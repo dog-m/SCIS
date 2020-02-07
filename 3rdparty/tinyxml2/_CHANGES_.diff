@@ -1,0 +1,10 @@
+--- D:/SPbPU/TheInstrumenter/thirdparty/tinyxml2/tinyxml2_original.h	Чт фев  6 01:13:02 2020
++++ D:/SPbPU/TheInstrumenter/thirdparty/tinyxml2/tinyxml2.h	Чт фев  6 01:09:03 2020
+@@ -587,6 +587,7 @@ class TINYXML2_LIB XMLUtil
+         return IsNameStartChar( ch )
+                || isdigit( ch )
+                || ch == '.'
++               || ch == '+'   // [IMPROVEMENT] by Mikhail Onischuck at 2020-02-06: TXL generates names with '+' symbol in some names (especially in list node types)
+                || ch == '-';
+     }
+ 
