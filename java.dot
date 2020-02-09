@@ -1,0 +1,253 @@
+digraph G {
+  <program> [fillcolor="#FFA0A0" style=filled]; <program> <program> -> { <package_declaration> }
+  <package_declaration> <package_declaration> -> { <repeat_import_declaration>, <repeat_type_declaration>, <opt_package_header> }
+  <opt_package_header> <opt_package_header> -> { <package_header> }
+  <package_header> <package_header> -> { <package_name>, <repeat_annotation> }
+  <repeat_annotation> <repeat_annotation> -> { <annotation> }
+  <annotation> <annotation> -> { <type_name>, <opt_literal>, <opt_annotation_value_spec> }
+  <type_name> <type_name> -> { <primitive_type_or_id>, <repeat_type_component> }
+  <primitive_type_or_id> <primitive_type_or_id> -> { <primitive_type> }
+  <primitive_type> <primitive_type> -> {  }
+  <repeat_type_component> <repeat_type_component> -> { <type_component> }
+  <type_component> <type_component> -> { <dot_id>, <generic_argument> }
+  <dot_id> <dot_id> -> { <opt_generic_argument>, <class_instance_declaration> }
+  <opt_generic_argument> <opt_generic_argument> -> { <generic_argument> }
+  <generic_argument> <generic_argument> -> { <list_type_argument> }
+  <list_type_argument> <list_type_argument> -> { <type_argument> }
+  <type_argument> <type_argument> -> { <type_specifier>, <wildcard_type> }
+  <type_specifier> <type_specifier> -> { <type_name>, <repeat_dimension> }
+  <repeat_dimension> <repeat_dimension> -> { <dimension> }
+  <dimension> <dimension> -> { <opt_expression> }
+  <opt_expression> <opt_expression> -> { <expression> }
+  <expression> <expression> -> { <lambda_expression>, <assignment_expression> }
+  <lambda_expression> <lambda_expression> -> { <lambda_parameters>, <lambda_body> }
+  <lambda_parameters> <lambda_parameters> -> { <list_lambda_parameter> }
+  <list_lambda_parameter> <list_lambda_parameter> -> { <lambda_parameter> }
+  <lambda_parameter> <lambda_parameter> -> { <formal_parameter>, <inferred_formal_parameter> }
+  <formal_parameter> <formal_parameter> -> { <type_specifier>, <repeat_variable_modifier>, <opt_var_arg_specifier>, <formal_parameter_name> }
+  <repeat_variable_modifier> <repeat_variable_modifier> -> { <variable_modifier> }
+  <variable_modifier> <variable_modifier> -> { <annotation> }
+  <opt_var_arg_specifier> <opt_var_arg_specifier> -> { <var_arg_specifier> }
+  <var_arg_specifier> <var_arg_specifier> -> {  }
+  <formal_parameter_name> <formal_parameter_name> -> { <variable_name> }
+  <variable_name> <variable_name> -> { <repeat_dimension>, <declared_name> }
+  <declared_name> <declared_name> -> { <opt_generic_parameter> }
+  <opt_generic_parameter> <opt_generic_parameter> -> { <generic_parameter> }
+  <generic_parameter> <generic_parameter> -> { <list_type_parameter> }
+  <list_type_parameter> <list_type_parameter> -> { <type_parameter> }
+  <type_parameter> <type_parameter> -> { <declared_name>, <opt_type_bound_clause>, <repeat_annotation> }
+  <opt_type_bound_clause> <opt_type_bound_clause> -> { <type_bound_clause> }
+  <type_bound_clause> <type_bound_clause> -> { <type_bound> }
+  <type_bound> <type_bound> -> { <type_specifier>, <repeat_and_type_spec> }
+  <repeat_and_type_spec> <repeat_and_type_spec> -> { <and_type_spec> }
+  <and_type_spec> <and_type_spec> -> { <type_specifier> }
+  <inferred_formal_parameter> <inferred_formal_parameter> -> {  }
+  <lambda_body> <lambda_body> -> { <expression>, <block> }
+  <block> <block> -> { <repeat_declaration_or_statement>, <opt_expression_statement_no_semi> }
+  <repeat_declaration_or_statement> <repeat_declaration_or_statement> -> { <declaration_or_statement> }
+  <declaration_or_statement> <declaration_or_statement> -> { <declaration>, <class_declaration>, <statement> }
+  <declaration> <declaration> -> { <local_variable_declaration> }
+  <local_variable_declaration> <local_variable_declaration> -> { <variable_declaration> }
+  <variable_declaration> <variable_declaration> -> { <type_specifier>, <repeat_modifier>, <variable_declarators> }
+  <repeat_modifier> <repeat_modifier> -> { <modifier> }
+  <modifier> <modifier> -> { <annotation> }
+  <variable_declarators> <variable_declarators> -> { <list_variable_declarator+> }
+  <list_variable_declarator+> <list_variable_declarator+> -> { <variable_declarator>, <list_variable_declarator> }
+  <variable_declarator> <variable_declarator> -> { <variable_name>, <opt_equals_variable_initializer> }
+  <opt_equals_variable_initializer> <opt_equals_variable_initializer> -> { <equals_variable_initializer> }
+  <equals_variable_initializer> <equals_variable_initializer> -> { <variable_initializer> }
+  <variable_initializer> <variable_initializer> -> { <expression>, <array_initializer> }
+  <array_initializer> <array_initializer> -> { <list_variable_initializer>, <opt_literal> }
+  <list_variable_initializer> <list_variable_initializer> -> { <variable_initializer> }
+  <opt_literal> <opt_literal> -> { <literal> }
+  <literal> <literal> -> { <numeric_literal>, <character_literal>, <string_literal>, <boolean_literal>, <null_literal> }
+  <list_variable_declarator> <list_variable_declarator> -> { <variable_declarator> }
+  <class_declaration> <class_declaration> -> { <class_header>, <class_body> }
+  <class_header> <class_header> -> { <repeat_modifier>, <class_name>, <opt_extends_clause>, <opt_implements_clause> }
+  <class_name> <class_name> -> { <declared_name> }
+  <opt_extends_clause> <opt_extends_clause> -> { <extends_clause> }
+  <extends_clause> <extends_clause> -> { <list_type_name+> }
+  <list_type_name+> <list_type_name+> -> { <type_name>, <list_type_name> }
+  <list_type_name> <list_type_name> -> { <type_name> }
+  <opt_implements_clause> <opt_implements_clause> -> { <implements_clause> }
+  <implements_clause> <implements_clause> -> { <list_qualified_name+> }
+  <list_qualified_name+> <list_qualified_name+> -> { <qualified_name>, <list_qualified_name> }
+  <qualified_name> <qualified_name> -> { <reference> }
+  <reference> <reference> -> { <primitive_type>, <repeat_component> }
+  <repeat_component> <repeat_component> -> { <component> }
+  <component> <component> -> { <dot_id>, <generic_argument>, <dimension>, <method_argument>, <subscript>, <class_instance_creation_expression>, <method_reference> }
+  <method_argument> <method_argument> -> { <list_argument> }
+  <list_argument> <list_argument> -> { <argument> }
+  <argument> <argument> -> { <type_specifier>, <expression> }
+  <subscript> <subscript> -> { <expression> }
+  <class_instance_creation_expression> <class_instance_creation_expression> -> { <list_argument>, <class_or_interface_name>, <opt_class_body> }
+  <class_or_interface_name> <class_or_interface_name> -> { <repeat_class_or_interface_component> }
+  <repeat_class_or_interface_component> <repeat_class_or_interface_component> -> { <class_or_interface_component> }
+  <class_or_interface_component> <class_or_interface_component> -> { <dot_id>, <generic_argument> }
+  <opt_class_body> <opt_class_body> -> { <class_body> }
+  <class_body> <class_body> -> { <class_or_interface_body> }
+  <class_or_interface_body> <class_or_interface_body> -> { <opt_literal>, <repeat_class_body_declaration> }
+  <repeat_class_body_declaration> <repeat_class_body_declaration> -> { <class_body_declaration> }
+  <class_body_declaration> <class_body_declaration> -> { <empty_declaration>, <member_declaration>, <instance_initializer>, <static_initializer>, <field_declaration> }
+  <empty_declaration> <empty_declaration> -> {  }
+  <member_declaration> <member_declaration> -> { <method_or_constructor_declaration>, <type_declaration> }
+  <method_or_constructor_declaration> <method_or_constructor_declaration> -> { <method_declaration>, <constructor_declaration> }
+  <method_declaration> <method_declaration> -> { <type_specifier>, <opt_generic_parameter>, <repeat_modifier>, <method_declarator>, <opt_throws>, <method_body> }
+  <method_declarator> <method_declarator> -> { <repeat_dimension>, <method_name>, <list_formal_parameter> }
+  <method_name> <method_name> -> { <declared_name> }
+  <list_formal_parameter> <list_formal_parameter> -> { <formal_parameter> }
+  <opt_throws> <opt_throws> -> { <throws> }
+  <throws> <throws> -> { <list_qualified_name+> }
+  <method_body> <method_body> -> { <block>, <annotation_value> }
+  <annotation_value> <annotation_value> -> { <expression>, <opt_literal>, <nested_annotation>, <list_expression_or_nested_annotation> }
+  <nested_annotation> <nested_annotation> -> { <annotation> }
+  <list_expression_or_nested_annotation> <list_expression_or_nested_annotation> -> { <expression_or_nested_annotation> }
+  <expression_or_nested_annotation> <expression_or_nested_annotation> -> { <expression>, <nested_annotation> }
+  <constructor_declaration> <constructor_declaration> -> { <opt_generic_parameter>, <repeat_modifier>, <opt_throws>, <constructor_declarator>, <constructor_body> }
+  <constructor_declarator> <constructor_declarator> -> { <class_name>, <list_formal_parameter> }
+  <constructor_body> <constructor_body> -> { <block> }
+  <type_declaration> <type_declaration> -> { <class_declaration>, <interface_declaration>, <enum_declaration> }
+  <interface_declaration> <interface_declaration> -> { <interface_header>, <interface_body> }
+  <interface_header> <interface_header> -> { <repeat_modifier>, <opt_extends_clause>, <opt_implements_clause>, <opt_annot_marker>, <interface_name> }
+  <opt_annot_marker> <opt_annot_marker> -> { <annot_marker> }
+  <annot_marker> <annot_marker> -> {  }
+  <interface_name> <interface_name> -> { <declared_name> }
+  <interface_body> <interface_body> -> { <class_or_interface_body> }
+  <enum_declaration> <enum_declaration> -> { <enum_header>, <enum_body> }
+  <enum_header> <enum_header> -> { <repeat_modifier>, <opt_implements_clause>, <opt_id>, <opt_declared_name> }
+  <opt_id> <opt_id> -> {  }
+  <opt_declared_name> <opt_declared_name> -> { <declared_name> }
+  <enum_body> <enum_body> -> { <opt_literal>, <repeat_class_body_declaration>, <list_enum_element> }
+  <list_enum_element> <list_enum_element> -> { <enum_element> }
+  <enum_element> <enum_element> -> { <repeat_modifier>, <opt_method_argument>, <opt_class_or_interface_body> }
+  <opt_method_argument> <opt_method_argument> -> { <method_argument> }
+  <opt_class_or_interface_body> <opt_class_or_interface_body> -> { <class_or_interface_body> }
+  <instance_initializer> <instance_initializer> -> { <block> }
+  <static_initializer> <static_initializer> -> { <block> }
+  <field_declaration> <field_declaration> -> { <variable_declaration> }
+  <method_reference> <method_reference> -> { <opt_generic_argument> }
+  <list_qualified_name> <list_qualified_name> -> { <qualified_name> }
+  <statement> <statement> -> { <block>, <label_statement>, <empty_statement>, <expression_statement>, <if_statement>, <switch_statement>, <while_statement>, <do_statement>, <for_statement>, <for_in_statement>, <break_statement>, <continue_statement>, <return_statement>, <throw_statement>, <synchronized_statement>, <try_statement>, <assert_statement> }
+  <label_statement> <label_statement> -> { <statement>, <label_name> }
+  <label_name> <label_name> -> {  }
+  <empty_statement> <empty_statement> -> {  }
+  <expression_statement> <expression_statement> -> { <expression> }
+  <if_statement> <if_statement> -> { <statement>, <condition>, <opt_else_clause> }
+  <condition> <condition> -> { <expression> }
+  <opt_else_clause> <opt_else_clause> -> { <else_clause> }
+  <else_clause> <else_clause> -> { <statement> }
+  <switch_statement> <switch_statement> -> { <expression>, <switch_block> }
+  <switch_block> <switch_block> -> { <repeat_switch_alternative> }
+  <repeat_switch_alternative> <repeat_switch_alternative> -> { <switch_alternative> }
+  <switch_alternative> <switch_alternative> -> { <repeat_declaration_or_statement>, <switch_label> }
+  <switch_label> <switch_label> -> { <constant_expression> }
+  <constant_expression> <constant_expression> -> { <expression> }
+  <while_statement> <while_statement> -> { <statement>, <condition> }
+  <do_statement> <do_statement> -> { <statement>, <condition> }
+  <for_statement> <for_statement> -> { <statement>, <for_init>, <for_expression>, <for_update> }
+  <for_init> <for_init> -> { <local_variable_declaration>, <list_expression> }
+  <list_expression> <list_expression> -> { <expression> }
+  <for_expression> <for_expression> -> { <opt_expression> }
+  <for_update> <for_update> -> { <list_expression> }
+  <for_in_statement> <for_in_statement> -> { <expression>, <statement>, <for_in_init> }
+  <for_in_init> <for_in_init> -> { <type_specifier>, <variable_name>, <repeat_modifier> }
+  <break_statement> <break_statement> -> { <opt_label_name> }
+  <opt_label_name> <opt_label_name> -> { <label_name> }
+  <continue_statement> <continue_statement> -> { <opt_label_name> }
+  <return_statement> <return_statement> -> { <opt_expression> }
+  <throw_statement> <throw_statement> -> { <expression> }
+  <synchronized_statement> <synchronized_statement> -> { <expression>, <statement> }
+  <try_statement> <try_statement> -> { <block>, <opt_resource_specification>, <repeat_catch_clause>, <opt_finally_clause> }
+  <opt_resource_specification> <opt_resource_specification> -> { <resource_specification> }
+  <resource_specification> <resource_specification> -> { <opt_literal>, <resource_list> }
+  <resource_list> <resource_list> -> { <resource>, <repeat_semi_resource> }
+  <resource> <resource> -> { <type_specifier>, <expression>, <repeat_variable_modifier>, <variable_name> }
+  <repeat_semi_resource> <repeat_semi_resource> -> { <semi_resource> }
+  <semi_resource> <semi_resource> -> { <resource> }
+  <repeat_catch_clause> <repeat_catch_clause> -> { <catch_clause> }
+  <catch_clause> <catch_clause> -> { <variable_name>, <block>, <repeat_modifier>, <catch_type_specifier> }
+  <catch_type_specifier> <catch_type_specifier> -> { <type_specifier>, <repeat_or_type_specifier> }
+  <repeat_or_type_specifier> <repeat_or_type_specifier> -> { <or_type_specifier> }
+  <or_type_specifier> <or_type_specifier> -> { <type_specifier> }
+  <opt_finally_clause> <opt_finally_clause> -> { <finally_clause> }
+  <finally_clause> <finally_clause> -> { <block> }
+  <assert_statement> <assert_statement> -> { <expression>, <opt_assert_error_code> }
+  <opt_assert_error_code> <opt_assert_error_code> -> { <assert_error_code> }
+  <assert_error_code> <assert_error_code> -> { <expression> }
+  <opt_expression_statement_no_semi> <opt_expression_statement_no_semi> -> { <expression_statement_no_semi> }
+  <expression_statement_no_semi> <expression_statement_no_semi> -> { <expression> }
+  <assignment_expression> <assignment_expression> -> { <expression>, <conditional_expression>, <unary_expression>, <assignment_operator> }
+  <conditional_expression> <conditional_expression> -> { <conditional_or_expression>, <repeat_conditional_choice> }
+  <conditional_or_expression> <conditional_or_expression> -> { <conditional_and_expression>, <repeat_or_conditional_and_expression> }
+  <conditional_and_expression> <conditional_and_expression> -> { <inclusive_or_expression>, <repeat_and_inclusive_or_expression> }
+  <inclusive_or_expression> <inclusive_or_expression> -> { <exclusive_or_expression>, <repeat_or_exclusive_or_expression> }
+  <exclusive_or_expression> <exclusive_or_expression> -> { <and_expression>, <repeat_or_and_expression> }
+  <and_expression> <and_expression> -> { <equality_expression>, <repeat_and_equality_expression> }
+  <equality_expression> <equality_expression> -> { <relational_expression>, <repeat_equality_op_relational_expression> }
+  <relational_expression> <relational_expression> -> { <shift_expression>, <repeat_relational_op_shift_expression> }
+  <shift_expression> <shift_expression> -> { <additive_expression>, <repeat_shift_additive_expression> }
+  <additive_expression> <additive_expression> -> { <multiplicative_expression>, <repeat_add_op_multiplicative_expression> }
+  <multiplicative_expression> <multiplicative_expression> -> { <unary_expression>, <repeat_mult_op_unary_expression> }
+  <unary_expression> <unary_expression> -> { <pre_inc_dec>, <unary_op>, <postfix_expression>, <cast_expression> }
+  <pre_inc_dec> <pre_inc_dec> -> {  }
+  <unary_op> <unary_op> -> {  }
+  <postfix_expression> <postfix_expression> -> { <primary>, <repeat_post_inc_dec> }
+  <primary> <primary> -> { <expression>, <literal>, <reference>, <repeat_component>, <class_instance_creation_expression>, <array_creation_expression> }
+  <numeric_literal> <numeric_literal> -> {  }
+  <character_literal> <character_literal> -> {  }
+  <string_literal> <string_literal> -> {  }
+  <boolean_literal> <boolean_literal> -> {  }
+  <null_literal> <null_literal> -> {  }
+  <array_creation_expression> <array_creation_expression> -> { <array_type_specifier>, <opt_array_initializer> }
+  <array_type_specifier> <array_type_specifier> -> { <type_name>, <repeat_dimension+> }
+  <repeat_dimension+> <repeat_dimension+> -> { <repeat_dimension>, <dimension> }
+  <opt_array_initializer> <opt_array_initializer> -> { <array_initializer> }
+  <repeat_post_inc_dec> <repeat_post_inc_dec> -> { <post_inc_dec> }
+  <post_inc_dec> <post_inc_dec> -> {  }
+  <cast_expression> <cast_expression> -> { <type_specifier>, <lambda_expression>, <unary_expression> }
+  <repeat_mult_op_unary_expression> <repeat_mult_op_unary_expression> -> { <mult_op_unary_expression> }
+  <mult_op_unary_expression> <mult_op_unary_expression> -> { <unary_expression>, <mult_op> }
+  <mult_op> <mult_op> -> {  }
+  <repeat_add_op_multiplicative_expression> <repeat_add_op_multiplicative_expression> -> { <add_op_multiplicative_expression> }
+  <add_op_multiplicative_expression> <add_op_multiplicative_expression> -> { <multiplicative_expression>, <add_op> }
+  <add_op> <add_op> -> {  }
+  <repeat_shift_additive_expression> <repeat_shift_additive_expression> -> { <shift_additive_expression> }
+  <shift_additive_expression> <shift_additive_expression> -> { <additive_expression>, <shift_op> }
+  <shift_op> <shift_op> -> {  }
+  <repeat_relational_op_shift_expression> <repeat_relational_op_shift_expression> -> { <relational_op_shift_expression> }
+  <relational_op_shift_expression> <relational_op_shift_expression> -> { <type_specifier>, <shift_expression>, <relational_op> }
+  <relational_op> <relational_op> -> {  }
+  <repeat_equality_op_relational_expression> <repeat_equality_op_relational_expression> -> { <equality_op_relational_expression> }
+  <equality_op_relational_expression> <equality_op_relational_expression> -> { <relational_expression>, <equality_op> }
+  <equality_op> <equality_op> -> {  }
+  <repeat_and_equality_expression> <repeat_and_equality_expression> -> { <and_equality_expression> }
+  <and_equality_expression> <and_equality_expression> -> { <equality_expression> }
+  <repeat_or_and_expression> <repeat_or_and_expression> -> { <or_and_expression> }
+  <or_and_expression> <or_and_expression> -> { <and_expression> }
+  <repeat_or_exclusive_or_expression> <repeat_or_exclusive_or_expression> -> { <or_exclusive_or_expression> }
+  <or_exclusive_or_expression> <or_exclusive_or_expression> -> { <exclusive_or_expression> }
+  <repeat_and_inclusive_or_expression> <repeat_and_inclusive_or_expression> -> { <and_inclusive_or_expression> }
+  <and_inclusive_or_expression> <and_inclusive_or_expression> -> { <inclusive_or_expression> }
+  <repeat_or_conditional_and_expression> <repeat_or_conditional_and_expression> -> { <or_conditional_and_expression> }
+  <or_conditional_and_expression> <or_conditional_and_expression> -> { <conditional_and_expression> }
+  <repeat_conditional_choice> <repeat_conditional_choice> -> { <conditional_choice> }
+  <conditional_choice> <conditional_choice> -> { <expression>, <conditional_expression> }
+  <assignment_operator> <assignment_operator> -> {  }
+  <wildcard_type> <wildcard_type> -> { <opt_wildcard_type_bound> }
+  <opt_wildcard_type_bound> <opt_wildcard_type_bound> -> { <wildcard_type_bound> }
+  <wildcard_type_bound> <wildcard_type_bound> -> { <type_specifier> }
+  <class_instance_declaration> <class_instance_declaration> -> { <class_instance_creation_expression> }
+  <opt_annotation_value_spec> <opt_annotation_value_spec> -> { <annotation_value_spec> }
+  <annotation_value_spec> <annotation_value_spec> -> { <annotation_value_list> }
+  <annotation_value_list> <annotation_value_list> -> { <annotation_value>, <list_keyed_annotation_value> }
+  <list_keyed_annotation_value> <list_keyed_annotation_value> -> { <keyed_annotation_value> }
+  <keyed_annotation_value> <keyed_annotation_value> -> { <annotation_value> }
+  <package_name> <package_name> -> { <qualified_name> }
+  <repeat_import_declaration> <repeat_import_declaration> -> { <import_declaration> }
+  <import_declaration> <import_declaration> -> { <opt_literal>, <imported_name> }
+  <imported_name> <imported_name> -> { <package_or_type_name>, <opt_dot_star> }
+  <package_or_type_name> <package_or_type_name> -> { <qualified_name> }
+  <opt_dot_star> <opt_dot_star> -> { <dot_star> }
+  <dot_star> <dot_star> -> {  }
+  <repeat_type_declaration> <repeat_type_declaration> -> { <type_declaration> }
+}

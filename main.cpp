@@ -74,7 +74,9 @@ struct TypeNode {
 
 struct TypeGraph {
   auto_pool<TypeNode> pool;
-  map<string_view, decltype(pool)::pool_item> types;
+  map<string_view, TypeNode*> types;
+
+  vector<TypeNode*> __xmlOrderedNodes;
 
   TypeGraph() = default;
   TypeGraph(TypeGraph &&) = delete;
@@ -117,10 +119,13 @@ struct TypeGraphBuilder: public XMLVisitor {
   map<Label, NodePtr> referenceMap;
 
   NodePtr registerNode(Label const label, string_view const name) {
-    if (auto const node = graph->findNodeByName(name))
-      return referenceMap[label] = node;
-    else
-      return referenceMap[label] = graph->createNode(label, name);
+    auto node = graph->findNodeByName(name);
+    if (!node) {
+      node = graph->createNode(label, name);
+      graph->__xmlOrderedNodes.push_back(node);
+    }
+
+    return referenceMap[label] = node;
   }
 
   [[nodiscard]]
@@ -179,7 +184,7 @@ struct TypeGraphBuilder: public XMLVisitor {
     return true;
   }
 
-  bool VisitExit(XMLElement const& element) override {
+  bool VisitExit(XMLElement const&) override {
     --xmlTreeDepth;
 
     auto root = roots.top();
@@ -200,18 +205,27 @@ struct TypeGraphBuilder: public XMLVisitor {
     return true;
   }
 
-  void buildGraph(XMLDocument const& doc, TypeGraph *const graphToBuild) {
-    currentNode = nullptr;
-    expectedLabel = 0;
+  void reset(TypeGraph *const graphToBuild) {
     graph = graphToBuild;
+    currentNode = nullptr;
+    while (!roots.empty()) roots.pop();
+    expectedLabel = 0;
+    while (!hangingNodes.empty()) hangingNodes.pop();
     xmlTreeDepth = 0;
+    referenceMap.clear();
 
-    doc.Accept(this);
+    graphToBuild->__xmlOrderedNodes.clear();
+  }
+
+  void buildGraph(XMLDocument const& xmlDoc, TypeGraph *const graphToBuild) {
+    reset(graphToBuild);
+
+    xmlDoc.Accept(this);
 
     if (auto const count = hangingNodes.size(); count == 0)
       ERROR("Expected top node type to hang around");
 
-    else if (count == 1)
+    else if (count == 1 && hangingNodes.top().second->name == "program")
       hangingNodes.pop();
 
     else {
@@ -234,12 +248,13 @@ struct TypeGraphBuilder: public XMLVisitor {
 static void renderAsDOT(TypeGraph const& g) {
   INFO("Drawing...");
 
-  cout << "digraph {" << endl;
+  cout << "digraph G {" << endl;
 
-  for (auto const& [_, type] : g.types) {
+  for (auto const type : g.__xmlOrderedNodes) {
     cout << "  <" << type->name << ">"
-         << (ref->name == "program" ? " [fillcolor=red style=filled]; <program>" : " ")
-         << "-> { ";
+         << (type->name == "program" ? " [fillcolor=\"#FFA0A0\" style=filled]; <program>" : "")
+         << " <" << type->name << ">"
+         << " -> { ";
 
     int shouldBePrinted = static_cast<int>(type->references.size());
     for (auto const ref : type->references)
@@ -283,7 +298,7 @@ static void parse(XMLDocument &doc, const char* fileName, TypeGraph &graph) {
 
 int main(/*int argc, char** argv*/) {
   TypeGraph graph;
-  XMLDocument doc(true, COLLAPSE_WHITESPACE); // TODO: remove collapsing
+  XMLDocument doc; // TODO: remove collapsing
   parse(doc, "java.xml", graph);
 
   INFO("parsing done");

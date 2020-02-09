@@ -1,0 +1,3 @@
+@echo Rendering...
+@dot -Tpng java.dot -o java.png
+@echo Done
