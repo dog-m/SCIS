@@ -30,12 +30,14 @@ struct auto_pool {
   }
 
   template<typename ...Args>
+  [[nodiscard]]
   inline pool_item getNew(Args&&... args) {
     auto const item = new T(forward<Args>(args)...);
     return items.emplace_back(item);
   }
 
   template<typename U, typename ...Args>
+  [[nodiscard]]
   inline U* getNewTyped(Args&&... args) {
     return static_cast<U*>(getNew(forward<Args>(args)...));
   }
@@ -56,23 +58,38 @@ constexpr Label LABEL_INCORRECT = Label(-1);
 
 struct TypeNode {
   Label label;
-  string_view type;
+  string_view name;
+  set<TypeNode*> references;
 
-  TypeNode(Label const label, string_view const type):
-    label(label), type(type) {}
+  TypeNode(Label const label, string_view const name):
+    label(label), name(name) {}
+
+  void connectTo(TypeNode *const other) {
+    if (other != this)
+      references.insert(other);
+  }
 };
+
+
 
 struct TypeGraph {
   auto_pool<TypeNode> pool;
+  map<string_view, decltype(pool)::pool_item> types;
 
-  map<Label, decltype(pool)::pool_item> types;
+  TypeGraph() = default;
+  TypeGraph(TypeGraph &&) = delete;
+  TypeGraph(TypeGraph const&) = delete;
 
-  void createNode(Label const label, string_view const type) {
-    types[label] = pool.getNew(label, type);
+  auto createNode(Label const label, string_view const type) {
+    return types[type] = pool.getNew(label, type);
   }
 
-  decltype(pool)::pool_item findNodeByLabel(Label const label) {
-    return types[label];
+  [[nodiscard]]
+  TypeNode* findNodeByName(string_view const name) const noexcept {
+    if (auto const it = types.find(name); it != types.cend())
+      return it->second;
+    else
+      return nullptr;
   }
 };
 
@@ -82,11 +99,34 @@ struct TypeGraph {
 
 
 
+static set<string_view> const TXL_SPECIAL {
+  "NL", "IN", "EX", "SPON", "SPOFF",
+  "empty", "id", "number", "charlit", "stringlit"
+};
+
 struct TypeGraphBuilder: public XMLVisitor {
+  using NodePtr = TypeNode*;
+
   TypeGraph* graph;
-  TypeNode* currentRoot = nullptr;
-  stack<TypeNode*> passedNodes;
+  NodePtr currentNode = nullptr;
+  stack<NodePtr> roots;
   Label expectedLabel = 0;
+  stack<pair<uint32_t, NodePtr>> hangingNodes;
+  uint32_t xmlTreeDepth = 0;
+
+  map<Label, NodePtr> referenceMap;
+
+  NodePtr registerNode(Label const label, string_view const name) {
+    if (auto const node = graph->findNodeByName(name))
+      return referenceMap[label] = node;
+    else
+      return referenceMap[label] = graph->createNode(label, name);
+  }
+
+  [[nodiscard]]
+  NodePtr findNodeByReference(Label const ref) {
+    return referenceMap[ref];
+  }
 
   bool VisitEnter(XMLElement const& element, XMLAttribute const *const firstAttr) override {
     string_view tagName = element.Name();
@@ -104,56 +144,83 @@ struct TypeGraphBuilder: public XMLVisitor {
 
     bool is_labeled = (label != LABEL_INCORRECT);
     bool const is_reference = (ref != LABEL_INCORRECT);
+    bool const is_special = (TXL_SPECIAL.find(tagName) != TXL_SPECIAL.cend());
 
-    static set<string_view> const SPECIAL {
-      "NL", "IN", "EX", "SPON", "SPOFF",
-      "empty", "id", "number", "charlit", "stringlit"
-    };
-    bool const is_special = (SPECIAL.find(tagName) != SPECIAL.cend());
+    // set a new root for further nodes
+    roots.push(currentNode);
 
-    if (is_special)
-      return false;
-
-    if (!is_reference)
-      ++expectedLabel;
-
-    if (!is_labeled && !is_reference && !is_special) {
-      label = expectedLabel;
-      WARNING("Unindexed node type: " << tagName << ". It probably have label = " << label);
-      is_labeled = true;
-    }
-
-    if (is_labeled && label != expectedLabel)
-      WARNING("Desynchronization with expected label counter: expected " << expectedLabel << ", actual " << label);
-
-    if (is_reference) {
-      Label ref = firstAttr->IntValue();
-      auto const node = graph->findNodeByLabel(ref);
-      if (node)
-        INFO(" -> " << node->type);
-      else
-        WARNING("Undefined reference " << ref);
+    if (is_special) {
+      currentNode = nullptr;
     }
     else {
-      //INFO("Found clean! " << tagName);
-      graph->createNode(label, tagName);
+      if (!is_reference)
+        ++expectedLabel;
+
+      if (!is_labeled && !is_reference && !is_special) {
+        label = expectedLabel;
+        //WARNING("Non-indexed node type: " << tagName << ". It probably have label = " << label);
+        is_labeled = true;
+      }
+
+      if (is_labeled && label != expectedLabel)
+        WARNING("Desynchronization with expected label counter: expected " << expectedLabel << ", actual " << label);
+
+      currentNode = is_reference ? findNodeByReference(ref) : registerNode(label, tagName);
+      if (!currentNode) {
+        ERROR("Undefined reference " << ref);
+        terminate();
+      }
+
+      hangingNodes.push(make_pair(xmlTreeDepth, currentNode));
     }
+
+    ++xmlTreeDepth;
 
     return true;
   }
 
   bool VisitExit(XMLElement const& element) override {
-    if (!passedNodes.empty())
-      passedNodes.pop();
+    --xmlTreeDepth;
+
+    auto root = roots.top();
+    if (root) {
+      // TODO: add connection logic
+      while (!hangingNodes.empty() && hangingNodes.top().first == xmlTreeDepth) {
+        if (hangingNodes.top().second)
+          root->connectTo(hangingNodes.top().second);
+
+        hangingNodes.pop();
+      }
+    }
+
+
+    currentNode = roots.top();
+    roots.pop();
 
     return true;
   }
 
   void buildGraph(XMLDocument const& doc, TypeGraph *const graphToBuild) {
-    currentRoot = nullptr;
+    currentNode = nullptr;
     expectedLabel = 0;
     graph = graphToBuild;
+    xmlTreeDepth = 0;
+
     doc.Accept(this);
+
+    if (auto const count = hangingNodes.size(); count == 0)
+      ERROR("Expected top node type to hang around");
+
+    else if (count == 1)
+      hangingNodes.pop();
+
+    else {
+      ERROR("Something left behind!");
+      while (!hangingNodes.empty()) {
+        cerr << hangingNodes.top().second->name << endl;
+        hangingNodes.pop();
+      }
+    }
   }
 
 };
@@ -164,8 +231,36 @@ struct TypeGraphBuilder: public XMLVisitor {
 
 
 
-static void parse(const char* fileName) {
-  XMLDocument doc(true, COLLAPSE_WHITESPACE); // TODO: remove collapsing
+static void renderAsDOT(TypeGraph const& g) {
+  INFO("Drawing...");
+
+  cout << "digraph {" << endl;
+
+  for (auto const& [_, type] : g.types) {
+    cout << "  <" << type->name << ">"
+         << (ref->name == "program" ? " [fillcolor=red style=filled]; <program>" : " ")
+         << "-> { ";
+
+    int shouldBePrinted = static_cast<int>(type->references.size());
+    for (auto const ref : type->references)
+      cout << "<" << ref->name << ">" << (shouldBePrinted --> 1 ? ", " : "");
+
+    cout << " }" << endl;
+  }
+
+  cout << "}" << endl;
+
+  INFO("done");
+}
+
+
+
+/* =================================================================================== */
+
+
+
+static void parse(XMLDocument &doc, const char* fileName, TypeGraph &graph) {
+  INFO("Parsing...");
 
   if (auto result = doc.LoadFile(fileName); result != XML_SUCCESS) {
     ERROR("Loading failed: " << doc.ErrorIDToName(result));
@@ -174,12 +269,10 @@ static void parse(const char* fileName) {
     INFO("XML loaded normaly");
   }
 
-  TypeGraph graph;
-
   TypeGraphBuilder builder;
   builder.buildGraph(doc, &graph);
 
-  //doc.SaveFile("1.xml", true);
+  INFO("done");
 }
 
 
@@ -189,7 +282,13 @@ static void parse(const char* fileName) {
 
 
 int main(/*int argc, char** argv*/) {
-  parse("java.xml");
+  TypeGraph graph;
+  XMLDocument doc(true, COLLAPSE_WHITESPACE); // TODO: remove collapsing
+  parse(doc, "java.xml", graph);
+
+  INFO("parsing done");
+
+  renderAsDOT(graph);
 
   return 0;
 }
