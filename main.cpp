@@ -253,7 +253,6 @@ static void renderAsDOT(TypeGraph const& g) {
   for (auto const type : g.__xmlOrderedNodes) {
     cout << "  <" << type->name << ">"
          << (type->name == "program" ? " [fillcolor=\"#FFA0A0\" style=filled]; <program>" : "")
-         << " <" << type->name << ">"
          << " -> { ";
 
     int shouldBePrinted = static_cast<int>(type->references.size());
