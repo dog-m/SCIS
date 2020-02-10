@@ -1,3 +1,3 @@
 echo Rendering...
-dot -Tpng java.dot -o java.png
+dot -Tjpg java.dot -o java.jpg
 echo Done
