@@ -1,9 +1,12 @@
 #include <iostream>
 #include "3rdparty/tinyxml2/tinyxml2.h"
-#include <map>
-#include <set>
-#include <stack>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
+#include <list>
+#include <stack>
+#include <queue>
+#include <deque>
 
 using namespace std;
 using namespace tinyxml2;
@@ -59,7 +62,7 @@ constexpr Label LABEL_INCORRECT = Label(-1);
 struct TypeNode {
   Label label;
   string_view name;
-  set<TypeNode*> references;
+  unordered_set<TypeNode*> references;
 
   TypeNode(Label const label, string_view const name):
     label(label), name(name) {}
@@ -74,7 +77,7 @@ struct TypeNode {
 
 struct TypeGraph {
   auto_pool<TypeNode> pool;
-  map<string_view, TypeNode*> types;
+  unordered_map<string_view, TypeNode*> types;
 
   vector<TypeNode*> __xmlOrderedNodes;
 
@@ -82,7 +85,8 @@ struct TypeGraph {
   TypeGraph(TypeGraph &&) = delete;
   TypeGraph(TypeGraph const&) = delete;
 
-  auto createNode(Label const label, string_view const type) {
+  auto createNode(Label const label,
+                  string_view const type) {
     return types[type] = pool.getNew(label, type);
   }
 
@@ -101,7 +105,7 @@ struct TypeGraph {
 
 
 
-static set<string_view> const TXL_SPECIAL {
+static unordered_set<string_view> const TXL_SPECIAL {
   "NL", "IN", "EX", "SPON", "SPOFF",
   "empty", "id", "number", "charlit", "stringlit"
 };
@@ -116,9 +120,10 @@ struct TypeGraphBuilder: public XMLVisitor {
   stack<pair<uint32_t, NodePtr>> hangingNodes;
   uint32_t xmlTreeDepth = 0;
 
-  map<Label, NodePtr> referenceMap;
+  unordered_map<Label, NodePtr> referenceMap;
 
-  NodePtr registerNode(Label const label, string_view const name) {
+  NodePtr registerNode(Label const label,
+                       string_view const name) {
     auto node = graph->findNodeByName(name);
     if (!node) {
       node = graph->createNode(label, name);
@@ -133,7 +138,8 @@ struct TypeGraphBuilder: public XMLVisitor {
     return referenceMap[ref];
   }
 
-  bool VisitEnter(XMLElement const& element, XMLAttribute const *const firstAttr) override {
+  bool VisitEnter(XMLElement const& element,
+                  XMLAttribute const *const firstAttr) override {
     string_view tagName = element.Name();
     Label label = LABEL_INCORRECT;
     Label ref = LABEL_INCORRECT;
@@ -217,7 +223,8 @@ struct TypeGraphBuilder: public XMLVisitor {
     graphToBuild->__xmlOrderedNodes.clear();
   }
 
-  void buildGraph(XMLDocument const& xmlDoc, TypeGraph *const graphToBuild) {
+  void buildGraph(XMLDocument const& xmlDoc,
+                  TypeGraph *const graphToBuild) {
     reset(graphToBuild);
 
     xmlDoc.Accept(this);
@@ -273,7 +280,9 @@ static void renderAsDOT(TypeGraph const& g) {
 
 
 
-static void parse(XMLDocument &doc, const char* fileName, TypeGraph &graph) {
+static void parse(XMLDocument &doc,
+                  const char* fileName,
+                  TypeGraph &graph) {
   INFO("Parsing...");
 
   if (auto result = doc.LoadFile(fileName); result != XML_SUCCESS) {
@@ -295,14 +304,80 @@ static void parse(XMLDocument &doc, const char* fileName, TypeGraph &graph) {
 
 
 
+using NodeRefC = TypeNode const*;
+
+static void renderPath(list<NodeRefC> const& path) {
+  auto shouldBePrinted = path.size();
+  for (auto const point : path) {
+    cout << "<" << point->name << ">"
+         << (shouldBePrinted --> 1 ? " -> " : "")
+         << endl;
+  }
+  cout << endl;
+}
+
+static bool checkDequeEqual(deque<NodeRefC> const& a,
+                            deque<NodeRefC> const& b) {
+  if (a.size() != b.size())
+    return false;
+
+  if (a.size() == 0)
+    return true;
+
+  for (size_t i = 0; i < a.size(); i++)
+    if (a[i] != b[i])
+      return false;
+
+  return true;
+}
+
+static void processPoint(NodeRefC const p,
+                         deque<NodeRefC> &targetsMine,
+                         unordered_set<NodeRefC> &visitedCommon) {
+  ;
+}
+
+static void findAllAcyclicPathsBetween(NodeRefC const A, NodeRefC const B) {
+  unordered_set<NodeRefC> visited;
+
+  list<list<NodeRefC>> paths_A, paths_B;
+  // a.splice(a.cend(), b); <-- append B to A
+  // push in back of A (head = start, A)
+  // push in front of B (tail = finish, B)
+
+  deque<NodeRefC> next_A, next_B;
+
+  next_A.push_back(A);
+  next_B.push_back(B);
+
+  while (checkDequeEqual(next_A, next_B) && !next_A.empty()) {
+    auto const a = next_A.front();
+    next_A.pop_front();
+
+    auto const b = next_B.front();
+    next_B.pop_front();
+
+    ;
+  }
+}
+
+
+
+/* =================================================================================== */
+
+
+
 int main(/*int argc, char** argv*/) {
   TypeGraph graph;
-  XMLDocument doc; // TODO: remove collapsing
+  XMLDocument doc;
   parse(doc, "java.xml", graph);
 
   INFO("parsing done");
 
   renderAsDOT(graph);
+
+  INFO("Looking for paths between <program> and <class_name>");
+  findAllAcyclicPathsBetween(graph.types.at("program"), graph.types.at("class_name"));
 
   return 0;
 }
