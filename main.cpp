@@ -260,10 +260,15 @@ static void renderAsDOT(TypeGraph const& g) {
 
   cout << "digraph G {" << endl;
 
-  for (auto const type : g.__xmlOrderedNodes) {
+  for (auto const type : g.__xmlOrderedNodes)
     cout << "  <" << type->name << ">"
-         << (type->name == "program" ? " [fillcolor=\"#FFA0A0\" style=filled]; <program>" : "")
-         << " -> { ";
+         << (type->name == "program" ? " [fillcolor=\"0.0 0.35 1.0\" style=filled];" : "")
+         << endl;
+
+  cout << endl;
+
+  for (auto const type : g.__xmlOrderedNodes) {
+    cout << "  <" << type->name << "> -> { ";
 
     int shouldBePrinted = static_cast<int>(type->pointingTo.size());
     for (auto const point : type->pointingTo)
