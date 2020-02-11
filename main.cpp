@@ -7,7 +7,6 @@
 #include <stack>
 #include <queue>
 #include <deque>
-#include <utility>
 
 using namespace std;
 using namespace tinyxml2;
@@ -65,8 +64,12 @@ struct TypeNode {
   string_view name;
   unordered_set<TypeNode*> pointingTo, pointingFrom;
 
+  TypeNode* shortestPathToRoot = nullptr;
+  uint16_t distanceToRoot = decltype(distanceToRoot)(-1);
+  bool isWeak = false;
+
   TypeNode(Label const label, string_view const name):
-    label(label), name(name) {}
+    label(label), name(name), shortestPathToRoot(nullptr), isWeak(false) {}
 
   void pointTo(TypeNode *const other) {
     if (other != this) {
@@ -160,6 +163,13 @@ struct TypeGraphBuilder: public XMLVisitor {
     bool const is_reference = (ref != LABEL_INCORRECT);
     bool const is_special = (TXL_SPECIAL.find(tagName) != TXL_SPECIAL.cend());
 
+    bool is_weak = false;
+    if (auto const pos = tagName.find_first_of('_'); pos != string_view::npos) {
+      auto const prefix = tagName.substr(0, pos);
+      if (prefix == "opt" || (prefix == "list" && tagName.back() != '+'))
+        is_weak = true;
+    }
+
     // set a new root for further nodes
     roots.push(currentNode);
 
@@ -184,6 +194,8 @@ struct TypeGraphBuilder: public XMLVisitor {
         ERROR("Undefined reference " << ref);
         terminate();
       }
+
+      currentNode->isWeak = is_weak;
 
       hangingNodes.push(make_pair(xmlTreeDepth, currentNode));
     }
@@ -256,13 +268,16 @@ struct TypeGraphBuilder: public XMLVisitor {
 
 
 static void renderAsDOT(TypeGraph const& g) {
-  INFO("Drawing...");
+  decltype(TypeNode::distanceToRoot) maxDistance = 0;
+  for (auto const type : g.__xmlOrderedNodes)
+    maxDistance = max(maxDistance, type->distanceToRoot);
 
   cout << "digraph G {" << endl;
 
   for (auto const type : g.__xmlOrderedNodes)
     cout << "  <" << type->name << ">"
-         << (type->name == "program" ? " [fillcolor=\"0.0 0.35 1.0\" style=filled];" : "")
+         //<< (type->name == "program" ? " [fillcolor=\"0.0 0.35 1.0\" style=filled];" : "")
+         << " [fillcolor=\"" << (type->distanceToRoot * 0.75f / maxDistance) << " 0.35 1.0\" style=filled];"
          << endl;
 
   cout << endl;
@@ -274,12 +289,12 @@ static void renderAsDOT(TypeGraph const& g) {
     for (auto const point : type->pointingTo)
       cout << "<" << point->name << ">" << (shouldBePrinted --> 1 ? ", " : "");
 
-    cout << " }" << endl;
+    cout << " }"
+         << (type->isWeak ? " [style=dotted constraint=false];" : "")
+         << endl;
   }
 
   cout << "}" << endl;
-
-  INFO("done");
 }
 
 
@@ -291,19 +306,15 @@ static void renderAsDOT(TypeGraph const& g) {
 static void parse(XMLDocument &doc,
                   const char* fileName,
                   TypeGraph &graph) {
-  INFO("Parsing...");
-
   if (auto result = doc.LoadFile(fileName); result != XML_SUCCESS) {
     ERROR("Loading failed: " << doc.ErrorIDToName(result));
     return;
-  } else {
-    INFO("XML loaded normaly");
   }
+  else
+    INFO("XML loaded normaly");
 
   TypeGraphBuilder builder;
   builder.buildGraph(doc, &graph);
-
-  INFO("done");
 }
 
 
@@ -352,13 +363,54 @@ static void printAllPaths(NodeRefC const A,
 
 
 
+static void rebuildShortestPathsBFS(TypeGraph &graph,
+                                    TypeNode *const start) {
+  using NodeRef = TypeNode*;
+
+  unordered_set<NodeRef> visited;
+  deque<pair<NodeRef, NodeRef>> queue;
+
+  auto constexpr INF_DISTANCE = decltype(TypeNode::distanceToRoot)(-1);
+  for (auto &[_, node] : graph.types) {
+    node->distanceToRoot = INF_DISTANCE;
+    node->shortestPathToRoot = nullptr;
+  }
+
+  queue.push_back(make_pair(nullptr, start));
+
+  while (!queue.empty()) {
+    auto const [root, node] = queue.front();
+    queue.pop_front();
+
+    decltype(INF_DISTANCE) const newDistance = root ? root->distanceToRoot + 1 : 0;
+    if (newDistance < node->distanceToRoot) {
+      node->distanceToRoot = newDistance;
+      node->shortestPathToRoot = root;
+    }
+    visited.insert(node);
+
+    for (auto const target : node->pointingTo)
+      if (visited.find(target) == visited.cend())
+        queue.push_back(make_pair(node, target));
+  }
+}
+
+
+
+/* =================================================================================== */
+
+
+
 int main(/*int argc, char** argv*/) {
   TypeGraph graph;
   XMLDocument doc;
-  parse(doc, "java.xml", graph);
+  INFO("Parsing...");
+  parse(doc, "1.xml", graph);
 
-  INFO("parsing done");
+  INFO("Building shortest paths...");
+  rebuildShortestPathsBFS(graph, graph.types.at("program"));
 
+  INFO("Rendering...");
   renderAsDOT(graph);
 
   //INFO("Looking for paths between <program> and <class_header>");
