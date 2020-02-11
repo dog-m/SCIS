@@ -7,6 +7,7 @@
 #include <stack>
 #include <queue>
 #include <deque>
+#include <utility>
 
 using namespace std;
 using namespace tinyxml2;
@@ -62,14 +63,16 @@ constexpr Label LABEL_INCORRECT = Label(-1);
 struct TypeNode {
   Label label;
   string_view name;
-  unordered_set<TypeNode*> references;
+  unordered_set<TypeNode*> pointingTo, pointingFrom;
 
   TypeNode(Label const label, string_view const name):
     label(label), name(name) {}
 
-  void connectTo(TypeNode *const other) {
-    if (other != this)
-      references.insert(other);
+  void pointTo(TypeNode *const other) {
+    if (other != this) {
+      pointingTo.insert(other);
+      other->pointingFrom.insert(this);
+    }
   }
 };
 
@@ -198,7 +201,7 @@ struct TypeGraphBuilder: public XMLVisitor {
       // TODO: add connection logic
       while (!hangingNodes.empty() && hangingNodes.top().first == xmlTreeDepth) {
         if (hangingNodes.top().second)
-          root->connectTo(hangingNodes.top().second);
+          root->pointTo(hangingNodes.top().second);
 
         hangingNodes.pop();
       }
@@ -262,9 +265,9 @@ static void renderAsDOT(TypeGraph const& g) {
          << (type->name == "program" ? " [fillcolor=\"#FFA0A0\" style=filled]; <program>" : "")
          << " -> { ";
 
-    int shouldBePrinted = static_cast<int>(type->references.size());
-    for (auto const ref : type->references)
-      cout << "<" << ref->name << ">" << (shouldBePrinted --> 1 ? ", " : "");
+    int shouldBePrinted = static_cast<int>(type->pointingTo.size());
+    for (auto const point : type->pointingTo)
+      cout << "<" << point->name << ">" << (shouldBePrinted --> 1 ? ", " : "");
 
     cout << " }" << endl;
   }
@@ -306,59 +309,36 @@ static void parse(XMLDocument &doc,
 
 using NodeRefC = TypeNode const*;
 
-static void renderPath(list<NodeRefC> const& path) {
-  auto shouldBePrinted = path.size();
-  for (auto const point : path) {
-    cout << "<" << point->name << ">"
-         << (shouldBePrinted --> 1 ? " -> " : "")
-         << endl;
+static void printAllPaths_DFS(NodeRefC const A,
+                              NodeRefC const B,
+                              unordered_set<NodeRefC> &visited,
+                              list<NodeRefC> &path) {
+  visited.insert(A);
+  path.push_back(A);
+
+  if (A == B) {
+    // just print it
+    // TODO: save in result list
+    for (auto const point : path)
+      cout << point->name << " -> ";
+    cout << endl;
   }
-  cout << endl;
+  else {
+    // just go through each neighbour
+    for (auto const nextPoint : A->pointingTo)
+      if (visited.find(nextPoint) == visited.cend())
+        printAllPaths_DFS(nextPoint, B, visited, path);
+  }
+
+  path.pop_back();
+  visited.erase(A);
 }
 
-static bool checkDequeEqual(deque<NodeRefC> const& a,
-                            deque<NodeRefC> const& b) {
-  if (a.size() != b.size())
-    return false;
-
-  if (a.size() == 0)
-    return true;
-
-  for (size_t i = 0; i < a.size(); i++)
-    if (a[i] != b[i])
-      return false;
-
-  return true;
-}
-
-static void processPoint(NodeRefC const p,
-                         deque<NodeRefC> &targetsMine,
-                         unordered_set<NodeRefC> &visitedCommon) {
-  ;
-}
-
-static void findAllAcyclicPathsBetween(NodeRefC const A, NodeRefC const B) {
+static void printAllPaths(NodeRefC const A,
+                          NodeRefC const B) {
   unordered_set<NodeRefC> visited;
-
-  list<list<NodeRefC>> paths_A, paths_B;
-  // a.splice(a.cend(), b); <-- append B to A
-  // push in back of A (head = start, A)
-  // push in front of B (tail = finish, B)
-
-  deque<NodeRefC> next_A, next_B;
-
-  next_A.push_back(A);
-  next_B.push_back(B);
-
-  while (checkDequeEqual(next_A, next_B) && !next_A.empty()) {
-    auto const a = next_A.front();
-    next_A.pop_front();
-
-    auto const b = next_B.front();
-    next_B.pop_front();
-
-    ;
-  }
+  list<NodeRefC> path;
+  printAllPaths_DFS(A, B, visited, path);
 }
 
 
@@ -376,8 +356,8 @@ int main(/*int argc, char** argv*/) {
 
   renderAsDOT(graph);
 
-  INFO("Looking for paths between <program> and <class_name>");
-  findAllAcyclicPathsBetween(graph.types.at("program"), graph.types.at("class_name"));
+  //INFO("Looking for paths between <program> and <class_header>");
+  //printAllPaths(graph.types.at("program"), graph.types.at("class_header"));
 
   return 0;
 }
