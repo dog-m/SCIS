@@ -1,0 +1,43 @@
+<logic>
+  <grammar source="./../java.grm">
+    <language name="java"/>
+    <root type="program"/>
+  </grammar>
+
+  <extra-rules>
+    <rule repeat="true" base-type="block">
+      <replace>
+        {{ <thing type="repeat declaration_or_statement" id="Statements"/> }}
+      </replace>
+      <by>
+        { <ref id="Statements"/> }
+      </by>
+    </rule>
+    
+    <rule name="simplify">
+      replace [block]
+        '{'{ Statements [repeat declaration_or_statement] '}'}
+      by
+        '{ Statements '}
+    </rule>
+  </extra-rules>
+
+  <pointcuts>
+    <type id="if_statement">
+      <pointcut name="before">
+        ???
+      </pointcut>
+      
+      ...
+    </type>
+    
+    <type id="for_statement">
+      <pointcut id="before-body">
+        ???
+      </pointcut>
+      
+      <pointcut id="before" ref="before@if_statement"/>
+      ...
+    </type>
+  </pointcuts>
+</logic>

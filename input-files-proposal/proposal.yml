@@ -1,0 +1,37 @@
+with java from "java-description.xml"
+
+use fragment "imports-instrummentation-fragment-with-dependencies.java.xml"
+
+scope s1:
+  { class_name@class_header = "Main" }
+scope s2:
+  { method_name@method_declaration = "main" }
+scope s3:
+  s1 * s2
+
+scope s4:
+  s1 * s2
+  where:
+    s1 <- { class_name@class_header = "Main" }
+    s2 <- { method_name@method_declaration = "main" }
+
+actions:
+  instrument-some-statements-at-s3-and-s4:
+    @s3 > [all] if(*) # before:
+      construct:
+        msg <- $LOCATION + " " + $ITEM + " block in " +
+               $CLASS + " class, in " + $METHOD + " method.";
+      add:
+        instrumentationLogger.log(Level.FINE, msg);
+
+    @s4 > [first] if('x == 10'...) > [all] for(*) # before-body:
+      add:
+        print_iterration,
+        correct_variable_i,
+        do_other_stuff
+
+    @scope > path-element > [repeat-modifier] statement-name(param-template?) # pointcut-name:
+      construct:
+        element <- $CONSTANT
+      add:
+        name_of_a_block_of_code
