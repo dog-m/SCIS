@@ -1,5 +1,4 @@
 #include <iostream>
-#include "3rdparty/tinyxml2/tinyxml2.h"
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -8,12 +7,15 @@
 #include <queue>
 #include <deque>
 
+#include "3rdparty/tinyxml2/tinyxml2.h"
+#include "txlwrapper.h"
+
 using namespace std;
 using namespace tinyxml2;
 
-#define INFO(I)    (cout << "[INFO] " << I << endl)
-#define WARNING(W) (cerr << "[WARNING] " << W << endl)
-#define ERROR(E)   (cerr << "[ERROR] " << E << endl)
+#define SCIS_INFO(I)    (cout << "[INFO] " << I << endl)
+#define SCIS_WARNING(W) (cerr << "[WARNING] " << W << endl)
+#define SCIS_ERROR(E)   (cerr << "[ERROR] " << E << endl)
 
 #define NODISCARD [[nodiscard]]
 
@@ -201,11 +203,11 @@ struct TypeGraphBuilder: public XMLVisitor {
       }
 
       if (is_labeled && label != expectedLabel)
-        WARNING("Desynchronization with expected label counter: expected " << expectedLabel << ", actual " << label);
+        SCIS_WARNING("Desynchronization with expected label counter: expected " << expectedLabel << ", actual " << label);
 
       currentNode = is_reference ? findNodeByReference(ref) : registerNode(label, tagName, element.Attribute("kind"));
       if (!currentNode) {
-        ERROR("Undefined reference " << ref);
+        SCIS_ERROR("Undefined reference " << ref);
         terminate();
       }
 
@@ -257,13 +259,13 @@ struct TypeGraphBuilder: public XMLVisitor {
     xmlDoc.Accept(this);
 
     if (auto const count = hangingNodes.size(); count == 0)
-      ERROR("Expected top node type to hang around");
+      SCIS_ERROR("Expected top node type to hang around");
 
     else if (count == 1 && hangingNodes.top().second->name == "program")
       hangingNodes.pop();
 
     else {
-      ERROR("Something left behind!");
+      SCIS_ERROR("Something left behind!");
       while (!hangingNodes.empty()) {
         cerr << hangingNodes.top().second->name << endl;
         hangingNodes.pop();
@@ -319,11 +321,11 @@ static void parse(XMLDocument &doc,
                   const char* fileName,
                   TypeGraph &graph) {
   if (auto result = doc.LoadFile(fileName); result != XML_SUCCESS) {
-    ERROR("Loading failed: " << doc.ErrorIDToName(result));
+    SCIS_ERROR("Loading failed: " << doc.ErrorIDToName(result));
     return;
   }
   else
-    INFO("XML loaded normaly");
+    SCIS_INFO("XML loaded normaly");
 
   TypeGraphBuilder builder;
   builder.buildGraph(doc, &graph);
@@ -411,18 +413,18 @@ static void rebuildShortestPathsBFS(TypeGraph &graph,
 
 /* =================================================================================== */
 
-
-
 int main(/*int argc, char** argv*/) {
+  TXLWrapper::test();
+
   TypeGraph graph;
   XMLDocument doc;
-  INFO("Parsing...");
+  SCIS_INFO("Parsing...");
   parse(doc, "java.xml", graph);
 
-  INFO("Building shortest paths...");
+  SCIS_INFO("Building shortest paths...");
   rebuildShortestPathsBFS(graph, graph.types.at("program"));
 
-  INFO("Rendering...");
+  SCIS_INFO("Rendering...");
   renderAsDOT(graph);
 
   //INFO("Looking for paths between <program> and <class_header>");
