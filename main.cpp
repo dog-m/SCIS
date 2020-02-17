@@ -15,6 +15,8 @@ using namespace tinyxml2;
 #define WARNING(W) (cerr << "[WARNING] " << W << endl)
 #define ERROR(E)   (cerr << "[ERROR] " << E << endl)
 
+#define NODISCARD [[nodiscard]]
+
 /* =================================================================================== */
 
 
@@ -33,14 +35,14 @@ struct auto_pool {
   }
 
   template<typename ...Args>
-  [[nodiscard]]
+  NODISCARD
   inline pool_item getNew(Args&&... args) {
     auto const item = new T(forward<Args>(args)...);
     return items.emplace_back(item);
   }
 
   template<typename U, typename ...Args>
-  [[nodiscard]]
+  NODISCARD
   inline U* getNewTyped(Args&&... args) {
     return static_cast<U*>(getNew(forward<Args>(args)...));
   }
@@ -59,23 +61,43 @@ using Label = int;
 
 constexpr Label LABEL_INCORRECT = Label(-1);
 
+enum class Kind {
+  Order,
+  Choose,
+  Repeat,
+  List
+};
+
 struct TypeNode {
-  Label label;
   string_view name;
+  Label label;
+  Kind kind;
   unordered_set<TypeNode*> pointingTo, pointingFrom;
 
   TypeNode* shortestPathToRoot = nullptr;
   uint16_t distanceToRoot = decltype(distanceToRoot)(-1);
   bool isWeak = false;
 
-  TypeNode(Label const label, string_view const name):
-    label(label), name(name), shortestPathToRoot(nullptr), isWeak(false) {}
+  TypeNode(string_view const name, Label const label, Kind const kind):
+    name(name), label(label), kind(kind), shortestPathToRoot(nullptr) {
+    // check if node have weak connections
+    isWeak = false;
+    if (auto const pos = name.find_first_of('_'); pos != string_view::npos) {
+      auto const prefix = name.substr(0, pos);
+      if (prefix == "opt" || (prefix == "list" && name.back() != '+'))
+        isWeak = true;
+    }
+  }
 
   void pointTo(TypeNode *const other) {
     if (other != this) {
       pointingTo.insert(other);
       other->pointingFrom.insert(this);
     }
+  }
+
+  string renderName() const {
+    return "<" + to_string(label) + " " + name.data() + ">";
   }
 };
 
@@ -92,11 +114,12 @@ struct TypeGraph {
   TypeGraph(TypeGraph const&) = delete;
 
   auto createNode(Label const label,
-                  string_view const type) {
-    return types[type] = pool.getNew(label, type);
+                  string_view const type,
+                  Kind const kind) {
+    return types[type] = pool.getNew(type, label, kind);
   }
 
-  [[nodiscard]]
+  NODISCARD
   TypeNode* findNodeByName(string_view const name) const noexcept {
     if (auto const it = types.find(name); it != types.cend())
       return it->second;
@@ -128,47 +151,38 @@ struct TypeGraphBuilder: public XMLVisitor {
 
   unordered_map<Label, NodePtr> referenceMap;
 
+  NODISCARD
   NodePtr registerNode(Label const label,
-                       string_view const name) {
-    auto node = graph->findNodeByName(name);
-    if (!node) {
-      node = graph->createNode(label, name);
+                       string_view const name,
+                       string_view const kindStr) {
+    Kind kind = Kind::Order;
+         if (kindStr == "list")   kind = Kind::List;
+    else if (kindStr == "choose") kind = Kind::Choose;
+    else if (kindStr == "repeat") kind = Kind::Repeat;
+
+    /*auto node = graph->findNodeByName(name);
+    if (!node) {*/
+      auto node = graph->createNode(label, name, kind);
       graph->__xmlOrderedNodes.push_back(node);
-    }
+    //}
 
     return referenceMap[label] = node;
   }
 
-  [[nodiscard]]
+  NODISCARD
   NodePtr findNodeByReference(Label const ref) {
     return referenceMap[ref];
   }
 
   bool VisitEnter(XMLElement const& element,
-                  XMLAttribute const *const firstAttr) override {
+                  XMLAttribute const *const) override {
     string_view tagName = element.Name();
-    Label label = LABEL_INCORRECT;
-    Label ref = LABEL_INCORRECT;
-
-    if (firstAttr && XMLUtil::StringEqual(firstAttr->Name(), "ref"))
-      ref = firstAttr->IntValue();
-    else
-      for(auto attr = firstAttr; attr; attr = attr->Next() )
-        if (XMLUtil::StringEqual(attr->Name(), "label")) {
-          label = attr->IntValue();
-          break;
-        }
+    Label label = element.IntAttribute("label", LABEL_INCORRECT);
+    Label ref = element.IntAttribute("ref", LABEL_INCORRECT);
 
     bool is_labeled = (label != LABEL_INCORRECT);
     bool const is_reference = (ref != LABEL_INCORRECT);
     bool const is_special = (TXL_SPECIAL.find(tagName) != TXL_SPECIAL.cend());
-
-    bool is_weak = false;
-    if (auto const pos = tagName.find_first_of('_'); pos != string_view::npos) {
-      auto const prefix = tagName.substr(0, pos);
-      if (prefix == "opt" || (prefix == "list" && tagName.back() != '+'))
-        is_weak = true;
-    }
 
     // set a new root for further nodes
     roots.push(currentNode);
@@ -189,13 +203,11 @@ struct TypeGraphBuilder: public XMLVisitor {
       if (is_labeled && label != expectedLabel)
         WARNING("Desynchronization with expected label counter: expected " << expectedLabel << ", actual " << label);
 
-      currentNode = is_reference ? findNodeByReference(ref) : registerNode(label, tagName);
+      currentNode = is_reference ? findNodeByReference(ref) : registerNode(label, tagName, element.Attribute("kind"));
       if (!currentNode) {
         ERROR("Undefined reference " << ref);
         terminate();
       }
-
-      currentNode->isWeak = is_weak;
 
       hangingNodes.push(make_pair(xmlTreeDepth, currentNode));
     }
@@ -275,7 +287,7 @@ static void renderAsDOT(TypeGraph const& g) {
   cout << "digraph G {" << endl;
 
   for (auto const type : g.__xmlOrderedNodes)
-    cout << "  <" << type->name << ">"
+    cout << "  " << type->renderName()
          //<< (type->name == "program" ? " [fillcolor=\"0.0 0.35 1.0\" style=filled];" : "")
          << " [fillcolor=\"" << (type->distanceToRoot * 0.75f / maxDistance) << " 0.35 1.0\" style=filled];"
          << endl;
@@ -283,11 +295,11 @@ static void renderAsDOT(TypeGraph const& g) {
   cout << endl;
 
   for (auto const type : g.__xmlOrderedNodes) {
-    cout << "  <" << type->name << "> -> { ";
+    cout << "  " << type->renderName() << " -> { ";
 
     int shouldBePrinted = static_cast<int>(type->pointingTo.size());
     for (auto const point : type->pointingTo)
-      cout << "<" << point->name << ">" << (shouldBePrinted --> 1 ? ", " : "");
+      cout << point->renderName() << (shouldBePrinted --> 1 ? ", " : "");
 
     cout << " }"
          << (type->isWeak ? " [style=dotted constraint=false];" : "")
@@ -405,7 +417,7 @@ int main(/*int argc, char** argv*/) {
   TypeGraph graph;
   XMLDocument doc;
   INFO("Parsing...");
-  parse(doc, "1.xml", graph);
+  parse(doc, "java.xml", graph);
 
   INFO("Building shortest paths...");
   rebuildShortestPathsBFS(graph, graph.types.at("program"));
