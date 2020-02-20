@@ -2,11 +2,10 @@
   <dependencies>
     ???
   </dependencies>
-  <code>
+  <code target="import_declaration..." joint-op="append-each-unique">
     import java.util.logging.Logger;
     import java.util.logging.Level;
     import java.util.logging.Handler;
     import java.util.logging.ConsoleHandler;
   </code>
-  ...
 </fragment>

@@ -1,0 +1,143 @@
+#pragma -newline -id "-"
+
+tokens
+    % Python string forms - shortstrings are already captured by [stringlit] and [charlit]
+    longstringlit	"\"\"\"#[(\"\"\")]*\"\"\""
+    longcharlit		"'''#[(''')]*'''"
+end tokens
+
+keys 
+    'with        'from
+    'use         'fragment
+    'scope
+    'rules
+end keys
+
+compounds 
+    ->  <-  ...
+end compounds
+
+comments 
+    //
+    /*  */
+end comments
+
+
+
+define program 
+    [with_statement]
+    [repeat scope_definition]
+    [rules]
+end define
+
+
+
+
+define with_statement
+    'with [id] 'from [stringlit] [NL]
+end define
+
+
+
+define scope_definition
+    'scope [scope_name]: [NL] [IN]
+        [basic_scope_or_expression] [NL] [EX]
+end define
+
+define basic_scope_or_expression_scope
+    [basic_scope] | [expression_scope]
+end define
+
+define basic_scope
+    '{ [list something+] '}
+end define
+
+define expression_scope
+    [something]
+end define
+
+define scope_name
+    [id]
+end define
+
+
+
+
+define rules
+    'rules ': [NL] [IN]
+        [repeat rule+] [EX]
+end define
+
+define rule
+    [id] ': [NL] [IN]
+        [repeat rule_statement+] [NL] [EX]
+end define
+
+define rule_statement
+    [rule_path] [NL] [IN]
+        [rule_actions] [NL] [EX]
+end define
+
+
+
+
+define rule_path
+    [SPOFF] '@ [scope_name] [SPON] [repeat path_item_with_arrow] '# [pointcut] ':
+end define
+
+define pointcut
+    [id]
+end define
+
+define path_item_with_arrow
+    '-> [path_item]
+end define
+
+define path_item
+    [SPOFF] '[ [modifier] '] [SPON] [statement_name] '( [param_template] ')
+end define
+
+define modifier
+    [id]
+end define
+
+define statement_name
+    [id]
+end define
+
+define param_template
+    '* | [opt '...] [stringlit] [opt '...]
+end define
+
+
+
+define rule_actions
+    [opt action_make]
+    [action_add]
+end define
+
+define action_make
+    'make: [NL] [IN]
+      [repeat action_make_item] [NL] [EX]
+end define
+
+define action_add
+    'add: [NL] [IN]
+        [list id+] [NL] [EX]
+end define
+
+define action_make_item
+    [id] '<- [action_make_expression] ';
+end define
+
+define action_make_expression
+    ???
+end define
+
+
+
+define action_make_expression_constant
+    [SPOFF] '$ [id] [SPON]
+end define
+
+
