@@ -1,7 +1,6 @@
 <logic>
   <grammar source="./../java.grm">
     <language name="java"/>
-    <root type="program"/>
     
     <tree>
       <imports type="repeat import_declaration"/>

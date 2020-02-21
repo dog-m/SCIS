@@ -14,7 +14,7 @@ keys
 end keys
 
 compounds 
-    ->  <-  ...
+    ->  <-  ...  <=  >=  !=
 end compounds
 
 comments 
@@ -26,6 +26,7 @@ end comments
 
 define program 
     [with_statement]
+    [repeat use_fragment_statement]
     [repeat scope_definition]
     [rules]
 end define
@@ -39,25 +40,54 @@ end define
 
 
 
+define use_fragment_statement
+    'use 'fragment [file_name] [NL]
+end define
+
+define file_name
+    [stringlit]
+end define
+
+
+
 define scope_definition
     'scope [scope_name]: [NL] [IN]
-        [basic_scope_or_expression] [NL] [EX]
+        [basic_scope_or_expression_scope] [NL] [EX]
+end define
+
+define scope_name
+    [id]
 end define
 
 define basic_scope_or_expression_scope
     [basic_scope] | [expression_scope]
 end define
 
+
 define basic_scope
-    '{ [list something+] '}
+    '{ [list basic_scope_constraint+] '}
 end define
+
+define basic_scope_constraint
+    [scope_id] [scope_op] [SP] [SPOFF] [opt '...] [stringlit] [opt '...] [SPON]
+    | [scope_id] [scope_op] [number]
+end define
+
+define scope_op
+    '= | '< | '<= | '> | '>= | '!=
+end define
+
+define scope_id
+    [repeat scope_id_root_chain] [id]
+end define
+
+define scope_id_root_chain
+    [id] ':
+end define
+
 
 define expression_scope
     [something]
-end define
-
-define scope_name
-    [id]
 end define
 
 
@@ -82,7 +112,7 @@ end define
 
 
 define rule_path
-    [SPOFF] '@ [scope_name] [SPON] [repeat path_item_with_arrow] '# [pointcut] ':
+    [SPOFF] '@ [scope_name] [SPON] [repeat path_item_with_arrow+] '# [pointcut] ':
 end define
 
 define pointcut
@@ -127,17 +157,23 @@ define action_add
 end define
 
 define action_make_item
-    [id] '<- [action_make_expression] ';
-end define
-
-define action_make_expression
-    ???
+    [id] '<- [string_chain] ';
 end define
 
 
 
-define action_make_expression_constant
+define string_chain
+    [stringlit_or_constant] [repeat string_chain_node]
+end define
+
+define string_chain_node
+    '+ [stringlit_or_constant]
+end define
+
+define stringlit_or_constant
+    [string_constant] | [stringlit]
+end define
+
+define string_constant
     [SPOFF] '$ [id] [SPON]
 end define
-
-
