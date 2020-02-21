@@ -1,4 +1,5 @@
-#pragma -newline -id "-"
+%#pragma -newline -id "-"
+#pragma -sp 2
 
 tokens
     % Python string forms - shortstrings are already captured by [stringlit] and [charlit]
@@ -25,9 +26,9 @@ end comments
 
 
 define program 
-    [with_statement]
-    [repeat use_fragment_statement]
-    [repeat scope_definition]
+    [opt with_statement] [NL]
+    [repeat use_fragment_statement] [NL]
+    [repeat scope_definition] [NL]
     [rules]
 end define
 
@@ -35,7 +36,7 @@ end define
 
 
 define with_statement
-    'with [id] 'from [stringlit] [NL]
+    'with [id] 'from [file_name] [NL]
 end define
 
 
@@ -51,8 +52,8 @@ end define
 
 
 define scope_definition
-    'scope [scope_name]: [NL] [IN]
-        [basic_scope_or_expression_scope] [NL] [EX]
+    'scope [SP] [SPOFF] [scope_name] ': [SPON] [NL] [IN]
+        [basic_scope_or_expression_scope] [NL] [EX] [NL]
 end define
 
 define scope_name
@@ -60,17 +61,18 @@ define scope_name
 end define
 
 define basic_scope_or_expression_scope
-    [basic_scope] | [expression_scope]
+        [basic_scope]
+    |   [expression_scope]
 end define
 
 
 define basic_scope
-    '{ [list basic_scope_constraint+] '}
+    '{ [SP] [list basic_scope_constraint+] [SP] '}
 end define
 
 define basic_scope_constraint
-    [scope_id] [scope_op] [SP] [SPOFF] [opt '...] [stringlit] [opt '...] [SPON]
-    | [scope_id] [scope_op] [number]
+        [scope_id] [scope_op] [SP] [SPOFF] [opt '...] [stringlit] [opt '...] [SPON]
+    |   [scope_id] [scope_op] [number]
 end define
 
 define scope_op
@@ -78,7 +80,7 @@ define scope_op
 end define
 
 define scope_id
-    [repeat scope_id_root_chain] [id]
+    [SPOFF] [repeat scope_id_root_chain] [id] [SPON]
 end define
 
 define scope_id_root_chain
@@ -87,20 +89,32 @@ end define
 
 
 define expression_scope
-    [something]
+        [expression_scope] '| [term_scope]
+    |   [expression_scope] '- [term_scope]
+    |   [term_scope]
+end define
+
+define term_scope
+        [term_scope] '& [primary_scope]
+    |   [primary_scope]
+end define
+
+define primary_scope
+        [id]
+    |   ( [expression_scope] )
 end define
 
 
 
 
 define rules
-    'rules ': [NL] [IN]
-        [repeat rule+] [EX]
+    [SPOFF] 'rules ': [SPON] [NL] [IN]
+        [repeat single_rule+] [EX]
 end define
 
-define rule
-    [id] ': [NL] [IN]
-        [repeat rule_statement+] [NL] [EX]
+define single_rule
+    [SPOFF] [id] ': [SPON] [NL] [IN]
+        [repeat rule_statement+] [EX]
 end define
 
 define rule_statement
@@ -112,7 +126,7 @@ end define
 
 
 define rule_path
-    [SPOFF] '@ [scope_name] [SPON] [repeat path_item_with_arrow+] '# [pointcut] ':
+    [SPOFF] '@ [scope_name] [SPON] [repeat path_item_with_arrow+] [SP] [SPOFF] '# [pointcut] ': [SPON]
 end define
 
 define pointcut
@@ -124,7 +138,7 @@ define path_item_with_arrow
 end define
 
 define path_item
-    [SPOFF] '[ [modifier] '] [SPON] [statement_name] '( [param_template] ')
+    [SP] [SPOFF] '[ [modifier] '] [SPON] [statement_name] '( [param_template] ')
 end define
 
 define modifier
@@ -136,7 +150,8 @@ define statement_name
 end define
 
 define param_template
-    '* | [opt '...] [stringlit] [opt '...]
+        '*
+    |   [opt '...] [stringlit] [opt '...]
 end define
 
 
@@ -147,17 +162,30 @@ define rule_actions
 end define
 
 define action_make
-    'make: [NL] [IN]
+    [SPOFF] 'make ': [SPON] [NL] [IN]
       [repeat action_make_item] [NL] [EX]
-end define
-
-define action_add
-    'add: [NL] [IN]
-        [list id+] [NL] [EX]
 end define
 
 define action_make_item
     [id] '<- [string_chain] ';
+end define
+
+define action_add
+    [SPOFF] 'add ': [SPON] [NL] [IN]
+        [action_list] [NL] [EX]
+end define
+
+define action_list
+        [action_id], [NL] [action_list]
+    |   [action_id]
+end define
+
+define action_id
+    [id] [opt template_params]
+end define
+
+define template_params
+    '( [list id+] ')
 end define
 
 
@@ -171,9 +199,10 @@ define string_chain_node
 end define
 
 define stringlit_or_constant
-    [string_constant] | [stringlit]
+        [string_constant]
+    |   [stringlit]
 end define
 
 define string_constant
-    [SPOFF] '$ [id] [SPON]
+    [SP] [SPOFF] '$ [id] [SPON]
 end define
