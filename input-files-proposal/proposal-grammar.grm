@@ -126,7 +126,7 @@ end define
 
 
 define rule_path
-    [SPOFF] '@ [scope_name] [SPON] [repeat path_item_with_arrow+] [SP] [SPOFF] '# [pointcut] ': [SPON]
+    [SPOFF] '@ [scope_name] [SPON] [repeat path_item_with_arrow+] '# [SP] [SPOFF] [pointcut] ': [SPON]
 end define
 
 define pointcut
