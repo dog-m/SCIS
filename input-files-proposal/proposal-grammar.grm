@@ -1,5 +1,5 @@
 %#pragma -newline -id "-"
-#pragma -sp 2
+#pragma -in 2
 
 tokens
     % Python string forms - shortstrings are already captured by [stringlit] and [charlit]
