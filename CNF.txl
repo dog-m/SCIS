@@ -287,7 +287,7 @@ end rule
 
 rule collapseSelf
   replace [repeat expression_element_chain]
-    Ao [opt !] A [id] + Bo [opt !] B [id] Co [opt +] C [repeat expression_element_chain]
+    A [expression_element] + B [expression_element] Bo [opt +] C [repeat expression_element_chain]
   construct A_str [stringlit]
     _ [quote A]
   construct B_str [stringlit]
@@ -295,7 +295,7 @@ rule collapseSelf
   where
     A_str [= B_str]
   by
-    Bo B Co C
+    B Bo C
 end rule
 
 
