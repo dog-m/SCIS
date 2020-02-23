@@ -1,7 +1,5 @@
-
 define program
-        [expression]
-    |   [simplified_expression]
+    [expression]
 end define
 
 define expression
@@ -27,17 +25,6 @@ end define
 
 % =================================================================
 
-function main
-  replace [program]
-    P [expression]
-  by
-    P [buildCNF]
-      [simplify]
-end function
-
-% =================================================================
-
-
 rule buildCNF
   replace [expression]
     E [expression]
@@ -60,8 +47,6 @@ rule buildCNF
       [collapseSelfOr5]
       [collapseSelfId]
       [collapseSelfId2]
-      %[sortOr]
-      %[sortOr2]
   where not
     NewE [= E]
   by
@@ -222,41 +207,107 @@ rule collapseSelfId2
 end rule
 
 
-rule sortOr
-  replace [expression]
-    A [inversion] + B [inversion] + C [expression]
+% =================================================================
+
+redefine program
+        ...
+    |   [expression_lists]
+end redefine
+
+define expression_lists
+    [repeat expression_chain_and]
+end define
+
+define expression_chain_and
+    [expression_chain_or] [opt *]
+end define
+
+define expression_chain_or
+        [expression_element]
+    |   ( [repeat expression_element_chain] )
+end define
+
+define expression_element_chain
+    [expression_element] [opt +]
+end define
+
+define expression_element
+    [opt !] [id]
+end define
+
+% =================================================================
+
+function convertToChains
+  replace [program]
+    P [expression]
+  construct TypeHolder [expression_lists]
+    % void
+  construct newP [expression_lists]
+    TypeHolder [reparse P]
+  by
+    newP
+end function
+
+function convertToTree
+  replace [program]
+    P [expression_lists]
+  construct TypeHolder [expression]
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  construct newP [expression]
+    TypeHolder [reparse P]
+  by
+    newP
+end function
+
+% =================================================================
+
+rule sort
+  replace [repeat expression_element_chain]
+    Ao [opt !] A [id] + Bo [opt !] B [id] Co [opt +] C [repeat expression_element_chain]
   construct A_str [stringlit]
     _ [quote A]
   construct B_str [stringlit]
     _ [quote B]
   where
-    A_str [> B_str]
+    B_str [< A_str]
   by
-    B + A + C
+    Bo B + Ao A Co C
 end rule
-
-rule sortOr2
-  replace [expression]
-    A [expression] + B [inversion] + C [inversion]
-  construct B_str [stringlit]
-    _ [quote B]
-  construct C_str [stringlit]
-    _ [quote C]
-  where
-    B_str [> C_str]
-  by
-    A + C + B
-end rule
-
-% =================================================================
-
-define simplified_expression
-  [number]
-end define
-
-% =================================================================
 
 rule simplify
-  match [expression]
-    _ [expression]
+  replace [expression_lists]
+    E [expression_lists]
+  construct NewE [expression_lists]
+    E [collapseSelf]
+  where not
+    NewE [= E]
+  by
+    NewE
 end rule
+
+rule collapseSelf
+  replace [repeat expression_element_chain]
+    Ao [opt !] A [id] + Bo [opt !] B [id] Co [opt +] C [repeat expression_element_chain]
+  construct A_str [stringlit]
+    _ [quote A]
+  construct B_str [stringlit]
+    _ [quote B]
+  where
+    A_str [= B_str]
+  by
+    Bo B Co C
+end rule
+
+
+% =================================================================
+
+function main
+  replace [program]
+    P [program]
+  by
+    P [buildCNF]
+      [convertToChains]
+      [sort]
+      [simplify]
+      [convertToTree]
+end function
