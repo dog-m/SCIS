@@ -14,10 +14,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME ON)
-set(BOOST_INCLUDEDIR "C:/Boost/include/boost-1_72")
-set(BOOST_LIBRARYDIR "C:/Boost/lib")
+set(BOOST_INCLUDEDIR "C:/boost/include/boost-1_72")
+set(BOOST_LIBRARYDIR "C:/boost/lib")
 set(BOOST_LIB_PREFIX "lib")
 set(Boost_ARCHITECTURE "-x32")
+#set(Boost_COMPILER "override")
 #set(Boost_DEBUG 1)
 find_package(Boost 1.72 REQUIRED COMPONENTS
   filesystem
@@ -31,10 +32,10 @@ if(Boost_FOUND)
       3rdparty/tinyxml2/tinyxml2.cpp
       3rdparty/tinyxml2/tinyxml2.h
 
-      txlwrapper.cpp
-      txlwrapper.h
+      src/include/txlwrapper.h
+      src/txlwrapper.cpp
 
-      main.cpp
+      src/main.cpp
     )
 
     add_executable(TheInstrumenter ${SOURCES})

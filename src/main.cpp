@@ -7,8 +7,8 @@
 #include <queue>
 #include <deque>
 
-#include "3rdparty/tinyxml2/tinyxml2.h"
-#include "txlwrapper.h"
+#include "../3rdparty/tinyxml2/tinyxml2.h"
+#include "include/txlwrapper.h"
 
 using namespace std;
 using namespace tinyxml2;
