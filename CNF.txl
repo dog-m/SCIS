@@ -1,3 +1,7 @@
+compounds
+    <T>   <F>
+end compounds
+
 define program
     [expression]
 end define
@@ -18,8 +22,14 @@ define inversion
 end define
 
 define primary
-        [id]
+        [var_or_const]
     |   ( [expression] )
+end define
+
+define var_or_const
+      [id]
+  |   <T>
+  |   <F>
 end define
 
 
@@ -31,14 +41,19 @@ rule buildCNF
   construct NewE [expression]
     E [demorganD]
       [demorganC]
+      
       [cancelDoubleNegation]
+      [cancelDoubleNegation2]
+      
       [resolveBrackets]
       [resolveBracketsSimple]
       [resolveBracketsId]
       [resolveBracketsR]
       [resolveBracketsL]
+      
       [distributeOr]
       [distributeOr2]
+      
       [collapseSelfOr]
       [collapseSelfAnd]
       [collapseSelfOr2]
@@ -47,6 +62,25 @@ rule buildCNF
       [collapseSelfOr5]
       [collapseSelfId]
       [collapseSelfId2]
+      
+      [collapseConstant_True]
+      [collapseConstant_True2]
+      [collapseConstant_True3]
+      [collapseConstant_True_or]
+      [collapseConstant_True_or2]
+      [collapseConstant_True_and]
+      [collapseConstant_True_and2]
+      
+      [collapseConstant_False]
+      [collapseConstant_False2]
+      [collapseConstant_False3]
+      [collapseConstant_False_or]
+      [collapseConstant_False_or2]
+      [collapseConstant_False_and]
+      [collapseConstant_False_and2]
+      
+      [consumeOr]
+      [consumeOr2]
   where not
     NewE [= E]
   by
@@ -55,7 +89,7 @@ end rule
 
 
 rule demorganD
-  replace [expression]
+  replace [inversion]
     !( A [expression] + B [expression] )
   by
     ( !(A) * !(B) )
@@ -63,16 +97,38 @@ end rule
 
 
 rule demorganC
-  replace [term]
+  replace [inversion]
     !( A [term] * B [term] )
   by
     ( !(A) + !(B) )
 end rule
 
 
-rule cancelDoubleNegation
+rule consumeOr
   replace [expression]
+    A [term] * B [term] + A
+  by
+    A
+end rule
+
+rule consumeOr2
+  replace [expression]
+    A [term] + A * B [term]
+  by
+    A
+end rule
+
+
+rule cancelDoubleNegation
+  replace [inversion]
     !( ! A [inversion] )
+  by
+    A
+end rule
+
+rule cancelDoubleNegation2
+  replace [inversion]
+    ! ! A [inversion]
   by
     A
 end rule
@@ -94,7 +150,7 @@ end rule
 
 rule resolveBracketsId
   replace [expression]
-    ( N [id] )
+    ( N [var_or_const] )
   by
     N
 end rule
@@ -145,7 +201,7 @@ end rule
 
 rule collapseSelfOr2
   replace * [expression]
-    A [id] + ! B [id] + C [expression]
+    A [var_or_const] + ! B [var_or_const] + C [expression]
   where
     A [= B]
   by
@@ -154,7 +210,7 @@ end rule
 
 rule collapseSelfOr3
   replace * [expression]
-    ! A [id] + B [id] + C [expression]
+    ! A [var_or_const] + B [var_or_const] + C [expression]
   where
     A [= B]
   by
@@ -163,7 +219,7 @@ end rule
 
 rule collapseSelfOr4
   replace * [expression]
-    A [expression] + B [id] + ! C [id]
+    A [expression] + B [var_or_const] + ! C [var_or_const]
   where
     B [= C]
   by
@@ -172,7 +228,7 @@ end rule
 
 rule collapseSelfOr5
   replace * [expression]
-    A [expression] + ! B [id] + C [id]
+    A [expression] + ! B [var_or_const] + C [var_or_const]
   where
     B [= C]
   by
@@ -181,16 +237,14 @@ end rule
 
 rule collapseSelfAnd
   replace [term]
-    A [term] * B [term]
-  where
-    A [= B]
+    A [term] * A
   by
     A
 end rule
 
 rule collapseSelfId
   replace * [expression]
-    A [id] + B [id] + C [expression]
+    A [var_or_const] + B [var_or_const] + C [expression]
   where
     A [= B]
   by
@@ -199,11 +253,111 @@ end rule
 
 rule collapseSelfId2
   replace * [expression]
-    A [expression] + B [id] + C [id]
+    A [expression] + B [var_or_const] + C [var_or_const]
   where
     B [= C]
   by
     A + B
+end rule
+
+
+rule collapseConstant_True
+  replace * [inversion]
+    ! <T>
+  by
+    <F>
+end rule
+
+rule collapseConstant_True2
+  replace * [expression]
+    ! A [inversion] + A
+  by
+    <T>
+end rule
+
+rule collapseConstant_True3
+  replace * [expression]
+    A [inversion] + ! A
+  by
+    <T>
+end rule
+
+rule collapseConstant_True_or
+  replace * [expression]
+    A [expression] + <T>
+  by
+    <T>
+end rule
+
+rule collapseConstant_True_or2
+  replace * [expression]
+    <T> + A [expression]
+  by
+    <T>
+end rule
+
+rule collapseConstant_True_and
+  replace * [term]
+    A [term] * <T>
+  by
+    A
+end rule
+
+rule collapseConstant_True_and2
+  replace * [term]
+    <T> * A [term]
+  by
+    A
+end rule
+
+
+rule collapseConstant_False
+  replace * [inversion]
+    ! <F>
+  by
+    <T>
+end rule
+
+rule collapseConstant_False2
+  replace * [term]
+    ! A [inversion] * A
+  by
+    <F>
+end rule
+
+rule collapseConstant_False3
+  replace * [term]
+    A [inversion] * ! A
+  by
+    <F>
+end rule
+
+rule collapseConstant_False_or
+  replace * [expression]
+    A [expression] + <F>
+  by
+    A
+end rule
+
+rule collapseConstant_False_or2
+  replace * [expression]
+    <F> + A [expression]
+  by
+    A
+end rule
+
+rule collapseConstant_False_and
+  replace * [term]
+    A [term] * <F>
+  by
+    <F>
+end rule
+
+rule collapseConstant_False_and2
+  replace * [term]
+    <F> * A [term]
+  by
+    <F>
 end rule
 
 
@@ -215,7 +369,8 @@ redefine program
 end redefine
 
 define expression_lists
-    [repeat expression_chain_and]
+        [repeat expression_chain_and]
+    |   [repeat expression_element_chain]
 end define
 
 define expression_chain_and
@@ -232,7 +387,7 @@ define expression_element_chain
 end define
 
 define expression_element
-    [opt !] [id]
+    [opt !] [var_or_const]
 end define
 
 % =================================================================
@@ -252,7 +407,7 @@ function convertToTree
   replace [program]
     P [expression_lists]
   construct TypeHolder [expression]
-    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    'SOME_USELESS_RANDOM_IDENTIFIER
   construct newP [expression]
     TypeHolder [reparse P]
   by
@@ -261,9 +416,29 @@ end function
 
 % =================================================================
 
+rule simplify
+  replace [expression_lists]
+    E [expression_lists]
+  construct NewE [expression_lists]
+    E [sort]
+      [sort2]
+      
+      [collapseSelf_or]
+      [collapseSelf_and]
+      
+      %[simplify_and]
+      
+      [fix_tail_of_and_chain]
+  where not
+    NewE [= E]
+  by
+    NewE
+end rule
+
+
 rule sort
   replace [repeat expression_element_chain]
-    Ao [opt !] A [id] + Bo [opt !] B [id] Co [opt +] C [repeat expression_element_chain]
+    Ao [opt !] A [var_or_const] + Bo [opt !] B [var_or_const] Co [opt +] C [repeat expression_element_chain]
   construct A_str [stringlit]
     _ [quote A]
   construct B_str [stringlit]
@@ -274,28 +449,42 @@ rule sort
     Bo B + Ao A Co C
 end rule
 
-rule simplify
-  replace [expression_lists]
-    E [expression_lists]
-  construct NewE [expression_lists]
-    E [collapseSelf]
-  where not
-    NewE [= E]
-  by
-    NewE
-end rule
 
-rule collapseSelf
-  replace [repeat expression_element_chain]
-    A [expression_element] + B [expression_element] Bo [opt +] C [repeat expression_element_chain]
+rule sort2
+  replace [repeat expression_chain_and]
+    A [expression_chain_or] * B [expression_chain_or] Bo [opt *] C [repeat expression_chain_and]
   construct A_str [stringlit]
     _ [quote A]
   construct B_str [stringlit]
     _ [quote B]
   where
-    A_str [= B_str]
+    B_str [< A_str]
   by
-    B Bo C
+    B * A Bo C
+end rule
+
+
+rule collapseSelf_or
+  replace [repeat expression_element_chain]
+    A [expression_element] + A Bo [opt +] C [repeat expression_element_chain]
+  by
+    A Bo C
+end rule
+
+
+rule collapseSelf_and
+  replace [repeat expression_chain_and]
+    A [expression_chain_or] * A Bo [opt *] C [repeat expression_chain_and]
+  by
+    A Bo C
+end rule
+
+
+rule fix_tail_of_and_chain
+  replace [repeat expression_chain_and]
+    B [expression_chain_or] *
+  by
+    B
 end rule
 
 
@@ -307,7 +496,6 @@ function main
   by
     P [buildCNF]
       [convertToChains]
-      [sort]
       [simplify]
       [convertToTree]
 end function
