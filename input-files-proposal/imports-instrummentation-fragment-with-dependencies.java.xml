@@ -2,7 +2,7 @@
   <dependencies>
     ???
   </dependencies>
-  <code target="import_declaration..." joint-op="append-each-unique">
+  <code white-list="imports">
     import java.util.logging.Logger;
     import java.util.logging.Level;
     import java.util.logging.Handler;

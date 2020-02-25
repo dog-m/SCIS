@@ -10,7 +10,7 @@ end tokens
 keys 
     'with        'from
     'use         'fragment
-    'scope
+    'context
     'rules
 end keys
 
@@ -26,82 +26,70 @@ end comments
 
 
 define program 
-    [opt with_statement] [NL]
     [repeat use_fragment_statement] [NL]
-    [repeat scope_definition] [NL]
+    [repeat context_definition] [NL]
     [rules]
 end define
 
 
 
-
-define with_statement
-    'with [id] 'from [file_name] [NL]
-end define
-
-
-
 define use_fragment_statement
-    'use 'fragment [file_name] [NL]
-end define
-
-define file_name
-    [stringlit]
+    'use 'fragment [stringlit] [NL]
 end define
 
 
 
-define scope_definition
-    'scope [SP] [SPOFF] [scope_name] ': [SPON] [NL] [IN]
-        [basic_scope_or_expression_scope] [NL] [EX] [NL]
+define context_definition
+    'context [SP] [SPOFF] [context_name] ': [SPON] [NL] [IN]
+        [basic_context_or_expression_context] [NL] [EX] [NL]
 end define
 
-define scope_name
+define context_name
     [id]
 end define
 
-define basic_scope_or_expression_scope
-        [basic_scope]
-    |   [expression_scope]
+define basic_context_or_expression_context
+        [basic_context]
+    |   [expression_context]
 end define
 
 
-define basic_scope
-    '{ [SP] [list basic_scope_constraint+] [SP] '}
+define basic_context
+    '{ [SP] [list basic_context_constraint+] [SP] '}
 end define
 
-define basic_scope_constraint
-        [scope_id] [scope_op] [SP] [SPOFF] [opt '...] [stringlit] [opt '...] [SPON]
-    |   [scope_id] [scope_op] [number]
+define basic_context_constraint
+        [context_id] [context_op] [SP] [SPOFF] [opt '...] [stringlit] [opt '...] [SPON]
+    |   [context_id] [context_op] [number]
 end define
 
-define scope_op
+define context_op
     '= | '< | '<= | '> | '>= | '!=
 end define
 
-define scope_id
-    [SPOFF] [repeat scope_id_root_chain] [id] [SPON]
+define context_id
+    [SPOFF] [repeat context_id_root_chain] [id] [SPON]
 end define
 
-define scope_id_root_chain
+define context_id_root_chain
     [id] ':
 end define
 
 
-define expression_scope
-        [expression_scope] '| [term_scope]
-    |   [expression_scope] '- [term_scope]
-    |   [term_scope]
+define expression_context
+        [expression_context] '| [term_context]
+    |   [expression_context] '- [term_context]
+    |   [term_context]
 end define
 
-define term_scope
-        [term_scope] '& [primary_scope]
-    |   [primary_scope]
+define term_context
+        [term_context] '& [primary_context]
+    |   [primary_context]
 end define
 
-define primary_scope
+define primary_context
         [id]
-    |   ( [expression_scope] )
+    |   ( [expression_context] )
 end define
 
 
@@ -126,7 +114,7 @@ end define
 
 
 define rule_path
-    [SPOFF] '@ [scope_name] [SPON] [repeat path_item_with_arrow+] '# [SP] [SPOFF] [pointcut] ': [SPON]
+    [SPOFF] '@ [context_name] [SPON] [repeat path_item_with_arrow+] '# [SP] [SPOFF] [pointcut] ': [SPON]
 end define
 
 define pointcut

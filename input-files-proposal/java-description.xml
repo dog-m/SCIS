@@ -3,10 +3,19 @@
     <language name="java"/>
     
     <tree>
-      <imports type="repeat import_declaration"/>
-      <class type="class_declaration">
-        
-      </class>
+      <package type="package_declaration">
+        <imports type="repeat import_declaration"/>
+        <class type="class_declaration">
+          <method type="method_declaration">
+            <statement type="statement">
+              <if type="if_statement"/>
+              <for type="for_statement"/>
+              <while type="while_statement"/>
+              ...
+            </statement>
+          </method>
+        </class>
+      </package>
     </tree>
     
   </grammar>
@@ -25,6 +34,13 @@
   
   <points>
     <point-of-interest
+      id="package_name"
+      type="package_declaration"
+      value-of="package_header::package_name"
+      keep-in="global"
+      />
+
+    <point-of-interest
       id="class_name"
       type="class_declaration"
       value-of="class_header::class_name"
@@ -41,25 +57,37 @@
   </points>
 
   <pointcuts>
-    <type id="if_statement">
+    <type id="imports">
+      <pointcut name="@">
+        <replace>
+          Imports <?base-type?>
+        </replace>
+        <by>
+          Imports
+          <?ref as-type="repeat import_declaration" join-op="append-each-unique"?>
+        </by>
+      </pointcut>
+    </type>
+  
+    <type id="if">
       <pointcut name="before">
         <replace>
           IfStatement <?base-type?>
         </replace>
         <by>
-          <?ref?>
+          <?ref as-type="repeat statement" join-op="append"?>
           IfStatement
         </by>
       </pointcut>
       ...
     </type>
     
-    <type id="for_statement">
+    <type id="for">
       <pointcut id="before-body">
         ???
       </pointcut>
 
-      <pointcut id="before" ref="if_statement::before"/>
+      <pointcut id="before" ref="if::before"/>
       ...
     </type>
   </pointcuts>
