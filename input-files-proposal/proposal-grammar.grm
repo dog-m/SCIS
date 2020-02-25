@@ -45,12 +45,17 @@ define context_definition
 end define
 
 define context_name
-    [id]
+        [id]
+    |   [global_context]
+end define
+
+define global_context
+    '@
 end define
 
 define basic_context_or_expression_context
         [basic_context]
-    |   [expression_context]
+    |   [compound_context]
 end define
 
 
@@ -59,37 +64,54 @@ define basic_context
 end define
 
 define basic_context_constraint
-        [context_id] [context_op] [SP] [SPOFF] [opt '...] [stringlit] [opt '...] [SPON]
-    |   [context_id] [context_op] [number]
+        [context_property] [context_op] [SP] [string_template]
+    |   [context_property] [context_op] [number]
+end define
+
+define string_template
+    [SPOFF] [opt '...] [stringlit] [opt '...] [SPON]
 end define
 
 define context_op
     '= | '< | '<= | '> | '>= | '!=
 end define
 
-define context_id
-    [SPOFF] [repeat context_id_root_chain] [id] [SPON]
+define context_property
+    [SPOFF] [context_property_variant] [SPON]
 end define
 
-define context_id_root_chain
-    [id] ':
+define context_property_variant
+        [point_of_interest]
+    |   [something]
+end define
+
+define point_of_interest
+    poi ': [id]
+end define
+
+define something
+    [id]
 end define
 
 
-define expression_context
-        [expression_context] '| [term_context]
-    |   [expression_context] '- [term_context]
-    |   [term_context]
+define compound_context
+    [context_expression]
 end define
 
-define term_context
-        [term_context] '& [primary_context]
-    |   [primary_context]
+define context_expression
+        [context_expression] '| [context_expression]
+    |   [context_expression] '- [context_expression]
+    |   [context_term]
 end define
 
-define primary_context
-        [id]
-    |   ( [expression_context] )
+define context_term
+        [context_term] '& [context_term]
+    |   [context_primary]
+end define
+
+define context_primary
+        [context_name]
+    |   ( [context_expression] )
 end define
 
 

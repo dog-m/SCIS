@@ -1,4 +1,4 @@
-<fragment language="java">
+<fragment language="java" name="add_logging_imports">
   <dependencies>
     ???
   </dependencies>

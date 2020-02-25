@@ -71,11 +71,11 @@
   
     <type id="if">
       <pointcut name="before">
-        <replace>
+        <replace type="statement">
           IfStatement <?base-type?>
         </replace>
         <by>
-          <?ref as-type="repeat statement" join-op="append"?>
+          <?ref as-type="repeat statement" join-op="insert"?>
           IfStatement
         </by>
       </pointcut>
