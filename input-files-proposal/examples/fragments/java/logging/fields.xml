@@ -1,0 +1,10 @@
+<fragment language="java" name="logging_fields">
+  <dependencies>
+    <required name="logging_imports"/>
+  </dependencies>
+
+  <code black-list="imports, if, for">
+    private static final Logger instrumentationLogger = Logger.getLogger(getClass().getName());
+    private static final Handler instrumentationHandler = newConsoleHandler();
+  </code>
+</fragment>

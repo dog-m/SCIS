@@ -1,4 +1,4 @@
-<logic>
+<annotation>
   <grammar source="./../java.grm">
     <language name="java"/>
     
@@ -68,7 +68,7 @@
         </by>
       </pointcut>
     </type>
-  
+
     <type id="if">
       <pointcut name="before">
         <replace type="statement">
@@ -81,14 +81,5 @@
       </pointcut>
       ...
     </type>
-    
-    <type id="for">
-      <pointcut id="before-body">
-        ???
-      </pointcut>
-
-      <pointcut id="before" ref="if::before"/>
-      ...
-    </type>
   </pointcuts>
-</logic>
+</annotation>

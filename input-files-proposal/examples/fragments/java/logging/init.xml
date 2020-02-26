@@ -1,0 +1,12 @@
+<fragment language="java" name="logging_init">
+  <dependencies>
+    <required name="logging_imports"/>
+    <required name="logging_fields"/>
+  </dependencies>
+
+  <code black-list="imports, if, for">
+    instrumentationHandler.setLevel(Level.ALL);
+    instrumentationLogger.addHandler(instrumentationHandler);
+    instrumentationLogger.setLevel(Level.ALL);
+  </code>
+</fragment>

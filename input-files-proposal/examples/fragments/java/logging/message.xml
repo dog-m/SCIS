@@ -1,0 +1,10 @@
+<fragment language="java" name="logging_message">
+  <dependencies>
+    <required name="logging_imports"/>
+    <required name="logging_fields"/>
+  </dependencies>
+
+  <code black-list="imports" params="message">
+    instrumentationLogger.log'(Level.FINE, ###{message}');
+  </code>
+</fragment>

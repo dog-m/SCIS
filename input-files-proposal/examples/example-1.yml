@@ -1,0 +1,29 @@
+use fragment "logging/dependencies"
+use fragment "logging/fields"
+use fragment "logging/init"
+use fragment "logging/message"
+
+context class:
+  { poi:class_name = "Main" }
+
+context method:
+  { poi:method_name = "main" }
+
+context class_and_method:
+  class & method
+
+rules:
+  print_usefull_message_to_the_log:
+    @@ -> [first] imports # all:
+      add:
+        logging_dependencies
+  
+    @class -> [first] body # all:
+      add:
+        logging_fields
+  
+    @class_and_method -> [first] if(*) # before:
+      make:
+        msg <- $pointcut + " " + $node + " block in " + $file + " class, in " + $method_name + " method";
+      add:
+        logging_message(msg)
