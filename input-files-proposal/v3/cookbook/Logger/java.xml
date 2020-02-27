@@ -1,0 +1,37 @@
+<recipie
+  name="Logger"
+  language="java"
+  >
+  <dependencies>
+    ...
+  </dependencies>
+  <keywords>
+    <imports>
+      <pointcut for="*">
+        <code>
+          import java.util.logging.Logger;
+          import java.util.logging.Level;
+          import java.util.logging.Handler;
+          import java.util.logging.ConsoleHandler;
+        </code>
+      </pointcut>
+    </imports>
+
+    <if>
+      <pointcut for="before">
+        <code>
+          instrumentationLogger.log'(Level.FINE,
+              ###{"Entering IF in " + $class_name + ":" + $method_name}');
+        </code>
+      </pointcut>
+      ...
+      <pointcut for="after">
+        <code>
+          instrumentationLogger.log'(Level.FINE,
+              ###{"Leaving IF in " + $class_name + ":" + $method_name}');
+        </code>
+      </pointcut>
+    </if>
+    ...
+  </keywords>
+</recipie>

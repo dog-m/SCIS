@@ -1,0 +1,17 @@
+<recipie
+  name="CustomRecipie"
+  language="java"
+  override="Logger"
+  >
+    <dependencies>
+      <required recipie="Logger"/>
+      ...
+    </dependencies>
+    <keywords>
+      <if>
+        <pointcut for="after">
+          iLogger.log'(Level.FINE, ###{"Leaving IF in " + $class_name + ":" + $method_name}');
+        </pointcut>
+      </if>
+    </keywords>
+</recipie>

@@ -1,0 +1,117 @@
+<annotation>
+  <grammar
+    language="java"
+    src="java.grm"
+    >
+    <keyword-tree>
+      <package type="package_declaration">
+        <imports type="repeat import_declaration"/>
+        <class type="class_declaration">
+          <method type="method_declaration">
+            <var>
+              <if type="if_statement"/>
+              <for type="for_statement"/>
+              <while type="while_statement"/>
+              ...
+            </var>
+          </method>
+        </class>
+      </package>
+    </keyword-tree>
+  </grammar>
+
+  <lib>
+    <rule
+      name="simplify"
+      apply="after-all"
+      >
+      <source>
+        replace [block]
+          '{'{ Statements [repeat declaration_or_statement] '}'}
+        by
+          '{ Statements '}
+      </source>
+    </rule>
+    
+    <function
+      name="addToImportsIfNotExists"
+      apply="call"
+      params="Addition:import_declaration"
+      >
+      <source>
+        replace [repeat import_declaration]
+          Imports [repeat import_declaration]
+
+        deconstruct not * [import_declaration] Imports
+          Addition
+
+        by
+          Imports [^ Addition]
+      </source>
+    </function>
+    ...
+  </lib>
+  
+  <points-of-interest>
+    <point
+      id="package_name"
+      keyword="package"
+      value-of="package_header::package_name"
+      />
+
+    <point
+      id="class_name"
+      keyword="class"
+      value-of="class_header::class_name"
+      />
+
+    <point
+      id="method_name"
+      keyword="method"
+      value-of="method_name"
+      />
+    ...
+  </points-of-interest>
+
+  <pointcuts>
+    <keyword
+      name="imports"
+      >
+      <replacement-pattern io-type="repeat import_declaration">
+        Imports
+        <?all?>
+      </replacement-pattern>
+      <pointcuts>
+        <pointcut name="*">
+          <reference type="repeat import_declaration" as="Additions"/>
+          ???
+            <?apply op="addToImportsIfNotExists" each="Additions" params=""?>
+          ???
+        </pointcut>
+      </pointcuts>
+    </keyword>
+
+    <keyword
+      name="if"
+      >
+      <replacement-pattern io-type="statement">
+        <?before?>
+          IfStatement
+        <?after?>
+      </replacement-pattern>
+      
+
+      <pointcut name="before">
+        <replace type="statement">
+          IfStatement <?base-type?>
+        </replace>
+        <by>
+          <?ref as-type="repeat statement" join-op="insert"?>
+          IfStatement
+        </by>
+      </pointcut>
+      ...
+    </keyword>
+    ...
+  </pointcuts>
+</annotation>
