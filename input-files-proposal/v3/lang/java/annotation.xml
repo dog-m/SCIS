@@ -77,10 +77,12 @@
     <keyword
       name="imports"
       >
-      <replacement-pattern io-type="repeat import_declaration">
-        Imports
-        <?all?>
-      </replacement-pattern>
+      <patterns>
+        <replacement-pattern io-type="repeat import_declaration">
+          Imports
+          <?all?>
+        </replacement-pattern>
+      </patterns>
       <pointcuts>
         <pointcut name="*">
           <reference type="repeat import_declaration" as="Additions"/>
@@ -94,23 +96,40 @@
     <keyword
       name="if"
       >
-      <replacement-pattern io-type="statement">
-        <?before?>
-          IfStatement
-        <?after?>
-      </replacement-pattern>
-      
-
-      <pointcut name="before">
-        <replace type="statement">
-          IfStatement <?base-type?>
-        </replace>
-        <by>
-          <?ref as-type="repeat statement" join-op="insert"?>
-          IfStatement
-        </by>
-      </pointcut>
-      ...
+      <patterns>
+        <replacement-pattern io-type="statement">
+          <?before?>
+          if ( <if_statement:condition/> ) {
+              <?before-body?>
+              <if_statement:statement/>
+              <?after-body?>
+          }
+          <if_statement:opt_else_clause/>
+          <?after?>
+        </replacement-pattern>
+        <replacement-pattern io-type="statement">
+          <?before?>
+          if ( <if_statement:condition/> ) {
+              <?true-before-body?>
+                <if_statement:statement/>
+              <?true-after-body?>
+          } else {
+              <?false-before-body?>
+                <if_statement:opt_else_clause:statement/>
+              <?false-after-body?>
+          }
+          <?after?>
+        </replacement-pattern>
+      </patterns>
+      <pointcuts>
+        <pointcut name="before">
+          <reference type="statement" as="Additions"/>
+          ???
+            <?insert?>
+          ???
+        </pointcut>
+        ...
+      </pointcuts>
     </keyword>
     ...
   </pointcuts>
