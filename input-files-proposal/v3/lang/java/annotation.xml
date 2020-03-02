@@ -3,7 +3,7 @@
       language="java"
       src="java.grm"
       >
-        <keyword-tree>
+        <keyword-DAG>
             <package type="package_declaration">
                 <imports type="repeat import_declaration"/>
                 <class type="class_declaration">
@@ -22,7 +22,7 @@
                     </method>
                 </class>
             </package>
-        </keyword-tree>
+        </keyword-DAG>
     </grammar>
 
     <lib>
@@ -103,7 +103,7 @@
             </pointcuts>
         </keyword>
 
-        <!-- match-type already here in keyword when we described it in keyword-tree -->
+        <!-- match-type already here in keyword when we described it in keyword-DAG -->
         <keyword
           name="if"
           >
