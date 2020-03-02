@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16.4)
 
-project(TheInstrumenter LANGUAGES CXX)
+# Source Code Instrumentation System
+project(SCIS LANGUAGES CXX)
 
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 1)
@@ -24,21 +25,24 @@ find_package(Boost 1.72.0 REQUIRED COMPONENTS
 if(Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 
+    include_directories(3rdparty)
+    include_directories(src/include)
+
     file(GLOB SOURCES
       3rdparty/tinyxml2/tinyxml2.cpp
       3rdparty/tinyxml2/tinyxml2.h
 
-      src/include/txlwrapper.h
-      src/txlwrapper.cpp
+      src/include/txl/interpreter.h
+      src/txl/interpreter.cpp
 
       src/include/common.h
 
       src/main.cpp
     )
 
-    add_executable(TheInstrumenter ${SOURCES})
+    add_executable(SCIS ${SOURCES})
 
-    target_link_libraries(TheInstrumenter
+    target_link_libraries(SCIS
       PRIVATE
         $<$<BOOL:${WIN32}>:ws2_32>
         ${Boost_LIBRARIES}

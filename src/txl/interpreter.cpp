@@ -1,4 +1,4 @@
-#include "include/txlwrapper.h"
+#include "txl/interpreter.h"
 
 using namespace std;
 
@@ -13,7 +13,7 @@ using namespace std;
 
 using namespace boost::process;
 
-void TXLWrapper::test() {
+void TXL::TXLInterpreter::test() {
   ipstream stream;
   child c(search_path("txl"), "-v", std_in.close(), std_out > null, std_err > stream);
 

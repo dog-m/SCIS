@@ -7,8 +7,8 @@
 #include <queue>
 #include <deque>
 
-#include "../3rdparty/tinyxml2/tinyxml2.h"
-#include "include/txlwrapper.h"
+#include "tinyxml2/tinyxml2.h"
+#include "txl/interpreter.h"
 
 using namespace std;
 using namespace tinyxml2;
@@ -414,7 +414,7 @@ static void rebuildShortestPathsBFS(TypeGraph &graph,
 /* =================================================================================== */
 
 int main(/*int argc, char** argv*/) {
-  TXLWrapper::test();
+  TXL::TXLInterpreter::test();
 
   TypeGraph graph;
   XMLDocument doc;

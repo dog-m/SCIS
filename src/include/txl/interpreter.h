@@ -3,10 +3,14 @@
 
 #include <iostream>
 
-class TXLWrapper
-{
-public:
-  static void test();
-};
+namespace TXL {
+
+  class TXLInterpreter
+  {
+  public:
+    static void test();
+  };
+
+}
 
 #endif // TXLWRAPPER_H
