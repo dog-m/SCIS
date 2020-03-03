@@ -1,4 +1,4 @@
-#include "txl/interpreter.h"
+#include "interpreter.h"
 
 using namespace std;
 

@@ -26,17 +26,15 @@ if(Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 
     include_directories(3rdparty)
-    include_directories(src/include)
 
     file(GLOB SOURCES
       3rdparty/tinyxml2/tinyxml2.cpp
       3rdparty/tinyxml2/tinyxml2.h
 
-      src/include/txl/interpreter.h
+      src/txl/interpreter.h
       src/txl/interpreter.cpp
 
-      src/include/common.h
-
+      src/common.h
       src/main.cpp
     )
 
