@@ -1,0 +1,134 @@
+<annotation>
+    <grammar
+      language="java"
+      src="java.grm"
+      >
+        <keyword-DAG>
+            <package type="package_declaration">
+                <imports type="repeat import_declaration"/>
+                <class type="class_declaration">
+                    <method type="method_declaration">
+                        <var>
+                            <if type="if_statement">
+                                <else type="else_clause"/>
+                            </if>
+                            <switch type="switch_statement">
+                                <case type="switch_alternative"/>
+                            </switch>
+                            <for type="for_statement"/>
+                            <while type="while_statement"/>
+                            ...
+                        </var>
+                    </method>
+                </class>
+            </package>
+        </keyword-DAG>
+    </grammar>
+
+    <lib>
+        <rule
+          name="simplify"
+          apply="after-all"
+          >
+            <source>
+                replace [block]
+                  '{'{ Statements [repeat declaration_or_statement] '}'}
+                by
+                  '{ Statements '}
+            </source>
+        </rule>
+        
+        <function
+          name="addToImportsIfNotExists"
+          apply="call"
+          params="Addition:import_declaration"
+          >
+            <source>
+                replace [repeat import_declaration]
+                  Imports [repeat import_declaration]
+
+                deconstruct not * [import_declaration] Imports
+                  Addition
+
+                by
+                  Imports [^ Addition]
+            </source>
+        </function>
+        ...
+    </lib>
+  
+    <points-of-interest>
+        <point
+          id="package_name"
+          keyword="package"
+          value-of="package_header::package_name"
+          />
+
+        <point
+          id="class_name"
+          keyword="class"
+          value-of="class_header::class_name"
+          />
+
+        <point
+          id="method_name"
+          keyword="method"
+          value-of="method_name"
+          />
+        ...
+    </points-of-interest>
+
+    <pointcuts>
+        <keyword
+          name="imports"
+          >
+            <replacement-patterns>
+                <pattern search-type="repeat import_declaration">
+                    Imports
+                    <p name="all"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="*">
+                    <reference type="repeat import_declaration" as="Additions"/>
+                    <paste-algorithm>
+                        <call
+                          op="addToImportsIfNotExists"
+                          params=""
+                          apply-to="Imports">
+                            <each element-of="Additions"/>
+                        </call>
+                    </paste-algorithm>
+                </pointcut>
+            </pointcuts>
+        </keyword>
+
+        <!-- match-type already here in keyword when we described it in keyword-DAG -->
+        <keyword
+          name="if"
+          >
+            <replacement-patterns>
+                <pattern search-type="statement">
+                    <p name="before"/>
+                    if ( <?condition?> ) {
+                        <p name="before-body"/>
+                        <?statement?>
+                        <p name="after-body"/>
+                    }
+                    <?opt_else_clause?>
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <reference type="repeat statement" as="Additions"/>
+                    <paste-algorithm>
+                        <insert-as-is/>
+                    </paste-algorithm>
+                </pointcut>
+                ...
+            </pointcuts>
+        </keyword>
+        ...
+    </pointcuts>
+</annotation>

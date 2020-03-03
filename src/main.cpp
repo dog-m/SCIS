@@ -7,15 +7,12 @@
 #include <queue>
 #include <deque>
 
+#include "logging.h"
 #include "tinyxml2/tinyxml2.h"
 #include "txl/interpreter.h"
 
 using namespace std;
 using namespace tinyxml2;
-
-#define SCIS_INFO(I)    (cout << "[INFO] " << I << endl)
-#define SCIS_WARNING(W) (cerr << "[WARNING] " << W << endl)
-#define SCIS_ERROR(E)   (cerr << "[ERROR] " << E << endl)
 
 #define NODISCARD [[nodiscard]]
 
@@ -414,7 +411,7 @@ static void rebuildShortestPathsBFS(TypeGraph &graph,
 /* =================================================================================== */
 
 int main(/*int argc, char** argv*/) {
-  TXL::TXLInterpreter::test();
+  SCIS_INFO(TXL::TXLInterpreter::grammarToXML("./input-files-proposal/v1/lang/java/grammar.txl").size());
 
   TypeGraph graph;
   XMLDocument doc;

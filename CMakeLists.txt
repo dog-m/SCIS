@@ -33,7 +33,10 @@ if(Boost_FOUND)
 
       src/txl/interpreter.h
       src/txl/interpreter.cpp
+      src/txl/wrapper.h
+      src/txl/wrapper.cpp
 
+      src/logging.h
       src/common.h
       src/main.cpp
     )

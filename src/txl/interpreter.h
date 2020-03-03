@@ -1,16 +1,18 @@
-#ifndef TXLWRAPPER_H
-#define TXLWRAPPER_H
+#ifndef INTERPRETER_H
+#define INTERPRETER_H
 
-#include <iostream>
+#include "../logging.h"
+#include <string>
 
 namespace TXL {
 
-  class TXLInterpreter
+  struct TXLInterpreter
   {
-  public:
     static void test();
+
+    static std::string grammarToXML(std::string const &grammarFileName);
   };
 
 }
 
-#endif // TXLWRAPPER_H
+#endif // INTERPRETER_H

@@ -1,25 +1,45 @@
 #include "interpreter.h"
+#include "wrapper.h"
 
 using namespace std;
 
-/// https://stackoverflow.com/a/59338759
-// Workaround for a boost/mingw bug.
-// This must occur before the inclusion of the boost/process.hpp header.
-// Taken from https://github.com/boostorg/process/issues/96
-#ifndef __kernel_entry
-  #define __kernel_entry
-#endif
-#include <boost/process.hpp>
-
-using namespace boost::process;
-
 void TXL::TXLInterpreter::test() {
-  ipstream stream;
-  child c(search_path("txl"), "-v", std_in.close(), std_out > null, std_err > stream);
-
-  string line;
-  while (/*c.running() &&*/ getline(stream, line) /*&& !line.empty()*/)
+  TXL::TXLWrapper::runNoInput({ "-v" },
+                              TXL::TXLWrapper::NOOP_READER,
+                              [](string const& line){
     cout << line << endl;
+    return true;
+  });
+}
 
-  c.wait();
+string TXL::TXLInterpreter::grammarToXML(string const &grammarFileName) {
+  constexpr auto GRAMMAR_TREE_START = "-- Grammar Tree --";
+  constexpr auto GRAMMAR_TREE_END   = "-- End Grammar Tree --";
+
+  string result = "";
+  bool recordingXML = false;
+
+  const auto stdErrReader = [&](string const& line) {
+    if (line.find(GRAMMAR_TREE_START) != string::npos) {
+      recordingXML = true;
+      return true;
+    }
+    else
+      if (line.find(GRAMMAR_TREE_END) != string::npos) {
+        recordingXML = false;
+        return false;
+      }
+
+    if (recordingXML)
+      result += line;
+
+    return true;
+  };
+
+  TXL::TXLWrapper::runNoInput({ "#", grammarFileName, "-Dgrammar" }, TXL::TXLWrapper::NOOP_READER, stdErrReader);
+
+  if (recordingXML)
+    SCIS_WARNING("Unexpected end of grammar tree");
+
+  return result;
 }
