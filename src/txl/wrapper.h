@@ -1,5 +1,5 @@
-#ifndef WRAPPER_H
-#define WRAPPER_H
+#ifndef TXLWRAPPER_H
+#define TXLWRAPPER_H
 
 #include <functional>
 #include <vector>
@@ -12,14 +12,15 @@ namespace TXL {
 
   struct TXLWrapper final
   {
-    static auto NOOP_READER(string const&) { return false; }
+    static bool NOOP_READER(string const&) { return false; }
 
     static void runNoInput(vector<string> const& params,
-                           ReaderFunction const& outReader,
-                           ReaderFunction const& errReader);
+                           ReaderFunction const& errReader,
+                           ReaderFunction const& outReader = NOOP_READER);
   private:
     TXLWrapper() = delete;
   };
+
 }
 
-#endif // WRAPPER_H
+#endif // TXLWRAPPER_H

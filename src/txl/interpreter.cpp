@@ -1,11 +1,12 @@
 #include "interpreter.h"
 #include "wrapper.h"
 
+#include <sstream>
+
 using namespace std;
 
 void TXL::TXLInterpreter::test() {
   TXL::TXLWrapper::runNoInput({ "-v" },
-                              TXL::TXLWrapper::NOOP_READER,
                               [](string const& line){
     cout << line << endl;
     return true;
@@ -16,10 +17,10 @@ string TXL::TXLInterpreter::grammarToXML(string const &grammarFileName) {
   constexpr auto GRAMMAR_TREE_START = "-- Grammar Tree --";
   constexpr auto GRAMMAR_TREE_END   = "-- End Grammar Tree --";
 
-  string result = "";
+  stringstream result;
   bool recordingXML = false;
 
-  const auto stdErrReader = [&](string const& line) {
+  TXL::TXLWrapper::runNoInput({ "#", grammarFileName, "-Dgrammar" }, [&](string const& line) {
     if (line.find(GRAMMAR_TREE_START) != string::npos) {
       recordingXML = true;
       return true;
@@ -31,15 +32,13 @@ string TXL::TXLInterpreter::grammarToXML(string const &grammarFileName) {
       }
 
     if (recordingXML)
-      result += line;
+      result << line << '<' << NEW_LINE_TAG << "/>" << endl;
 
     return true;
-  };
-
-  TXL::TXLWrapper::runNoInput({ "#", grammarFileName, "-Dgrammar" }, TXL::TXLWrapper::NOOP_READER, stdErrReader);
+  });
 
   if (recordingXML)
     SCIS_WARNING("Unexpected end of grammar tree");
 
-  return result;
+  return result.str();
 }

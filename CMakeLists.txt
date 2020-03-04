@@ -35,6 +35,10 @@ if(Boost_FOUND)
       src/txl/interpreter.cpp
       src/txl/wrapper.h
       src/txl/wrapper.cpp
+      src/txl/grammar.h
+      src/txl/grammar.cpp
+      src/txl/grammar_parser.h
+      src/txl/grammar_parser.cpp
 
       src/logging.h
       src/common.h

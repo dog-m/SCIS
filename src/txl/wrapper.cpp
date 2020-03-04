@@ -14,8 +14,8 @@ using namespace std;
 using namespace boost::process;
 
 void TXL::TXLWrapper::runNoInput(const vector<string> &params,
-                                 const TXL::ReaderFunction &outReader,
-                                 const TXL::ReaderFunction &errReader)
+                                 const TXL::ReaderFunction &errReader,
+                                 const TXL::ReaderFunction &outReader)
 {
   ipstream outStream, errStream;
   child c(search_path("txl"), args(params), std_in.close(), std_out > outStream, std_err > errStream);

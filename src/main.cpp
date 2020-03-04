@@ -315,9 +315,9 @@ static void renderAsDOT(TypeGraph const& g) {
 
 
 static void parse(XMLDocument &doc,
-                  const char* fileName,
+                  string const& grammarXML,
                   TypeGraph &graph) {
-  if (auto result = doc.LoadFile(fileName); result != XML_SUCCESS) {
+  if (auto result = doc.Parse(grammarXML.data()); result != XML_SUCCESS) {
     SCIS_ERROR("Loading failed: " << doc.ErrorIDToName(result));
     return;
   }
@@ -411,12 +411,10 @@ static void rebuildShortestPathsBFS(TypeGraph &graph,
 /* =================================================================================== */
 
 int main(/*int argc, char** argv*/) {
-  SCIS_INFO(TXL::TXLInterpreter::grammarToXML("./input-files-proposal/v1/lang/java/grammar.txl").size());
-
   TypeGraph graph;
   XMLDocument doc;
   SCIS_INFO("Parsing...");
-  parse(doc, "java.xml", graph);
+  parse(doc, TXL::TXLInterpreter::grammarToXML("./example/lang/java/grammar.txl"), graph);
 
   SCIS_INFO("Building shortest paths...");
   rebuildShortestPathsBFS(graph, graph.types.at("program"));

@@ -1,10 +1,14 @@
-#ifndef INTERPRETER_H
-#define INTERPRETER_H
+#ifndef TXLINTERPRETER_H
+#define TXLINTERPRETER_H
 
 #include "../logging.h"
 #include <string>
 
 namespace TXL {
+
+  using namespace std;
+
+  constexpr string_view NEW_LINE_TAG = "x-new-line-x";
 
   struct TXLInterpreter
   {
@@ -15,4 +19,4 @@ namespace TXL {
 
 }
 
-#endif // INTERPRETER_H
+#endif // TXLINTERPRETER_H
