@@ -2,7 +2,7 @@
 #define TXLGRAMMAR_H
 
 #include <vector>
-#include <sstream>
+#include <ostream>
 #include <optional>
 #include <memory>
 #include <unordered_map>
@@ -18,33 +18,33 @@ namespace TXL {
     struct Literal {
       virtual ~Literal() = default;
 
-      virtual void toString(stringstream &) const = 0;
+      virtual void toString(ostream &) const = 0;
     };
 
     struct PlainText: public Literal {
       string text = "???";
 
-      void toString(stringstream &ss) const override;
+      void toString(ostream &ss) const override;
     };
 
     struct TypeReference : public Literal {
       string name = "???";
       optional<string> function = nullopt;
 
-      void toString(stringstream &ss) const override;
+      void toString(ostream &ss) const override;
     };
 
     struct TypeVariant {
       vector<unique_ptr<Literal>> pattern;
 
-      void toString(stringstream &ss) const;
+      void toString(ostream &ss) const;
     };
 
     struct Type {
       string name;
-      vector<unique_ptr<TypeVariant>> variants;
+      vector<TypeVariant> variants;
 
-      void toString(stringstream &ss) const;
+      void toString(ostream &ss) const;
     };
 
     // end of sub-types

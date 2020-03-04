@@ -7,9 +7,12 @@
 #include <queue>
 #include <deque>
 
-#include "logging.h"
 #include "tinyxml2/tinyxml2.h"
+
+#include "logging.h"
 #include "txl/interpreter.h"
+#include "txl/grammar.h"
+#include "txl/grammar_parser.h"
 
 using namespace std;
 using namespace tinyxml2;
@@ -411,6 +414,7 @@ static void rebuildShortestPathsBFS(TypeGraph &graph,
 /* =================================================================================== */
 
 int main(/*int argc, char** argv*/) {
+  /*
   TypeGraph graph;
   XMLDocument doc;
   SCIS_INFO("Parsing...");
@@ -424,6 +428,21 @@ int main(/*int argc, char** argv*/) {
 
   //INFO("Looking for paths between <program> and <class_header>");
   //printAllPaths(graph.types.at("program"), graph.types.at("class_header"));
+  */
+  auto const grammarXMLSource = TXL::TXLInterpreter::grammarToXML("./example/lang/java/grammar.txl");
+  SCIS_INFO("Grammar size: " << grammarXMLSource.size());
+
+  XMLDocument doc(true, COLLAPSE_WHITESPACE);
+  doc.Parse(grammarXMLSource.data());
+
+  SCIS_INFO("loaded");
+
+  TXL::TXLGrammarParser parser;
+  auto const grm = parser.parse(doc);
+
+  SCIS_INFO("As TXL:");
+  for (auto const& [_, type] : grm->types)
+    type->toString(cout);
 
   return 0;
 }
