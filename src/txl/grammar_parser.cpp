@@ -24,10 +24,12 @@ unique_ptr<TXLGrammar> TXLGrammarParser::parse(XMLDocument const& doc) {
 
 void TXLGrammarParser::parseElement(XMLElement const *const node) {
   string_view const typeName = node->Name();
-  bool const isReference = node->IntAttribute("ref", -1) > 0;
+  // skip special (definition only) types
+  if (isSpecial(typeName))
+    return;
 
   // skip refs
-  if (isReference)
+  if (bool const isReference = node->IntAttribute("ref", -1) > 0)
     // types itself will be added somewhere in the future on other branches (in queue)
     return;
 
@@ -38,13 +40,29 @@ void TXLGrammarParser::parseElement(XMLElement const *const node) {
     return;
   }
 
-  auto const type = grammar->getTypeByName(typeName);
-  // add a new empty variant
-  type->variants.emplace_back(/* empty */);
-  auto const variant = &type->variants.back();
+  // FIXME: [opt literal] and so on
 
-  // build a pattern
-  buildPatternForVariant(variant, node->FirstChild());
+  auto const type = grammar->findOrAddTypeByName(typeName);
+
+  auto const addLiteral_kindOrder = [&](unique_ptr<TXLGrammar::Literal> && ptr) {
+    type->variants.back().pattern.push_back(std::move(ptr));
+  };
+
+  auto const addLiteral_kindChoose = [&](unique_ptr<TXLGrammar::Literal> && ptr) {
+    type->variants.emplace_back(/* empty */);
+    type->variants.back().pattern.push_back(std::move(ptr));
+  };
+
+  // build a pattern based on 'kind'
+  string_view const kind = node->Attribute("kind");
+  if (kind == "choose") {
+    buildPatternForVariant(addLiteral_kindChoose, node->FirstChild(), typeName.data());
+  }
+  else {
+    // add a new empty variant
+    type->variants.emplace_back(/* empty */);
+    buildPatternForVariant(addLiteral_kindOrder, node->FirstChild(), nullptr);
+  }
 }
 
 bool TXLGrammarParser::isSpecial(string_view const& name) {
@@ -71,8 +89,9 @@ bool TXLGrammarParser::hasInternalFunction(const string_view &name) {
     return false;
 }
 
-void TXLGrammarParser::buildPatternForVariant(TXLGrammar::TypeVariant * const variant,
-                                              XMLNode const* const firstChild) {
+void TXLGrammarParser::buildPatternForVariant(AddLiteralFunc const& addLiteral,
+                                              XMLNode const* const firstChild,
+                                              const char* const skipNodeWithName) {
   for (auto child = firstChild; child; child = child->NextSibling()) {
     if (auto const text = child->ToText()) {
       auto txt = make_unique<TXLGrammar::PlainText>();
@@ -81,7 +100,7 @@ void TXLGrammarParser::buildPatternForVariant(TXLGrammar::TypeVariant * const va
       auto const x = txt->text.find_first_not_of(" \t");
       txt->text.erase(0, x);
 
-      variant->pattern.push_back(std::move(txt));
+      addLiteral(std::move(txt));
     }
     else if (auto const tag = child->ToElement()) {
       string_view const tagName = tag->Name();
@@ -91,6 +110,9 @@ void TXLGrammarParser::buildPatternForVariant(TXLGrammar::TypeVariant * const va
 
       // add child to queue (BFS)
       queue.push_back(tag);
+
+      if (tagName == skipNodeWithName)
+        continue;
 
       auto typeRef = make_unique<TXLGrammar::TypeReference>();
 
@@ -109,7 +131,7 @@ void TXLGrammarParser::buildPatternForVariant(TXLGrammar::TypeVariant * const va
         }
       }
 
-      variant->pattern.push_back(std::move(typeRef));
+      addLiteral(std::move(typeRef));
     }
     else
       SCIS_ERROR("Unknown element in grammar: " << child->Value());

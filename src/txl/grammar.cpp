@@ -4,7 +4,7 @@
 using namespace std;
 using namespace TXL;
 
-void TXLGrammar::PlainText::toString(ostream &ss) const {
+void TXLGrammar::PlainText::toTXL(ostream &ss) const {
   bool showQuote = true;
 
   for (auto const c : text) {
@@ -20,14 +20,19 @@ void TXLGrammar::PlainText::toString(ostream &ss) const {
   }
 }
 
-void TXLGrammar::TypeReference::toString(ostream &ss) const {
-  ss << "[" << (function.has_value() ? function.value() + " " : "") << name << "]";
+void TXLGrammar::TypeReference::toTXL(ostream &ss) const {
+  ss << "["
+     << (function.has_value() ? function.value() + " " : "")
+     << name
+     << "]";
 }
 
-void TXLGrammar::TypeVariant::toString(ostream &ss) const {
+void TXLGrammar::TypeVariant::toTXL(ostream &ss, size_t const baseIndent) const {
+  ss << string(baseIndent * 2, ' ');
+
   auto count = pattern.size();
   for (auto const& literal : pattern) {
-    literal->toString(ss);
+    literal->toTXL(ss);
 
     // separate parts from each other
     if (count --> 1)
@@ -35,24 +40,30 @@ void TXLGrammar::TypeVariant::toString(ostream &ss) const {
   }
 }
 
-void TXLGrammar::Type::toString(ostream &ss) const {
-  ss << "define " << name << endl;
+void TXLGrammar::Type::toTXL(ostream &ss, size_t const baseIndent) const {
+  auto const indent = string(baseIndent * 2, ' ');
 
   auto count = variants.size();
   for (auto const& var : variants) {
-    ss << "  ";
     // render pattern variant as single row
-    var.toString(ss);
+    var.toTXL(ss, baseIndent + 1);
 
     // separate variants by vertical line
     if (count --> 1)
-      ss << endl << '|' << endl;
+      ss << endl
+         << indent << '|' << endl;
   }
+}
+
+void TXLGrammar::Type::toTXLDefinition(ostream &ss) const {
+  ss << "define " << name << endl;
+
+  toTXL(ss, 1);
 
   ss << endl << "end define" << endl << endl;
 }
 
-TXLGrammar::Type* TXLGrammar::getTypeByName(string_view const& name) {
+TXLGrammar::Type* TXLGrammar::findOrAddTypeByName(string_view const& name) {
   if (auto const x = types.find(name); x != types.cend())
     return x->second.get();
   else {
@@ -61,6 +72,6 @@ TXLGrammar::Type* TXLGrammar::getTypeByName(string_view const& name) {
 
     types.emplace(name, newType);
 
-    return newType; // FIXME: !!!
+    return newType;
   }
 }

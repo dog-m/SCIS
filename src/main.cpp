@@ -442,7 +442,7 @@ int main(/*int argc, char** argv*/) {
 
   SCIS_INFO("As TXL:");
   for (auto const& [_, type] : grm->types)
-    type->toString(cout);
+    type->toTXLDefinition(cout);
 
   return 0;
 }

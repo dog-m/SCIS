@@ -1,15 +1,15 @@
 #ifndef GRAMMARPARSER_H
 #define GRAMMARPARSER_H
 
-#include "grammar.h"
-
 #include <vector>
 #include <memory>
 #include <unordered_set>
 #include <deque>
+#include <functional>
 
 #include <tinyxml2/tinyxml2.h>
 
+#include "grammar.h"
 #include "interpreter.h"
 
 namespace TXL {
@@ -22,9 +22,12 @@ namespace TXL {
 
     void parseElement(XMLElement const* const node);
 
+    using AddLiteralFunc = function<void(unique_ptr<TXLGrammar::Literal>&&)>;
+
     /// build a pattern for a single variant
-    void buildPatternForVariant(TXLGrammar::TypeVariant *const variant,
-                                XMLNode const* const firstChild);
+    void buildPatternForVariant(AddLiteralFunc const&addLiteral,
+                                XMLNode const* const firstChild,
+                                const char* const skipNodeWithName);
 
   public:
     unique_ptr<TXLGrammar> parse(XMLDocument const& doc);
