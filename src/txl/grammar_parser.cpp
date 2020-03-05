@@ -3,6 +3,16 @@
 using namespace tinyxml2;
 using namespace TXL;
 
+static unordered_set<string_view> const SPECIAL_SYMBOLS {
+  NEW_LINE_TAG, "NL", "IN", "EX", "empty", "SPON", "SPOFF", "SP", "TAB", "TAB_16", "TAB_24", "!"
+};
+
+static unordered_set<string_view> const TYPE_MODIFIERS {
+  "opt", "repeat", "list", "attr", "see", "not", "push", "pop"
+};
+
+constexpr string_view TYPE_REPEATERS = "+*?,";
+
 unique_ptr<TXLGrammar> TXLGrammarParser::parse(XMLDocument const& doc) {
   grammar.reset(new TXLGrammar);
 
@@ -33,7 +43,7 @@ void TXLGrammarParser::parseElement(XMLElement const *const node) {
     // types itself will be added somewhere in the future on other branches (in queue)
     return;
 
-  if (hasInternalFunction(typeName)) {
+  if (haveTypeModifier(typeName)) {
     // add subtree and quit
     for (auto child = node->FirstChild(); child; child = child->NextSibling())
       queue.push_back(child->ToElement());
@@ -44,63 +54,53 @@ void TXLGrammarParser::parseElement(XMLElement const *const node) {
 
   auto const type = grammar->findOrAddTypeByName(typeName);
 
-  auto const addLiteral_kindOrder = [&](unique_ptr<TXLGrammar::Literal> && ptr) {
-    type->variants.back().pattern.push_back(std::move(ptr));
-  };
-
-  auto const addLiteral_kindChoose = [&](unique_ptr<TXLGrammar::Literal> && ptr) {
-    type->variants.emplace_back(/* empty */);
-    type->variants.back().pattern.push_back(std::move(ptr));
-  };
-
   // build a pattern based on 'kind'
   string_view const kind = node->Attribute("kind");
   if (kind == "choose") {
-    buildPatternForVariant(addLiteral_kindChoose, node->FirstChild(), typeName.data());
+    auto const addToPattern_kindChoose = [&](unique_ptr<TXLGrammar::Literal> && ptr) {
+      type->variants.emplace_back(/* empty */);
+      type->variants.back().pattern.push_back(std::move(ptr));
+    };
+    buildPatternForVariant(addToPattern_kindChoose, node->FirstChild(), typeName.data());
   }
   else {
+    auto const addToPattern_kindOrder = [&](unique_ptr<TXLGrammar::Literal> && ptr) {
+      type->variants.back().pattern.push_back(std::move(ptr));
+    };
     // add a new empty variant
     type->variants.emplace_back(/* empty */);
-    buildPatternForVariant(addLiteral_kindOrder, node->FirstChild(), nullptr);
+    buildPatternForVariant(addToPattern_kindOrder, node->FirstChild(), nullptr);
   }
 }
 
 bool TXLGrammarParser::isSpecial(string_view const& name) {
-  static unordered_set<string_view> const specials {
-    NEW_LINE_TAG, "NL", "IN", "EX", "empty", "SPON", "SPOFF"
-  };
-  return specials.find(name) != specials.cend();
+  return SPECIAL_SYMBOLS.find(name) != SPECIAL_SYMBOLS.cend();
 }
 
-bool TXLGrammarParser::isInternalFunction(string_view const& name) {
-  static unordered_set<string_view> const functions {
-    "opt", "list", "repeat"
-  };
-  return functions.find(name) != functions.cend();
+bool TXLGrammarParser::isTypeModifier(string_view const& name) {
+  return TYPE_MODIFIERS.find(name) != TYPE_MODIFIERS.cend();
 }
 
-bool TXLGrammarParser::hasInternalFunction(const string_view &name) {
+bool TXLGrammarParser::haveTypeRepeater(string_view const& name) {
+  return TYPE_REPEATERS.find(name.back()) != string_view::npos;
+}
+
+bool TXLGrammarParser::haveTypeModifier(const string_view &name) {
   auto const pos = name.find('_');
   if (pos != string_view::npos) {
     auto const prefix = name.substr(0, pos);
-    return isInternalFunction(prefix);
+    return isTypeModifier(prefix);
   }
   else
     return false;
 }
 
-void TXLGrammarParser::buildPatternForVariant(AddLiteralFunc const& addLiteral,
+void TXLGrammarParser::buildPatternForVariant(AddToPatternFunc const& addToPattern,
                                               XMLNode const* const firstChild,
                                               const char* const skipNodeWithName) {
   for (auto child = firstChild; child; child = child->NextSibling()) {
     if (auto const text = child->ToText()) {
-      auto txt = make_unique<TXLGrammar::PlainText>();
-
-      txt->text = text->Value();
-      auto const x = txt->text.find_first_not_of(" \t");
-      txt->text.erase(0, x);
-
-      addLiteral(std::move(txt));
+      processText(addToPattern, text);
     }
     else if (auto const tag = child->ToElement()) {
       string_view const tagName = tag->Name();
@@ -108,32 +108,71 @@ void TXLGrammarParser::buildPatternForVariant(AddLiteralFunc const& addLiteral,
       if (isSpecial(tagName))
         continue;
 
-      // add child to queue (BFS)
-      queue.push_back(tag);
-
-      if (tagName == skipNodeWithName)
-        continue;
-
-      auto typeRef = make_unique<TXLGrammar::TypeReference>();
-
-      typeRef->name = tagName;
-      typeRef->function = nullopt;
-
+      // looking for something like [opt ';] ie <opt_literal ...>
       auto const dashPos = tagName.find('_');
-      if (dashPos != string_view::npos) {
-        auto const prefix = tagName.substr(0, dashPos);
-
-        // is it a special function?
-        if (isInternalFunction(prefix)) {
-          auto const suffix = tagName.substr(dashPos + 1);
-          typeRef->name = suffix;
-          typeRef->function = prefix;
-        }
+      if (dashPos != string_view::npos &&
+          tagName.substr(dashPos + 1) == "literal" &&
+          isTypeModifier(tagName.substr(0, dashPos)) ) {
+        processElement(addToPattern, tag);
+        //processLiteral(addLiteral, tag);
       }
+      else {
+        // add child to queue (BFS)
+        queue.push_back(tag);
 
-      addLiteral(std::move(typeRef));
+        if (tagName == skipNodeWithName)
+          continue;
+
+        processElement(addToPattern, tag);
+      }
     }
     else
       SCIS_ERROR("Unknown element in grammar: " << child->Value());
+    }
+}
+
+void TXLGrammarParser::processText(TXLGrammarParser::AddToPatternFunc const& addToPattern,
+                                   XMLText const* const child) {
+  auto txt = make_unique<TXLGrammar::PlainText>();
+
+  txt->text = child->Value();
+
+  addToPattern(std::move(txt));
+}
+
+void TXLGrammarParser::processElement(TXLGrammarParser::AddToPatternFunc const& addToPattern,
+                                      XMLElement const* const child) {
+  string_view const tagName = child->Name();
+  auto typeRef = make_unique<TXLGrammar::TypeReference>();
+
+  typeRef->modifier = nullopt;
+  typeRef->name = tagName;
+  typeRef->repeater = nullopt;
+
+  // extract modifier
+  auto const dashPos = tagName.find('_');
+  if (dashPos != string_view::npos) {
+    auto const prefix = tagName.substr(0, dashPos);
+
+    // is it a special function?
+    if (isTypeModifier(prefix)) {
+      auto const suffix = tagName.substr(dashPos + 1);
+      typeRef->modifier = prefix;
+      typeRef->name = suffix;
+    }
   }
+
+  // extract repeater (highly depends on order!)
+  auto const repeatPos = typeRef->name.find_first_of(TYPE_REPEATERS);
+  if (repeatPos != string::npos) {
+    typeRef->repeater = typeRef->name.substr(repeatPos);
+    typeRef->name = typeRef->name.substr(0, repeatPos);
+  }
+
+  addToPattern(std::move(typeRef));
+}
+
+void TXLGrammarParser::processLiteral(TXLGrammarParser::AddToPatternFunc const& addToPattern,
+                                      XMLElement const* const tag) {
+  ;//
 }

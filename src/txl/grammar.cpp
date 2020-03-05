@@ -22,8 +22,9 @@ void TXLGrammar::PlainText::toTXL(ostream &ss) const {
 
 void TXLGrammar::TypeReference::toTXL(ostream &ss) const {
   ss << "["
-     << (function.has_value() ? function.value() + " " : "")
+     << (modifier.has_value() ? modifier.value() + " " : "")
      << name
+     << repeater.value_or("")
      << "]";
 }
 

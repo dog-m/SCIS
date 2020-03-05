@@ -28,8 +28,9 @@ namespace TXL {
     };
 
     struct TypeReference : public Literal {
+      optional<string> modifier = nullopt;
       string name = "???";
-      optional<string> function = nullopt;
+      optional<string> repeater = nullopt;
 
       void toTXL(ostream &ss) const override;
     };
