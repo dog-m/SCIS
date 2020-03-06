@@ -14,7 +14,7 @@ namespace TXL {
   {
     static void test();
 
-    static std::string grammarToXML(std::string const &grammarFileName);
+    static string grammarToXML(string_view const& grammarFileName);
   };
 
 }

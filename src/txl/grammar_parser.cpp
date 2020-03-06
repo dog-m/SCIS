@@ -111,10 +111,10 @@ void TXLGrammarParser::buildPatternForVariant(AddToPatternFunc const& addToPatte
       // looking for something like [opt ';] ie <opt_literal ...>
       auto const dashPos = tagName.find('_');
       if (dashPos != string_view::npos &&
-          tagName.substr(dashPos + 1) == "literal" &&
-          isTypeModifier(tagName.substr(0, dashPos)) ) {
-        processElement(addToPattern, tag);
-        //processLiteral(addLiteral, tag);
+          isTypeModifier(tagName.substr(0, dashPos)) &&
+          tagName.substr(dashPos + 1) == "literal") {
+        //
+        processLiteral(addToPattern, tag);
       }
       else {
         // add child to queue (BFS)
@@ -174,5 +174,6 @@ void TXLGrammarParser::processElement(TXLGrammarParser::AddToPatternFunc const& 
 
 void TXLGrammarParser::processLiteral(TXLGrammarParser::AddToPatternFunc const& addToPattern,
                                       XMLElement const* const tag) {
-  ;//
+  //auto lit = make_unique<TXLGrammar::OptionalPlainText>();
+  processElement(addToPattern, tag);
 }

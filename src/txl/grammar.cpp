@@ -28,6 +28,10 @@ void TXLGrammar::TypeReference::toTXL(ostream &ss) const {
      << "]";
 }
 
+void TXLGrammar::OptionalPlainText::toTXL(ostream &ss) const {
+  ss << "[" << modifier << ' ' << text << "]";
+}
+
 void TXLGrammar::TypeVariant::toTXL(ostream &ss, size_t const baseIndent) const {
   ss << string(baseIndent * 2, ' ');
 
@@ -74,5 +78,42 @@ TXLGrammar::Type* TXLGrammar::findOrAddTypeByName(string_view const& name) {
     types.emplace(name, newType);
 
     return newType;
+    }
+}
+
+void TXLGrammar::toDOT(ostream &ss) const {
+  ss << "digraph G {" << endl;
+
+  // pre-print all types
+  for (auto const& [_, type] : types)
+    ss << "  <" << type->name << ">" << endl;
+
+  ss << endl;
+
+  // print connections (ie references to other types)
+  for (auto const& [_, type] : types) {
+    ss << "  <" << type->name << "> -> { ";
+
+    // get number of elements to print
+    auto count = 0;
+    for (auto const& v : type->variants)
+      for (auto const& x : v.pattern)
+        if (dynamic_cast<TXL::TXLGrammar::TypeReference*>(x.get()))
+          ++count;
+
+    // actual printing with commas
+    for (auto const& v : type->variants)
+      for (auto const& x : v.pattern)
+        if (auto const ref = dynamic_cast<TXL::TXLGrammar::TypeReference*>(x.get())) {
+          ss << "<" << ref->name << ">";
+
+          if (count --> 1)
+            ss << ", ";
+        }
+
+    ss << " }" << endl;
   }
+
+  // finish graph
+  ss << '}' << endl;
 }

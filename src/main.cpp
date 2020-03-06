@@ -413,6 +413,25 @@ static void rebuildShortestPathsBFS(TypeGraph &graph,
 
 /* =================================================================================== */
 
+
+
+static unique_ptr<TXL::TXLGrammar> loadAndParseGrammar(string_view && fileName) {
+  auto const grammarXMLSource = TXL::TXLInterpreter::grammarToXML(fileName);
+  SCIS_INFO("Grammar size: " << grammarXMLSource.size());
+
+  XMLDocument doc(true, COLLAPSE_WHITESPACE);
+  doc.Parse(grammarXMLSource.data());
+
+  SCIS_INFO("loaded");
+
+  TXL::TXLGrammarParser parser;
+  return parser.parse(doc);
+}
+
+
+
+/* =================================================================================== */
+
 int main(/*int argc, char** argv*/) {
   /*
   TypeGraph graph;
@@ -429,20 +448,14 @@ int main(/*int argc, char** argv*/) {
   //INFO("Looking for paths between <program> and <class_header>");
   //printAllPaths(graph.types.at("program"), graph.types.at("class_header"));
   */
-  auto const grammarXMLSource = TXL::TXLInterpreter::grammarToXML("./example/lang/java/grammar.txl");
-  SCIS_INFO("Grammar size: " << grammarXMLSource.size());
-
-  XMLDocument doc(true, COLLAPSE_WHITESPACE);
-  doc.Parse(grammarXMLSource.data());
-
-  SCIS_INFO("loaded");
-
-  TXL::TXLGrammarParser parser;
-  auto const grm = parser.parse(doc);
+  auto const grm = loadAndParseGrammar("./example/lang/java/grammar.txl");
 
   SCIS_INFO("As TXL:");
   for (auto const& [_, type] : grm->types)
     type->toTXLDefinition(cout);
+
+  SCIS_INFO("As DOT:");
+  grm->toDOT(cout);
 
   return 0;
 }

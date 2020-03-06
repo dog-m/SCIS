@@ -13,14 +13,14 @@ void TXL::TXLInterpreter::test() {
   });
 }
 
-string TXL::TXLInterpreter::grammarToXML(string const &grammarFileName) {
+string TXL::TXLInterpreter::grammarToXML(string_view const& grammarFileName) {
   constexpr auto GRAMMAR_TREE_START = "-- Grammar Tree --";
   constexpr auto GRAMMAR_TREE_END   = "-- End Grammar Tree --";
 
   stringstream result;
   bool recordingXML = false;
 
-  TXL::TXLWrapper::runNoInput({ "#", grammarFileName, "-Dgrammar" }, [&](string const& line) {
+  TXL::TXLWrapper::runNoInput({ "#", grammarFileName.data(), "-Dgrammar" }, [&](string const& line) {
     if (line.find(GRAMMAR_TREE_START) != string::npos) {
       recordingXML = true;
       return true;

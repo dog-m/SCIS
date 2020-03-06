@@ -21,13 +21,13 @@ namespace TXL {
       virtual void toTXL(ostream &) const = 0;
     };
 
-    struct PlainText: public Literal {
+    struct PlainText final : public Literal {
       string text = "???";
 
       void toTXL(ostream &ss) const override;
     };
 
-    struct TypeReference : public Literal {
+    struct TypeReference final : public Literal {
       optional<string> modifier = nullopt;
       string name = "???";
       optional<string> repeater = nullopt;
@@ -35,13 +35,20 @@ namespace TXL {
       void toTXL(ostream &ss) const override;
     };
 
-    struct TypeVariant {
+    struct OptionalPlainText final : public Literal {
+      string modifier = "???";
+      string text = "???";
+
+      void toTXL(ostream &ss) const override;
+    };
+
+    struct TypeVariant final {
       vector<unique_ptr<Literal>> pattern;
 
       void toTXL(ostream &ss, size_t const baseIndent) const;
     };
 
-    struct Type {
+    struct Type final {
       string name;
       vector<TypeVariant> variants;
 
@@ -55,6 +62,8 @@ namespace TXL {
     unordered_map<string_view, unique_ptr<Type>> types;
 
     Type* findOrAddTypeByName(string_view const& name);
+
+    void toDOT(ostream &ss) const;
 
   }; // TXLGrammar
 
