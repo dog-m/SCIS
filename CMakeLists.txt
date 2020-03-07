@@ -20,6 +20,7 @@ set(Boost_USE_STATIC_RUNTIME ON)
 find_package(Boost 1.72.0 REQUIRED COMPONENTS
   filesystem
   system
+  thread
 )
 
 if(Boost_FOUND)

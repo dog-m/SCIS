@@ -20,8 +20,10 @@ string TXL::TXLInterpreter::grammarToXML(string_view const& grammarFileName) {
   stringstream result;
   bool recordingXML = false;
 
-  TXL::TXLWrapper::runNoInput({ "#", grammarFileName.data(), "-Dgrammar" }, [&](string const& line) {
-    if (line.find(GRAMMAR_TREE_START) != string::npos) {
+  TXL::TXLWrapper::runNoInput({ grammarFileName.data(), "-xml" },
+                              TXL::TXLWrapper::NOOP_READER,
+                              [&](string const& line) {
+    /*if (line.find(GRAMMAR_TREE_START) != string::npos) {
       recordingXML = true;
       return true;
     }
@@ -32,7 +34,8 @@ string TXL::TXLInterpreter::grammarToXML(string_view const& grammarFileName) {
       }
 
     if (recordingXML)
-      result << line << '<' << NEW_LINE_TAG << "/>" << endl;
+      result << line << '<' << NEW_LINE_TAG << "/>" << endl;*/
+    result << line << endl;
 
     return true;
   });

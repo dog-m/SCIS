@@ -3,6 +3,8 @@
 using namespace tinyxml2;
 using namespace TXL;
 
+unique_ptr<TXLGrammar> parse_via_new_alternative_parser(XMLDocument const&);
+
 static unordered_set<string_view> const SPECIAL_SYMBOLS {
   NEW_LINE_TAG, "NL", "IN", "EX", "empty", "SPON", "SPOFF", "SP", "TAB", "TAB_16", "TAB_24", "!"
 };
@@ -15,6 +17,8 @@ constexpr string_view TYPE_REPEATERS = "+*?,";
 
 unique_ptr<TXLGrammar> TXLGrammarParser::parse(XMLDocument const& doc) {
   grammar.reset(new TXLGrammar);
+
+  return parse_via_new_alternative_parser(doc);
 
   queue.push_back(doc.RootElement());
   // BFS
@@ -176,4 +180,44 @@ void TXLGrammarParser::processLiteral(TXLGrammarParser::AddToPatternFunc const& 
                                       XMLElement const* const tag) {
   //auto lit = make_unique<TXLGrammar::OptionalPlainText>();
   processElement(addToPattern, tag);
+}
+
+
+
+
+
+
+struct AlternativeParser {
+
+  unique_ptr<TXL::TXLGrammar> grammar;
+
+  XMLElement const* safePath(XMLNode const* root, vector<string_view> && path) const {
+    XMLElement const* node = reinterpret_cast<XMLElement const*>(root);
+    for (auto const& p : path) {
+      node = node->FirstChildElement(p.data());
+      if (!node)
+        throw p;
+    }
+    return node;
+  }
+
+  unique_ptr<TXL::TXLGrammar> parse(XMLDocument const& doc) {
+    grammar.reset(new TXLGrammar);
+
+    try {
+      auto const statements = safePath(&doc, { "program", "repeat_statement" });
+      ;//
+      cout << statements << endl;
+    } catch (string_view const& p) {
+      SCIS_ERROR("Incorrect grammar. Cant find element with name = " << p);
+    }
+
+    return std::move(grammar);
+  }
+
+};
+
+unique_ptr<TXLGrammar> parse_via_new_alternative_parser(XMLDocument const& doc) {
+  AlternativeParser p;
+  return p.parse(doc);
 }

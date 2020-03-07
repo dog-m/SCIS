@@ -10,24 +10,67 @@ using namespace std;
   #define __kernel_entry
 #endif
 #include <boost/process.hpp>
+#include <boost/asio/io_service.hpp>
+#include <future>
+#include <sstream>
+
+#include "../logging.h"
 
 using namespace boost::process;
+using namespace TXL;
 
-void TXL::TXLWrapper::runNoInput(const vector<string> &params,
-                                 const TXL::ReaderFunction &errReader,
-                                 const TXL::ReaderFunction &outReader)
+bool TXLWrapper::NOOP_READER(string const&) {
+  return true;
+}
+
+void TXLWrapper::runNoInput(const vector<string> &params,
+                            const ReaderFunction &errReader,
+                            const ReaderFunction &outReader)
 {
-  ipstream outStream, errStream;
-  child c(search_path("txl"), args(params), std_in.close(), std_out > outStream, std_err > errStream);
+  static auto const txl_executable = search_path("txl");
+
+//  boost::asio::io_service ios;
+//  ipstream outStream, errStream;
+//  child c(txl_executable, args(params), std_in.close(), std_out > outStream, std_err > errStream);
+
+//  string line;
+//  do {
+//    while (/*c.running() &&*/ errStream && !errStream.eof() && getline(errStream, line) /*&& !line.empty()*/)
+//      if (!errReader(line))
+//        break;
+
+//    while (/*c.running() &&*/ outStream && !outStream.eof() && getline(outStream, line) /*&& !line.empty()*/)
+//      if (!outReader(line))
+//        break;
+//  } while (c.running() && false);
+
+//  c.wait();
+  boost::asio::io_service ios;
+
+  future<string> data_err, data_out;
+
+  child c(txl_executable, args(params),
+          std_in.close(),
+          std_out > data_out,
+          std_err > data_err,
+          ios);
+
+  // blocked until finished
+  ios.run();
 
   string line;
-  while (/*c.running() &&*/ getline(errStream, line) /*&& !line.empty()*/)
+  stringstream ss;
+
+  // read errors (std_err)
+  ss.str(data_err.get());
+  while (getline(ss, line))
     if (!errReader(line))
       break;
 
-  while (/*c.running() &&*/ getline(outStream, line) /*&& !line.empty()*/)
+  // read text (std_out)
+  ss.clear();
+  ss.str(data_out.get());
+  while (getline(ss, line))
     if (!outReader(line))
       break;
-
-  c.wait();
 }

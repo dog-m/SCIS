@@ -12,7 +12,7 @@ namespace TXL {
 
   struct TXLWrapper final
   {
-    static bool NOOP_READER(string const&) { return false; }
+    static bool NOOP_READER(string const&);
 
     static void runNoInput(vector<string> const& params,
                            ReaderFunction const& errReader,
