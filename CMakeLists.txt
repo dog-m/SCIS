@@ -32,17 +32,32 @@ if(Boost_FOUND)
       3rdparty/tinyxml2/tinyxml2.cpp
       3rdparty/tinyxml2/tinyxml2.h
 
-      src/txl/interpreter.h
-      src/txl/interpreter.cpp
-      src/txl/wrapper.h
-      src/txl/wrapper.cpp
       src/txl/grammar.h
       src/txl/grammar.cpp
       src/txl/grammar_parser.h
       src/txl/grammar_parser.cpp
+      src/txl/interpreter.h
+      src/txl/interpreter.cpp
+      src/txl/wrapper.h
+      src/txl/wrapper.cpp
 
-      src/logging.h
-      src/common.h
+      src/scis/fragments/fragment_parser.h
+      src/scis/fragments/fragment_parser.cpp
+      src/scis/fragments/fragments.h
+      src/scis/fragments/fragments.cpp
+
+      src/scis/ruleset/ruleset.h
+      src/scis/ruleset/ruleset.cpp
+      src/scis/ruleset/ruleset_parser.h
+      src/scis/ruleset/ruleset_parser.cpp
+
+      src/scis/txl_generator.h
+      src/scis/txl_generator.cpp
+
+      src/include/arguments.h
+      src/include/common.h
+      src/include/logging.h
+
       src/main.cpp
     )
 
