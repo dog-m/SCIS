@@ -14,7 +14,7 @@ using namespace std;
 #include <future>
 #include <sstream>
 
-#include "../logging.h"
+#include "logging.h"
 
 using namespace boost::process;
 using namespace TXL;
@@ -23,7 +23,7 @@ bool TXLWrapper::NOOP_READER(string const&) {
   return true;
 }
 
-void TXLWrapper::runNoInput(const vector<string> &params,
+void TXLWrapper::runNoInput(initializer_list<string_view> && params,
                             const ReaderFunction &errReader,
                             const ReaderFunction &outReader)
 {

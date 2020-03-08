@@ -1,7 +1,7 @@
 #ifndef TXLINTERPRETER_H
 #define TXLINTERPRETER_H
 
-#include "../logging.h"
+#include "logging.h"
 #include <string>
 
 namespace TXL {

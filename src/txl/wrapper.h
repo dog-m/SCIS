@@ -14,7 +14,7 @@ namespace TXL {
   {
     static bool NOOP_READER(string const&);
 
-    static void runNoInput(vector<string> const& params,
+    static void runNoInput(initializer_list<string_view> && params,
                            ReaderFunction const& errReader,
                            ReaderFunction const& outReader = NOOP_READER);
   private:

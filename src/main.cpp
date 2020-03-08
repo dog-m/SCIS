@@ -417,14 +417,17 @@ static void rebuildShortestPathsBFS(TypeGraph &graph,
 
 static unique_ptr<TXL::TXLGrammar> loadAndParseGrammar(string_view && fileName) {
   auto const grammarXMLSource = TXL::TXLInterpreter::grammarToXML(fileName);
-  SCIS_INFO("Grammar size: " << grammarXMLSource.size());
+  SCIS_DEBUG("Grammar size: " << grammarXMLSource.size());
 
   XMLDocument doc(true, COLLAPSE_WHITESPACE);
-  doc.Parse(grammarXMLSource.data());
+  if (auto result = doc.Parse(grammarXMLSource.data()); result != XML_SUCCESS) {
+    SCIS_ERROR("XML Loading failed: " << doc.ErrorIDToName(result));
+    terminate();
+  }
+  else
+    SCIS_DEBUG("XML loaded normaly");
 
-  SCIS_INFO("loaded");
-
-  TXL::TXLGrammarParser parser;
+  TXL::GrammarParser parser;
   return parser.parse(doc);
 }
 

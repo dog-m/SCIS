@@ -20,15 +20,15 @@ string TXL::TXLInterpreter::grammarToXML(string_view const& grammarFileName) {
   stringstream result;
   bool recordingXML = false;
 
-  TXL::TXLWrapper::runNoInput({ grammarFileName.data(), "-xml" },
+  TXL::TXLWrapper::runNoInput({ grammarFileName.data(), "./txl_grammar.txl", "-xml" },
                               TXL::TXLWrapper::NOOP_READER,
                               [&](string const& line) {
-    /*if (line.find(GRAMMAR_TREE_START) != string::npos) {
+    /*if (!recordingXML && line.find(GRAMMAR_TREE_START) != string::npos) {
       recordingXML = true;
       return true;
     }
     else
-      if (line.find(GRAMMAR_TREE_END) != string::npos) {
+      if (recordingXML && line.find(GRAMMAR_TREE_END) != string::npos) {
         recordingXML = false;
         return false;
       }

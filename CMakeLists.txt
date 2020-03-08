@@ -16,7 +16,7 @@ set(Boost_USE_STATIC_RUNTIME ON)
 #set(BOOST_LIB_PREFIX "lib")
 #set(Boost_ARCHITECTURE "-x32")
 #set(Boost_COMPILER "mgw81")
-#set(Boost_DEBUG 1)
+set(Boost_DEBUG 1)
 find_package(Boost 1.72.0 REQUIRED COMPONENTS
   filesystem
   system
@@ -26,7 +26,7 @@ find_package(Boost 1.72.0 REQUIRED COMPONENTS
 if(Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 
-    include_directories(3rdparty)
+    include_directories(3rdparty src/include)
 
     file(GLOB SOURCES
       3rdparty/tinyxml2/tinyxml2.cpp

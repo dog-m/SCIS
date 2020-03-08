@@ -3,9 +3,6 @@
 
 #include <vector>
 #include <memory>
-#include <unordered_set>
-#include <deque>
-#include <functional>
 
 #include <tinyxml2/tinyxml2.h>
 
@@ -16,35 +13,35 @@ namespace TXL {
 
   using namespace tinyxml2;
 
-  class TXLGrammarParser {
-    unique_ptr<TXLGrammar> grammar;
-    deque<XMLElement const*> queue;
+  class GrammarParser {
+    unique_ptr<TXL::TXLGrammar> grammar;
 
-    void parseElement(XMLElement const* const node);
+    static XMLElement const* expectedPath(XMLNode const* root, initializer_list<const char*> && path);
 
-    using AddToPatternFunc = function<void(unique_ptr<TXLGrammar::Literal>&&)>;
+    inline void parseDefinition(XMLElement const* const definition);
 
-    /// build a pattern for a single variant
-    void buildPatternForVariant(AddToPatternFunc const& addToPattern,
-                                XMLNode const* const firstChild,
-                                const char* const skipNodeWithName);
+    void parseLiteralsOrTypes(TXLGrammar::TypeVariant* const typeVariant,
+                              XMLElement const* const literalsOrTypes);
 
-    void processText(AddToPatternFunc const& addToPattern,
-                     XMLText const* const child);
+    void parseType(TXLGrammar::TypeVariant* const typeVariant,
+                   XMLElement const* const type);
 
-    void processElement(AddToPatternFunc const& addToPattern,
-                        XMLElement const* const child);
+    string parseNameFromTypeid(XMLElement const* const type_id);
 
-    void processLiteral(AddToPatternFunc const& addToPattern,
-                        XMLElement const* const tag);
+    void parseLiteral(TXLGrammar::TypeVariant* const typeVariant,
+                      XMLElement const* const literal);
+
+    void mergeTextRecursive(string &text,
+                            XMLNode const* const node);
+
+    void parseOptionalText(TXLGrammar::TypeVariant* const typeVariant,
+                           XMLElement const* const type,
+                           string_view const& text);
 
   public:
-    unique_ptr<TXLGrammar> parse(XMLDocument const& doc);
+    unique_ptr<TXL::TXLGrammar> parse(XMLDocument const& doc);
 
     static bool isSpecial(string_view const& name);
-    static bool isTypeModifier(string_view const& name);
-    static bool haveTypeModifier(string_view const& name);
-    static bool haveTypeRepeater(string_view const& name);
   };
 
 } // TXL namespace

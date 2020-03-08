@@ -1,23 +1,15 @@
 #include "grammar.h"
-#include "../logging.h"
+#include "logging.h"
 
 using namespace std;
 using namespace TXL;
 
 void TXLGrammar::PlainText::toTXL(ostream &ss) const {
-  bool showQuote = true;
+  // BUG: potential formating bug here
+  if (text.front() != '\'')
+    ss << '\'';
 
-  for (auto const c : text) {
-    // escape terminal symbols
-    if (showQuote) {
-      ss << '\'';
-      showQuote = false;
-    }
-    else if (c == ' ' || c == '\t')
-      showQuote = true;
-
-    ss << c;
-  }
+  ss << text;
 }
 
 void TXLGrammar::TypeReference::toTXL(ostream &ss) const {
@@ -78,15 +70,19 @@ TXLGrammar::Type* TXLGrammar::findOrAddTypeByName(string_view const& name) {
     types.emplace(name, newType);
 
     return newType;
-    }
+  }
 }
 
 void TXLGrammar::toDOT(ostream &ss) const {
   ss << "digraph G {" << endl;
 
   // pre-print all types
-  for (auto const& [_, type] : types)
-    ss << "  <" << type->name << ">" << endl;
+  for (auto const& [_, type] : types) {
+    if (type->name != "program")
+      ss << "  <" << type->name << "> ;" << endl;
+    else
+      ss << "  <program> [fillcolor=\"0.0 0.35 1.0\" style=filled];" << endl;
+  }
 
   ss << endl;
 
@@ -111,7 +107,7 @@ void TXLGrammar::toDOT(ostream &ss) const {
             ss << ", ";
         }
 
-    ss << " }" << endl;
+    ss << " };" << endl;
   }
 
   // finish graph
