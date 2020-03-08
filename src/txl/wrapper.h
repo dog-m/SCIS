@@ -10,7 +10,7 @@ namespace TXL {
 
   using ReaderFunction = std::function< bool(string const&) >;
 
-  struct TXLWrapper final
+  struct Wrapper final
   {
     static bool NOOP_READER(string const&);
 
@@ -18,7 +18,7 @@ namespace TXL {
                            ReaderFunction const& errReader,
                            ReaderFunction const& outReader = NOOP_READER);
   private:
-    TXLWrapper() = delete;
+    Wrapper() = delete;
   };
 
 }

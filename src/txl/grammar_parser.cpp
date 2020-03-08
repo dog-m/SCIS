@@ -44,7 +44,7 @@ void GrammarParser::parseDefinition(XMLElement const* const definition) {
     }
 }
 
-void GrammarParser::parseLiteralsOrTypes(TXLGrammar::TypeVariant* const typeVariant,
+void GrammarParser::parseLiteralsOrTypes(Grammar::TypeVariant* const typeVariant,
                                          XMLElement const* const literalsOrTypes) {
   for (auto item = literalsOrTypes->FirstChild(); item; item = item->NextSibling()) {
     auto const something = item->FirstChildElement();
@@ -63,7 +63,7 @@ void GrammarParser::parseLiteralsOrTypes(TXLGrammar::TypeVariant* const typeVari
   }
 }
 
-void GrammarParser::parseType(TXLGrammar::TypeVariant* const typeVariant,
+void GrammarParser::parseType(Grammar::TypeVariant* const typeVariant,
                               XMLElement const* const type) {
   auto const name = parseNameFromTypeid(expectedPath(type, { "typeid" }));
 
@@ -76,7 +76,7 @@ void GrammarParser::parseType(TXLGrammar::TypeVariant* const typeVariant,
     return;
   }
 
-  auto typeRef = make_unique<TXLGrammar::TypeReference>();
+  auto typeRef = make_unique<Grammar::TypeReference>();
 
   if (auto const o = type->FirstChildElement("opt_typeModifier"))
     typeRef->modifier = expectedPath(o, { "typeModifier" })->GetText();
@@ -112,7 +112,7 @@ string GrammarParser::parseNameFromTypeid(XMLElement const* const type_id) {
     throw "literal";
 }
 
-void GrammarParser::parseLiteral(TXLGrammar::TypeVariant* const typeVariant,
+void GrammarParser::parseLiteral(Grammar::TypeVariant* const typeVariant,
                                  XMLElement const* const literal) {
   XMLElement const* unquotedLiteral = literal->FirstChildElement("unquotedLiteral");
   if (!unquotedLiteral)
@@ -126,7 +126,7 @@ void GrammarParser::parseLiteral(TXLGrammar::TypeVariant* const typeVariant,
   string text = "";
   mergeTextRecursive(text, unquotedLiteral);
 
-  auto txt = make_unique<TXLGrammar::PlainText>();
+  auto txt = make_unique<Grammar::PlainText>();
   txt->text = text;
 
   typeVariant->pattern.push_back(std::move(txt));
@@ -141,10 +141,10 @@ void GrammarParser::mergeTextRecursive(string &text,
       mergeTextRecursive(text, item);
 }
 
-void GrammarParser::parseOptionalText(TXLGrammar::TypeVariant* const typeVariant,
+void GrammarParser::parseOptionalText(Grammar::TypeVariant* const typeVariant,
                                       XMLElement const* const type,
                                       string_view const &text) {
-  auto optText = make_unique<TXLGrammar::OptionalPlainText>();
+  auto optText = make_unique<Grammar::OptionalPlainText>();
 
   optText->modifier = expectedPath(type, { "opt_typeModifier", "typeModifier" })->GetText();
   optText->text = text;
@@ -152,8 +152,8 @@ void GrammarParser::parseOptionalText(TXLGrammar::TypeVariant* const typeVariant
   typeVariant->pattern.push_back(std::move(optText));
 }
 
-unique_ptr<TXLGrammar> GrammarParser::parse(XMLDocument const& doc) {
-  grammar.reset(new TXLGrammar);
+unique_ptr<Grammar> GrammarParser::parse(XMLDocument const& doc) {
+  grammar.reset(new Grammar);
 
   try {
     auto const statements = expectedPath(&doc, { "program", "repeat_statement" });

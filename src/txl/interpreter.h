@@ -10,7 +10,7 @@ namespace TXL {
 
   constexpr string_view NEW_LINE_TAG = "x-new-line-x";
 
-  struct TXLInterpreter
+  struct Interpreter
   {
     static void test();
 

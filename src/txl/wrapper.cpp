@@ -19,11 +19,11 @@ using namespace std;
 using namespace boost::process;
 using namespace TXL;
 
-bool TXLWrapper::NOOP_READER(string const&) {
+bool Wrapper::NOOP_READER(string const&) {
   return true;
 }
 
-void TXLWrapper::runNoInput(initializer_list<string_view> && params,
+void Wrapper::runNoInput(initializer_list<string_view> && params,
                             const ReaderFunction &errReader,
                             const ReaderFunction &outReader)
 {

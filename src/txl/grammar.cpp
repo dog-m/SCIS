@@ -4,7 +4,7 @@
 using namespace std;
 using namespace TXL;
 
-void TXLGrammar::PlainText::toTXL(ostream &ss) const {
+void Grammar::PlainText::toTXL(ostream &ss) const {
   // BUG: potential formating bug here
   if (text.front() != '\'')
     ss << '\'';
@@ -12,7 +12,7 @@ void TXLGrammar::PlainText::toTXL(ostream &ss) const {
   ss << text;
 }
 
-void TXLGrammar::TypeReference::toTXL(ostream &ss) const {
+void Grammar::TypeReference::toTXL(ostream &ss) const {
   ss << "["
      << (modifier.has_value() ? modifier.value() + " " : "")
      << name
@@ -20,11 +20,11 @@ void TXLGrammar::TypeReference::toTXL(ostream &ss) const {
      << "]";
 }
 
-void TXLGrammar::OptionalPlainText::toTXL(ostream &ss) const {
+void Grammar::OptionalPlainText::toTXL(ostream &ss) const {
   ss << "[" << modifier << ' ' << text << "]";
 }
 
-void TXLGrammar::TypeVariant::toTXL(ostream &ss, size_t const baseIndent) const {
+void Grammar::TypeVariant::toTXL(ostream &ss, size_t const baseIndent) const {
   ss << string(baseIndent * 2, ' ');
 
   auto count = pattern.size();
@@ -37,7 +37,7 @@ void TXLGrammar::TypeVariant::toTXL(ostream &ss, size_t const baseIndent) const 
   }
 }
 
-void TXLGrammar::Type::toTXL(ostream &ss, size_t const baseIndent) const {
+void Grammar::Type::toTXL(ostream &ss, size_t const baseIndent) const {
   auto const indent = string(baseIndent * 2, ' ');
 
   auto count = variants.size();
@@ -52,7 +52,7 @@ void TXLGrammar::Type::toTXL(ostream &ss, size_t const baseIndent) const {
   }
 }
 
-void TXLGrammar::Type::toTXLDefinition(ostream &ss) const {
+void Grammar::Type::toTXLDefinition(ostream &ss) const {
   ss << "define " << name << endl;
 
   toTXL(ss, 1);
@@ -60,7 +60,7 @@ void TXLGrammar::Type::toTXLDefinition(ostream &ss) const {
   ss << endl << "end define" << endl << endl;
 }
 
-TXLGrammar::Type* TXLGrammar::findOrAddTypeByName(string_view const& name) {
+Grammar::Type* Grammar::findOrAddTypeByName(string_view const& name) {
   if (auto const x = types.find(name); x != types.cend())
     return x->second.get();
   else {
@@ -73,7 +73,7 @@ TXLGrammar::Type* TXLGrammar::findOrAddTypeByName(string_view const& name) {
   }
 }
 
-void TXLGrammar::toDOT(ostream &ss) const {
+void Grammar::toDOT(ostream &ss) const {
   ss << "digraph G {" << endl;
 
   // pre-print all types
@@ -94,13 +94,13 @@ void TXLGrammar::toDOT(ostream &ss) const {
     auto count = 0;
     for (auto const& v : type->variants)
       for (auto const& x : v.pattern)
-        if (dynamic_cast<TXL::TXLGrammar::TypeReference*>(x.get()))
+        if (dynamic_cast<TXL::Grammar::TypeReference*>(x.get()))
           ++count;
 
     // actual printing with commas
     for (auto const& v : type->variants)
       for (auto const& x : v.pattern)
-        if (auto const ref = dynamic_cast<TXL::TXLGrammar::TypeReference*>(x.get())) {
+        if (auto const ref = dynamic_cast<TXL::Grammar::TypeReference*>(x.get())) {
           ss << "<" << ref->name << ">";
 
           if (count --> 1)

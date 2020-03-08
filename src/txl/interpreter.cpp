@@ -5,23 +5,23 @@
 
 using namespace std;
 
-void TXL::TXLInterpreter::test() {
-  TXL::TXLWrapper::runNoInput({ "-v" },
+void TXL::Interpreter::test() {
+  TXL::Wrapper::runNoInput({ "-v" },
                               [](string const& line){
     cout << line << endl;
     return true;
   });
 }
 
-string TXL::TXLInterpreter::grammarToXML(string_view const& grammarFileName) {
+string TXL::Interpreter::grammarToXML(string_view const& grammarFileName) {
   constexpr auto GRAMMAR_TREE_START = "-- Grammar Tree --";
   constexpr auto GRAMMAR_TREE_END   = "-- End Grammar Tree --";
 
   stringstream result;
   bool recordingXML = false;
 
-  TXL::TXLWrapper::runNoInput({ grammarFileName.data(), "./txl_grammar.txl", "-xml" },
-                              TXL::TXLWrapper::NOOP_READER,
+  TXL::Wrapper::runNoInput({ grammarFileName.data(), "./txl_grammar.txl", "-xml" },
+                              TXL::Wrapper::NOOP_READER,
                               [&](string const& line) {
     /*if (!recordingXML && line.find(GRAMMAR_TREE_START) != string::npos) {
       recordingXML = true;

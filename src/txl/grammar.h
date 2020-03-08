@@ -11,7 +11,7 @@ namespace TXL {
 
   using namespace std;
 
-  struct TXLGrammar {
+  struct Grammar {
 
     // sub-types
 
