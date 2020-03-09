@@ -16,7 +16,7 @@ static unordered_set<string_view> const TYPE_MODIFIERS {
 
 XMLElement const* GrammarParser::expectedPath(XMLNode const* root,
                                               initializer_list<const char*> &&path) {
-  XMLElement const* node = reinterpret_cast<XMLElement const*>(root);
+  auto node = reinterpret_cast<XMLElement const*>(root);
   for (auto const p : path) {
     node = node->FirstChildElement(p);
     if (!node)
@@ -134,6 +134,10 @@ void GrammarParser::parseLiteral(Grammar::TypeVariant* const typeVariant,
 
 void GrammarParser::mergeTextRecursive(string &text,
                                        XMLNode const* const node) {
+  // skip comments if any
+  if (node->ToElement() && node->Value() == "comment"sv)
+    return;
+
   if (auto const txt = node->ToText())
     text += txt->Value();
   else

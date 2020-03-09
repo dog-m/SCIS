@@ -497,5 +497,5 @@ function main
     P [buildCNF]
       [convertToChains]
       [simplify]
-      [convertToTree]
+      %[convertToTree]
 end function

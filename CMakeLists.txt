@@ -41,11 +41,8 @@ if(Boost_FOUND)
       src/txl/wrapper.h
       src/txl/wrapper.cpp
 
-      src/scis/fragments/fragment_parser.h
-      src/scis/fragments/fragment_parser.cpp
-      src/scis/fragments/fragments.h
-      src/scis/fragments/fragments.cpp
-
+      src/scis/ruleset/fragment_parser.h
+      src/scis/ruleset/fragment_parser.cpp
       src/scis/ruleset/ruleset.h
       src/scis/ruleset/ruleset.cpp
       src/scis/ruleset/ruleset_parser.h

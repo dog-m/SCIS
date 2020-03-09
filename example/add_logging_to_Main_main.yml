@@ -22,7 +22,7 @@ rules:
       add:
         logging_fields
   
-    @class_and_method -> [first] if(*) # before:
+    @class_and_method -> [first] if # before:
       make:
         msg <- $pointcut + " " + $node + " block in " + $file + " class, in " + $method_name + " method";
       add:

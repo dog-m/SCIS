@@ -9,7 +9,7 @@ context s3:
 
 rules:
   instrument_some_statements_at_s3_and_s4:
-    @s3 -> [all] if(*) # before:
+    @s3 -> [all] if # before:
       make:
         msg <- $LOCATION + " " + $ITEM + " block in " + $CLASS + " class, in " + $METHOD + " method.";
       add:
