@@ -160,7 +160,11 @@ define statement_name
 end define
 
 define param_template
-    '( [opt '...] [stringlit] [opt '...] ')
+    '( [param_template_template] ')
+end define
+
+define param_template_template
+    [opt '...] [stringlit] [opt '...]
 end define
 
 

@@ -11,6 +11,6 @@ namespace SCIS {
   struct FragmentParser {
   };
 
-}
+} // TXL
 
 #endif // FRAGMENT_PARSER_H

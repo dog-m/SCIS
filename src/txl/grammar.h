@@ -67,6 +67,6 @@ namespace TXL {
 
   }; // TXLGrammar
 
-}
+} // TXL
 
 #endif // TXLGRAMMAR_H

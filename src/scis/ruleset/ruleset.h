@@ -17,10 +17,21 @@ namespace SCIS {
   };
 
   struct Context {
-    struct Constraint {};
-
     string id;
-    vector<vector<Constraint>> constraints;
+  };
+
+  struct BasicContext : public Context {
+    struct Constraint {
+      string id;
+      string op;
+      string value;
+    };
+
+    vector<Constraint> constraints;
+  }; // BasicContext
+
+  struct CompoundContext : public Context {
+    vector<vector<string>> references;
   };
 
   struct Rule {
@@ -33,7 +44,8 @@ namespace SCIS {
 
       string contextId;
       vector<PathElement> path;
-    };
+      string pointcut;
+    }; // Location
 
     struct Action {};
 
@@ -50,7 +62,7 @@ namespace SCIS {
 
       string target;
       vector<unique_ptr<Component>> components;
-    };
+    }; // MakeAction
 
     struct AddAction : public Action {
       struct FragmentUsageStatement {
@@ -59,25 +71,27 @@ namespace SCIS {
       };
 
       vector<FragmentUsageStatement> fragments;
-    };
+    }; // AddAction
 
     struct Stetement {
       Location location;
-      vector<unique_ptr<Action>> actions;
+
+      optional<MakeAction> actionMake = nullopt;
+      AddAction actionAdd;
     };
 
     bool enabled = true;
     string id;
 
     vector<Stetement> statements;
-  };
+  }; // Rule
 
   struct Ruleset {
     vector<Fragment> fragments;
-    unordered_map<string_view, Context> contexts;
-    unordered_map<string_view, Rule> rules;
+    unordered_map<string_view, unique_ptr<Context>> contexts;
+    unordered_map<string_view, unique_ptr<Rule>> rules;
   };
 
-}
+} // SCIS
 
 #endif // RULESET_H

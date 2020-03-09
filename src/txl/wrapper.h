@@ -21,6 +21,6 @@ namespace TXL {
     Wrapper() = delete;
   };
 
-}
+} // TXL
 
 #endif // TXLWRAPPER_H

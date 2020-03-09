@@ -17,6 +17,6 @@ namespace TXL {
     static string grammarToXML(string_view const& grammarFileName);
   };
 
-}
+} // TXL
 
 #endif // TXLINTERPRETER_H

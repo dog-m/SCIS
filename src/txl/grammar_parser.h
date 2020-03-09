@@ -16,7 +16,8 @@ namespace TXL {
   class GrammarParser {
     unique_ptr<TXL::Grammar> grammar;
 
-    static XMLElement const* expectedPath(XMLNode const* root, initializer_list<const char*> && path);
+    static XMLElement const* expectedPath(XMLNode const* root,
+                                          initializer_list<const char*> && path);
 
     inline void parseDefinition(XMLElement const* const definition);
 
@@ -31,8 +32,8 @@ namespace TXL {
     void parseLiteral(Grammar::TypeVariant* const typeVariant,
                       XMLElement const* const literal);
 
-    void mergeTextRecursive(string &text,
-                            XMLNode const* const node);
+    static void mergeTextRecursive(string &text,
+                                   XMLNode const* const node);
 
     void parseOptionalText(Grammar::TypeVariant* const typeVariant,
                            XMLElement const* const type,
@@ -44,6 +45,6 @@ namespace TXL {
     static bool isSpecial(string_view const& name);
   };
 
-} // TXL namespace
+} // TXL
 
 #endif // GRAMMARPARSER_H
