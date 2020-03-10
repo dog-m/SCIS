@@ -37,9 +37,15 @@ namespace SCIS {
   struct Rule {
     struct Location {
       struct PathElement {
+        struct Pattern {
+          bool somethingBefore = false;
+          optional<string> text = nullopt;
+          bool somethingAfter = false;
+        };
+
         string modifier;
         string statementId;
-        optional<string> pattern = nullopt;
+        Pattern pattern;
       };
 
       string contextId;
@@ -65,19 +71,15 @@ namespace SCIS {
     }; // MakeAction
 
     struct AddAction : public Action {
-      struct FragmentUsageStatement {
-        string fragmentId;
-        vector<string> args;
-      };
-
-      vector<FragmentUsageStatement> fragments;
-    }; // AddAction
+      string fragmentId;
+      vector<string> args;
+    };
 
     struct Stetement {
       Location location;
 
-      optional<MakeAction> actionMake = nullopt;
-      AddAction actionAdd;
+      vector<MakeAction> actionMake;
+      vector<AddAction> actionAdd;
     };
 
     bool enabled = true;

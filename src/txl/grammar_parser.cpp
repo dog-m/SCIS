@@ -4,6 +4,7 @@
 using namespace tinyxml2;
 using namespace TXL;
 
+#include "../xml_parser_utils.h"
 
 static unordered_set<string_view> const SPECIAL_SYMBOLS {
   NEW_LINE_TAG, "NL", "IN", "EX", "empty", "SPON", "SPOFF", "SP", "TAB", "TAB_16", "TAB_24", "!"
@@ -14,18 +15,8 @@ static unordered_set<string_view> const TYPE_MODIFIERS {
 };
 
 
-XMLElement const* GrammarParser::expectedPath(XMLNode const* root,
-                                              initializer_list<const char*> &&path) {
-  auto node = reinterpret_cast<XMLElement const*>(root);
-  for (auto const p : path) {
-    node = node->FirstChildElement(p);
-    if (!node)
-      throw p;
-  }
-  return node;
-}
-
-void GrammarParser::parseDefinition(XMLElement const* const definition) {
+void GrammarParser::parseDefinition(XMLElement const* const definition)
+{
   auto const type_id = expectedPath(definition, { "typeid", "id" })->GetText();
   SCIS_DEBUG("Found definition of " << type_id);
 
@@ -38,15 +29,16 @@ void GrammarParser::parseDefinition(XMLElement const* const definition) {
   // process alternatives
   auto const alternativeVariants = definition->FirstChildElement("repeat_barLiteralsAndTypes");
   if (alternativeVariants)
-    for (auto item = alternativeVariants->FirstChild(); item; item = item->NextSibling()) {
+    FOREACH_XML_NODE(alternativeVariants, item) {
       variant = &type->variants.emplace_back(/* empty */);
       parseLiteralsOrTypes(variant, expectedPath(item, { "repeat_literalOrType" }));
     }
 }
 
 void GrammarParser::parseLiteralsOrTypes(Grammar::TypeVariant* const typeVariant,
-                                         XMLElement const* const literalsOrTypes) {
-  for (auto item = literalsOrTypes->FirstChild(); item; item = item->NextSibling()) {
+                                         XMLElement const* const literalsOrTypes)
+{
+  FOREACH_XML_NODE(literalsOrTypes, item) {
     auto const something = item->FirstChildElement();
     string_view const name = something->Name();
     if (name == "type") {
@@ -64,7 +56,8 @@ void GrammarParser::parseLiteralsOrTypes(Grammar::TypeVariant* const typeVariant
 }
 
 void GrammarParser::parseType(Grammar::TypeVariant* const typeVariant,
-                              XMLElement const* const type) {
+                              XMLElement const* const type)
+{
   auto const name = parseNameFromTypeid(expectedPath(type, { "typeid" }));
 
   if (isSpecial(name) || name.empty())
@@ -93,7 +86,8 @@ void GrammarParser::parseType(Grammar::TypeVariant* const typeVariant,
   typeVariant->pattern.push_back(std::move(typeRef));
 }
 
-string GrammarParser::parseNameFromTypeid(XMLElement const* const type_id) {
+string GrammarParser::parseNameFromTypeid(XMLElement const* const type_id)
+{
   auto const something = type_id->FirstChildElement();
   // try obvious
   if (!something)
@@ -105,7 +99,7 @@ string GrammarParser::parseNameFromTypeid(XMLElement const* const type_id) {
   else
     if (name == "literal") {
       string text = "";
-      mergeTextRecursive(text, something);
+      mergeTextRecursiveNoComment(text, something);
       return text;
     }
   else
@@ -113,7 +107,8 @@ string GrammarParser::parseNameFromTypeid(XMLElement const* const type_id) {
 }
 
 void GrammarParser::parseLiteral(Grammar::TypeVariant* const typeVariant,
-                                 XMLElement const* const literal) {
+                                 XMLElement const* const literal)
+{
   XMLElement const* unquotedLiteral = literal->FirstChildElement("unquotedLiteral");
   if (!unquotedLiteral)
     unquotedLiteral = literal->FirstChildElement("quotedLiteral");
@@ -124,7 +119,7 @@ void GrammarParser::parseLiteral(Grammar::TypeVariant* const typeVariant,
       return;
 
   string text = "";
-  mergeTextRecursive(text, unquotedLiteral);
+  mergeTextRecursiveNoComment(text, unquotedLiteral);
 
   auto txt = make_unique<Grammar::PlainText>();
   txt->text = text;
@@ -132,8 +127,9 @@ void GrammarParser::parseLiteral(Grammar::TypeVariant* const typeVariant,
   typeVariant->pattern.push_back(std::move(txt));
 }
 
-void GrammarParser::mergeTextRecursive(string &text,
-                                       XMLNode const* const node) {
+void GrammarParser::mergeTextRecursiveNoComment(string &text,
+                                                XMLNode const* const node)
+{
   // skip comments if any
   if (node->ToElement() && node->Value() == "comment"sv)
     return;
@@ -141,13 +137,14 @@ void GrammarParser::mergeTextRecursive(string &text,
   if (auto const txt = node->ToText())
     text += txt->Value();
   else
-    for (auto item = node->FirstChild(); item; item = item->NextSibling())
-      mergeTextRecursive(text, item);
+    FOREACH_XML_NODE(node, item)
+      mergeTextRecursiveNoComment(text, item);
 }
 
 void GrammarParser::parseOptionalText(Grammar::TypeVariant* const typeVariant,
                                       XMLElement const* const type,
-                                      string_view const &text) {
+                                      string_view const &text)
+{
   auto optText = make_unique<Grammar::OptionalPlainText>();
 
   optText->modifier = expectedPath(type, { "opt_typeModifier", "typeModifier" })->GetText();
@@ -156,13 +153,14 @@ void GrammarParser::parseOptionalText(Grammar::TypeVariant* const typeVariant,
   typeVariant->pattern.push_back(std::move(optText));
 }
 
-unique_ptr<Grammar> GrammarParser::parse(XMLDocument const& doc) {
+unique_ptr<Grammar> GrammarParser::parse(XMLDocument const& doc)
+{
   grammar.reset(new Grammar);
 
   try {
     auto const statements = expectedPath(&doc, { "program", "repeat_statement" });
 
-    for (auto statement = statements->FirstChild(); statement; statement = statement->NextSibling())
+    FOREACH_XML_NODE(statements, statement)
       if (auto const definition = statement->FirstChildElement("defineStatement"))
         parseDefinition(definition);
 
@@ -178,6 +176,7 @@ unique_ptr<Grammar> GrammarParser::parse(XMLDocument const& doc) {
   return std::move(grammar);
 }
 
-bool GrammarParser::isSpecial(string_view const& name) {
+bool GrammarParser::isSpecial(string_view const& name)
+{
   return SPECIAL_SYMBOLS.find(name) != SPECIAL_SYMBOLS.cend();
 }

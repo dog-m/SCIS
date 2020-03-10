@@ -15,7 +15,8 @@ using namespace tinyxml2;
 
 
 /*static void rebuildShortestPathsBFS(TypeGraph &graph,
-                                    TypeNode *const start) {
+                                    TypeNode *const start)
+{
   using NodeRef = TypeNode*;
 
   unordered_set<NodeRef> visited;
@@ -52,7 +53,8 @@ using namespace tinyxml2;
 
 
 
-static unique_ptr<TXL::Grammar> loadAndParseGrammar(string_view && fileName) {
+static unique_ptr<TXL::Grammar> loadAndParseGrammar(string_view && fileName)
+{
   auto const grammarXMLSource = TXL::Interpreter::grammarToXML(fileName);
   SCIS_DEBUG("Grammar size: " << grammarXMLSource.size());
 
@@ -72,8 +74,8 @@ static unique_ptr<TXL::Grammar> loadAndParseGrammar(string_view && fileName) {
 
 /* =================================================================================== */
 
-int main(/*int argc, char** argv*/) {
-
+int main(/*int argc, char** argv*/)
+{
   auto const grm = loadAndParseGrammar("./example/lang/java/grammar.txl");
 
   SCIS_INFO("As TXL:");

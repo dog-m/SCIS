@@ -26,4 +26,6 @@ rules:
       make:
         msg <- $pointcut + " " + $node + " block in " + $file + " class, in " + $method_name + " method";
       add:
-        logging_message(msg)
+        logging_message(msg),
+        logging_message_a(msg),
+        logging_message_b(msg)

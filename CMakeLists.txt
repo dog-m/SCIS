@@ -55,6 +55,9 @@ if(Boost_FOUND)
       src/include/common.h
       src/include/logging.h
 
+      src/xml_parser_utils.h
+      src/xml_parser_utils.cpp
+
       src/main.cpp
     )
 

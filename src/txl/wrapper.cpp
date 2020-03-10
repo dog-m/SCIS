@@ -19,7 +19,8 @@ using namespace std;
 using namespace boost::process;
 using namespace TXL;
 
-bool Wrapper::NOOP_READER(string const&) {
+bool Wrapper::NOOP_READER(string const&)
+{
   return true;
 }
 

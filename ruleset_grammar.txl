@@ -23,6 +23,8 @@ comments
     /*  */
 end comments
 
+include "cnf_helper.txl"
+
 
 
 define program 
@@ -95,10 +97,11 @@ end define
 
 
 define compound_context
-    [context_expression]
+    %[context_expression]
+    [cnf_entry]
 end define
 
-define context_expression
+%{define context_expression
         [context_expression] '| [context_expression]
     |   [context_expression] '- [context_expression]
     |   [context_term]
@@ -112,7 +115,7 @@ end define
 define context_primary
         [context_name]
     |   ( [context_expression] )
-end define
+end define}%
 
 
 
@@ -185,19 +188,14 @@ end define
 
 define action_add
     [SPOFF] 'add ': [SPON] [NL] [IN]
-        [action_list] [NL] [EX]
-end define
-
-define action_list
-        [action_id], [NL] [action_list]
-    |   [action_id]
+        [list action_id+] [EX] [NL]
 end define
 
 define action_id
-    [id] [opt template_params]
+    [id] [opt template_args]
 end define
 
-define template_params
+define template_args
     '( [list id+] ')
 end define
 
@@ -219,3 +217,14 @@ end define
 define string_constant
     [SP] [SPOFF] '$ [id] [SPON]
 end define
+
+
+
+% ==============================================
+
+function main
+  replace * [program]
+    P [program]
+  by
+    P [do_cnf]
+end function

@@ -5,15 +5,17 @@
 
 using namespace std;
 
-void TXL::Interpreter::test() {
+void TXL::Interpreter::test()
+{
   TXL::Wrapper::runNoInput({ "-v" },
-                              [](string const& line){
+                              [](string const& line) {
     cout << line << endl;
     return true;
   });
 }
 
-string TXL::Interpreter::grammarToXML(string_view const& grammarFileName) {
+string TXL::Interpreter::grammarToXML(string_view const& grammarFileName)
+{
   constexpr auto GRAMMAR_TREE_START = "-- Grammar Tree --";
   constexpr auto GRAMMAR_TREE_END   = "-- End Grammar Tree --";
 

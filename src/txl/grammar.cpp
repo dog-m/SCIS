@@ -4,7 +4,8 @@
 using namespace std;
 using namespace TXL;
 
-void Grammar::PlainText::toTXL(ostream &ss) const {
+void Grammar::PlainText::toTXL(ostream &ss) const
+{
   // BUG: potential formating bug here
   if (text.front() != '\'')
     ss << '\'';
@@ -12,7 +13,8 @@ void Grammar::PlainText::toTXL(ostream &ss) const {
   ss << text;
 }
 
-void Grammar::TypeReference::toTXL(ostream &ss) const {
+void Grammar::TypeReference::toTXL(ostream &ss) const
+{
   ss << "["
      << (modifier.has_value() ? modifier.value() + " " : "")
      << name
@@ -20,11 +22,14 @@ void Grammar::TypeReference::toTXL(ostream &ss) const {
      << "]";
 }
 
-void Grammar::OptionalPlainText::toTXL(ostream &ss) const {
+void Grammar::OptionalPlainText::toTXL(ostream &ss) const
+{
   ss << "[" << modifier << ' ' << text << "]";
 }
 
-void Grammar::TypeVariant::toTXL(ostream &ss, size_t const baseIndent) const {
+void Grammar::TypeVariant::toTXL(ostream &ss,
+                                 size_t const baseIndent) const
+{
   ss << string(baseIndent * 2, ' ');
 
   auto count = pattern.size();
@@ -37,7 +42,9 @@ void Grammar::TypeVariant::toTXL(ostream &ss, size_t const baseIndent) const {
   }
 }
 
-void Grammar::Type::toTXL(ostream &ss, size_t const baseIndent) const {
+void Grammar::Type::toTXL(ostream &ss,
+                          size_t const baseIndent) const
+{
   auto const indent = string(baseIndent * 2, ' ');
 
   auto count = variants.size();
@@ -52,7 +59,8 @@ void Grammar::Type::toTXL(ostream &ss, size_t const baseIndent) const {
   }
 }
 
-void Grammar::Type::toTXLDefinition(ostream &ss) const {
+void Grammar::Type::toTXLDefinition(ostream &ss) const
+{
   ss << "define " << name << endl;
 
   toTXL(ss, 1);
@@ -60,7 +68,8 @@ void Grammar::Type::toTXLDefinition(ostream &ss) const {
   ss << endl << "end define" << endl << endl;
 }
 
-Grammar::Type* Grammar::findOrAddTypeByName(string_view const& name) {
+Grammar::Type* Grammar::findOrAddTypeByName(string_view const& name)
+{
   if (auto const x = types.find(name); x != types.cend())
     return x->second.get();
   else {
@@ -73,7 +82,8 @@ Grammar::Type* Grammar::findOrAddTypeByName(string_view const& name) {
   }
 }
 
-void Grammar::toDOT(ostream &ss) const {
+void Grammar::toDOT(ostream &ss) const
+{
   ss << "digraph G {" << endl;
 
   // pre-print all types

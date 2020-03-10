@@ -13,12 +13,6 @@ namespace SCIS {
   class RulesetParser {
     unique_ptr<Ruleset> ruleset;
 
-    static XMLElement const* expectedPath(XMLNode const* root,
-                                          initializer_list<const char*> &&path);
-
-    static void mergeTextRecursive(string &text,
-                                   XMLNode const* const node);
-
     void parseUsedFragments(XMLElement const* const fragments);
 
     void parseContexts(XMLElement const* const contexts);
@@ -34,11 +28,14 @@ namespace SCIS {
     void parseStatementActions(Rule::Stetement & statement,
                                XMLElement const* const actions);
 
-    void parseActionMake(Rule::Stetement & statement,
-                         XMLElement const* const actions);
+    void parseActions_Make(Rule::Stetement & statement,
+                           XMLElement const* const makes);
 
-    void parseActionAdd(Rule::Stetement & statement,
-                        XMLElement const* const actions);
+    void parseActions_Make_singleComponent(Rule::MakeAction & make,
+                                           XMLElement const* const stringlitOrConstant);
+
+    void parseActions_Add(Rule::Stetement & statement,
+                          XMLElement const* const additions);
 
   public:
     unique_ptr<Ruleset> parse(XMLDocument const& doc);
