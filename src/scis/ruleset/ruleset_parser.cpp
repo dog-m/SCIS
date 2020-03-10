@@ -2,10 +2,18 @@
 #include "logging.h"
 
 using namespace std;
-using namespace SCIS;
+using namespace scis;
 using namespace tinyxml2;
 
 #include "../xml_parser_utils.h"
+
+void RulesetParser::parseStringTemplate(Pattern &pattern,
+                                        XMLElement const* const core)
+{
+  pattern.somethingBefore = core->PreviousSiblingElement("opt_literal");
+  pattern.text = core->GetText();
+  pattern.somethingAfter = core->NextSiblingElement("opt_literal");
+}
 
 void RulesetParser::parseUsedFragments(XMLElement const* const fragments)
 {
@@ -21,8 +29,52 @@ void RulesetParser::parseUsedFragments(XMLElement const* const fragments)
 void RulesetParser::parseContexts(XMLElement const* const contexts)
 {
   FOREACH_XML_NODE(contexts, ctx) {
-    ;// TODO: contexts
+    auto const name = expectedPath(ctx, { "context_name", "id" })->GetText();
+    auto const something = expectedPath(ctx, { "basic_context_or_compound_context" })->FirstChildElement();
+
+    if (something->Name() == "basic_context"sv)
+      parseBasicContext(name, something);
+    else
+      if (something->Name() == "compound_context"sv)
+        parseBasicContext(name, something);
+    else
+      throw "Unknown context type: "s + name;
   }
+}
+
+void RulesetParser::parseBasicContext(string const& id,
+                                      XMLElement const* const basic_context)
+{
+  auto ctx = make_unique<BasicContext>();
+  ctx->id = id;
+
+  auto const list = expectedPath(basic_context, { "list_basic_context_constraint" });
+  FOREACH_XML_NODE(list, item) {
+    auto& constraint = ctx->constraints.emplace_back(/* empty */);
+
+    auto const property = expectedPath(item, { "context_property" });
+    mergeTextRecursive(constraint.id, property);
+
+    if (constraint.id.empty())
+      throw "Cant find ID in constraint of context [" + id + "]";
+
+    constraint.op = expectedPath(item, { "context_op" })->GetText();
+
+    parseStringTemplate(constraint.value, expectedPath(item, { "string_template", "stringlit" }));
+  }
+
+  ruleset->contexts.emplace(id, std::move(ctx));
+}
+
+void RulesetParser::parseCompoundContext(string const& id,
+                                         XMLElement const* const compound_context)
+{
+  auto ctx = make_unique<CompoundContext>();
+  ctx->id = id;
+
+  ctx; // FIXME: compound context
+
+  ruleset->contexts.emplace(id, std::move(ctx));
 }
 
 void RulesetParser::parseRules(XMLElement const* const rules)
@@ -71,15 +123,11 @@ void RulesetParser::parseStatementLocation(Rule::Stetement &statement,
 
     if (auto const optTmp = item->FirstChildElement("opt_param_template")) {
       // actual string
-      auto const patternStr = expectedPath(optTmp, { "param_template", "param_template_template", "stringlit" });
-      el.pattern.text = patternStr->GetText();
-
-      // prefixes and suffixes
-      el.pattern.somethingBefore = patternStr->PreviousSiblingElement("opt_literal");
-      el.pattern.somethingAfter = patternStr->NextSiblingElement("opt_literal");
+      auto& pattern = el.pattern = Pattern();
+      parseStringTemplate(*pattern, expectedPath(optTmp, { "param_template", "string_template", "stringlit" }));
     }
     else
-      el.pattern.text = nullopt;
+      el.pattern = nullopt;
   }
 
   // set pointcut name
@@ -132,7 +180,7 @@ void RulesetParser::parseActions_Make_singleComponent(Rule::MakeAction &make,
       make.components.emplace_back(std::move(ptr));
     }
   else
-    throw "?>. Unrecognized type of element found when parsing 'MAKE' action";
+    throw "Unrecognized type of element found when parsing 'MAKE' action: "s + something->Value();
 }
 
 void RulesetParser::parseActions_Add(Rule::Stetement &statement,
@@ -158,13 +206,20 @@ unique_ptr<Ruleset> RulesetParser::parse(XMLDocument const& doc)
   ruleset.reset(new Ruleset);
 
   try {
+    // fragments are required
     parseUsedFragments(expectedPath(&doc, { "program", "repeat_use_fragment_statement" }));
-    parseContexts(expectedPath(&doc, { "program", "repeat_context_definition" }));
+
+    // contexts are optional
+    auto const contexts = expectedPath(&doc, { "program" })->FirstChildElement("repeat_context_definition");
+    if (contexts)
+      parseContexts(contexts);
+
+    // rules are required
     parseRules(expectedPath(&doc, { "program", "rules", "repeat_single_rule" }));
 
     // skip everything else
-  } catch (char const* const p) {
-    SCIS_ERROR("Incorrect ruleset. Cant find element <" << p << '>');
+  } catch (string const msg) {
+    SCIS_ERROR("Incorrect ruleset. " << msg);
   }
 
   return std::move(ruleset);

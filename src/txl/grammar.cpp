@@ -2,7 +2,7 @@
 #include "logging.h"
 
 using namespace std;
-using namespace TXL;
+using namespace txl;
 
 void Grammar::PlainText::toTXL(ostream &ss) const
 {
@@ -104,13 +104,13 @@ void Grammar::toDOT(ostream &ss) const
     auto count = 0;
     for (auto const& v : type->variants)
       for (auto const& x : v.pattern)
-        if (dynamic_cast<TXL::Grammar::TypeReference*>(x.get()))
+        if (dynamic_cast<txl::Grammar::TypeReference*>(x.get()))
           ++count;
 
     // actual printing with commas
     for (auto const& v : type->variants)
       for (auto const& x : v.pattern)
-        if (auto const ref = dynamic_cast<TXL::Grammar::TypeReference*>(x.get())) {
+        if (auto const ref = dynamic_cast<txl::Grammar::TypeReference*>(x.get())) {
           ss << "<" << ref->name << ">";
 
           if (count --> 1)

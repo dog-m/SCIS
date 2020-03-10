@@ -2,7 +2,7 @@
 #include <unordered_set>
 
 using namespace tinyxml2;
-using namespace TXL;
+using namespace txl;
 
 #include "../xml_parser_utils.h"
 
@@ -51,7 +51,7 @@ void GrammarParser::parseLiteralsOrTypes(Grammar::TypeVariant* const typeVariant
       if (name == "literal")
         parseLiteral(typeVariant, something);
       else
-        throw "type> or <literal";
+        throw "Cant find element <type> or <literal>"s;
   }
 }
 
@@ -91,7 +91,7 @@ string GrammarParser::parseNameFromTypeid(XMLElement const* const type_id)
   auto const something = type_id->FirstChildElement();
   // try obvious
   if (!something)
-    throw "id";
+    throw "Cant find element <id>"s;
 
   string_view const name = something->Name();
   if (name == "id")
@@ -103,7 +103,7 @@ string GrammarParser::parseNameFromTypeid(XMLElement const* const type_id)
       return text;
     }
   else
-    throw "literal";
+    throw "Cant find element <literal>"s;
 }
 
 void GrammarParser::parseLiteral(Grammar::TypeVariant* const typeVariant,
@@ -165,8 +165,8 @@ unique_ptr<Grammar> GrammarParser::parse(XMLDocument const& doc)
         parseDefinition(definition);
 
     // skip everything else
-  } catch (char const* const p) {
-    SCIS_ERROR("Incorrect grammar. Cant find element <" << p << '>');
+  } catch (string const msg) {
+    SCIS_ERROR("Incorrect grammar. " << msg);
   }
 
   // additional check

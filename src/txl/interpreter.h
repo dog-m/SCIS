@@ -4,7 +4,7 @@
 #include "logging.h"
 #include <string>
 
-namespace TXL {
+namespace txl {
 
   using namespace std;
 

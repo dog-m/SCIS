@@ -17,7 +17,7 @@ using namespace std;
 #include "logging.h"
 
 using namespace boost::process;
-using namespace TXL;
+using namespace txl;
 
 bool Wrapper::NOOP_READER(string const&)
 {

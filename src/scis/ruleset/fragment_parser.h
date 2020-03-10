@@ -3,7 +3,7 @@
 
 #include <tinyxml2/tinyxml2.h>
 
-namespace SCIS {
+namespace scis {
 
   using namespace std;
   using namespace tinyxml2;

@@ -14,6 +14,7 @@
   for (auto E = C->FirstChildElement(); E; E = E->NextSiblingElement())
 #endif
 
+/// throws std::string
 tinyxml2::XMLElement const* expectedPath(tinyxml2::XMLNode const* root,
                                          std::initializer_list<const char *> &&path);
 

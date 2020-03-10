@@ -2,4 +2,4 @@
 #include "logging.h"
 
 using namespace std;
-using namespace SCIS;
+using namespace scis;

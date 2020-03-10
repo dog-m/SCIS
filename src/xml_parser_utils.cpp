@@ -10,7 +10,7 @@ XMLElement const* expectedPath(XMLNode const* root,
   for (auto const p : path) {
     node = node->FirstChildElement(p);
     if (!node)
-      throw p;
+      throw "Cant find element <"s + p + ">"s;
   }
   return node;
 }

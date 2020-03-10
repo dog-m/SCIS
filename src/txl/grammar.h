@@ -7,7 +7,7 @@
 #include <memory>
 #include <unordered_map>
 
-namespace TXL {
+namespace txl {
 
   using namespace std;
 

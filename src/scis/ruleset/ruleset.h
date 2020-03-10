@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <optional>
 
-namespace SCIS {
+namespace scis {
 
   using namespace std;
 
@@ -16,36 +16,44 @@ namespace SCIS {
     string getSource(string const& rootDir) const { return "?"; }
   };
 
+  struct Pattern {
+    bool somethingBefore = false;
+    string text;
+    bool somethingAfter = false;
+  };
+
   struct Context {
     string id;
   };
 
   struct BasicContext : public Context {
     struct Constraint {
-      string id;
+      string id = "";
       string op;
-      string value;
+      Pattern value;
     };
 
     vector<Constraint> constraints;
   }; // BasicContext
 
   struct CompoundContext : public Context {
-    vector<vector<string>> references;
+    struct Reference {
+      bool negation = false;
+      string id;
+    };
+
+    using Disjunction = vector<Reference>;
+    using Conjunction = vector<Disjunction>;
+
+    Conjunction references;
   };
 
   struct Rule {
     struct Location {
       struct PathElement {
-        struct Pattern {
-          bool somethingBefore = false;
-          optional<string> text = nullopt;
-          bool somethingAfter = false;
-        };
-
         string modifier;
         string statementId;
-        Pattern pattern;
+        optional<Pattern> pattern = nullopt;
       };
 
       string contextId;

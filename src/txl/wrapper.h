@@ -4,7 +4,7 @@
 #include <functional>
 #include <vector>
 
-namespace TXL {
+namespace txl {
 
   using namespace std;
 

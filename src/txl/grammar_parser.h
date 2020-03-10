@@ -9,12 +9,12 @@
 #include "grammar.h"
 #include "interpreter.h"
 
-namespace TXL {
+namespace txl {
 
   using namespace tinyxml2;
 
   class GrammarParser {
-    unique_ptr<TXL::Grammar> grammar;
+    unique_ptr<txl::Grammar> grammar;
 
     inline void parseDefinition(XMLElement const* const definition);
 
@@ -37,7 +37,7 @@ namespace TXL {
                            string_view const& text);
 
   public:
-    unique_ptr<TXL::Grammar> parse(XMLDocument const& doc);
+    unique_ptr<txl::Grammar> parse(XMLDocument const& doc);
 
     static bool isSpecial(string_view const& name);
   };

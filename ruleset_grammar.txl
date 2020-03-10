@@ -28,7 +28,7 @@ include "cnf_helper.txl"
 
 
 define program 
-    [repeat use_fragment_statement] [NL]
+    [repeat use_fragment_statement+] [NL]
     [repeat context_definition] [NL]
     [rules]
 end define
@@ -43,7 +43,7 @@ end define
 
 define context_definition
     'context [SP] [SPOFF] [context_name] ': [SPON] [NL] [IN]
-        [basic_context_or_expression_context] [NL] [EX] [NL]
+        [basic_context_or_compound_context] [NL] [EX] [NL]
 end define
 
 define context_name
@@ -55,7 +55,7 @@ define global_context
     '@
 end define
 
-define basic_context_or_expression_context
+define basic_context_or_compound_context
         [basic_context]
     |   [compound_context]
 end define
@@ -66,12 +66,11 @@ define basic_context
 end define
 
 define basic_context_constraint
-        [context_property] [context_op] [SP] [string_template]
-    |   [context_property] [context_op] [number]
+    [SPOFF] [context_property] [SPON] [context_op] [SP] [SPOFF] [string_template] [SPON]
 end define
 
 define string_template
-    [SPOFF] [opt '...] [stringlit] [opt '...] [SPON]
+    [opt '...] [stringlit] [opt '...]
 end define
 
 define context_op
@@ -79,21 +78,18 @@ define context_op
 end define
 
 define context_property
-    [SPOFF] [context_property_variant] [SPON]
+        [id_with_group]
+    |   [id]
 end define
 
-define context_property_variant
-        [point_of_interest]
-    |   [something]
+define id_with_group
+    [group_id] ': [id]
 end define
 
-define point_of_interest
-    poi ': [id]
-end define
-
-define something
+define group_id
     [id]
 end define
+
 
 
 define compound_context
@@ -163,11 +159,7 @@ define statement_name
 end define
 
 define param_template
-    '( [param_template_template] ')
-end define
-
-define param_template_template
-    [opt '...] [stringlit] [opt '...]
+    '( [string_template] ')
 end define
 
 

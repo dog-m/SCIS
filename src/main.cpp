@@ -53,9 +53,9 @@ using namespace tinyxml2;
 
 
 
-static unique_ptr<TXL::Grammar> loadAndParseGrammar(string_view && fileName)
+static unique_ptr<txl::Grammar> loadAndParseGrammar(string_view && fileName)
 {
-  auto const grammarXMLSource = TXL::Interpreter::grammarToXML(fileName);
+  auto const grammarXMLSource = txl::Interpreter::grammarToXML(fileName);
   SCIS_DEBUG("Grammar size: " << grammarXMLSource.size());
 
   XMLDocument doc(true, COLLAPSE_WHITESPACE);
@@ -66,7 +66,7 @@ static unique_ptr<TXL::Grammar> loadAndParseGrammar(string_view && fileName)
   else
     SCIS_DEBUG("XML loaded normaly");
 
-  TXL::GrammarParser parser;
+  txl::GrammarParser parser;
   return parser.parse(doc);
 }
 

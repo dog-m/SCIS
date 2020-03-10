@@ -6,16 +6,26 @@
 
 #include "fragment_parser.h"
 
-namespace SCIS {
+namespace scis {
 
   using namespace tinyxml2;
 
   class RulesetParser {
     unique_ptr<Ruleset> ruleset;
 
+    /// core = [stringlit] node in grammar
+    static void parseStringTemplate(Pattern &pattern,
+                                    XMLElement const* const core);
+
     void parseUsedFragments(XMLElement const* const fragments);
 
     void parseContexts(XMLElement const* const contexts);
+
+    void parseBasicContext(string const& id,
+                           XMLElement const* const basic_context);
+
+    void parseCompoundContext(string const& id,
+                              XMLElement const* const compound_context);
 
     void parseRules(XMLElement const* const rules);
 
