@@ -33,19 +33,19 @@ namespace scis {
     void parseRuleStatements(Rule *const rule,
                              XMLElement const* const statements);
 
-    void parseStatementLocation(Rule::Stetement & statement,
+    void parseStatementLocation(Rule::Statement & statement,
                                 XMLElement const* const path);
 
-    void parseStatementActions(Rule::Stetement & statement,
+    void parseStatementActions(Rule::Statement & statement,
                                XMLElement const* const actions);
 
-    void parseActions_Make(Rule::Stetement & statement,
+    void parseActions_Make(Rule::Statement & statement,
                            XMLElement const* const makes);
 
     void parseActions_Make_singleComponent(Rule::MakeAction & make,
                                            XMLElement const* const stringlitOrConstant);
 
-    void parseActions_Add(Rule::Stetement & statement,
+    void parseActions_Add(Rule::Statement & statement,
                           XMLElement const* const additions);
 
   public:

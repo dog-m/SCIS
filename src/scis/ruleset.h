@@ -98,7 +98,7 @@ namespace scis {
       vector<string> args;
     };
 
-    struct Stetement {
+    struct Statement {
       Location location;
 
       vector<MakeAction> actionMake;
@@ -108,7 +108,7 @@ namespace scis {
     bool enabled = true;
     string id;
 
-    vector<Stetement> statements;
+    vector<Statement> statements;
   }; // Rule
 
   struct Ruleset {

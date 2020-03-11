@@ -134,7 +134,7 @@ void RulesetParser::parseRuleStatements(Rule *const rule,
   }
 }
 
-void RulesetParser::parseStatementLocation(Rule::Stetement &statement,
+void RulesetParser::parseStatementLocation(Rule::Statement &statement,
                                            XMLElement const* const path)
 {
   // set context name
@@ -163,7 +163,7 @@ void RulesetParser::parseStatementLocation(Rule::Stetement &statement,
   statement.location.pointcut = expectedPath(path, { "pointcut", "id" })->GetText();
 }
 
-void RulesetParser::parseStatementActions(Rule::Stetement &statement,
+void RulesetParser::parseStatementActions(Rule::Statement &statement,
                                           XMLElement const* const actions)
 {
   // parse "make" action if presented
@@ -176,7 +176,7 @@ void RulesetParser::parseStatementActions(Rule::Stetement &statement,
   parseActions_Add(statement, expectedPath(actions, { "action_add", "list_action_id" }));
 }
 
-void RulesetParser::parseActions_Make(Rule::Stetement &statement,
+void RulesetParser::parseActions_Make(Rule::Statement &statement,
                                       XMLElement const* const makes)
 {
   FOREACH_XML_ELEMENT(makes, makeItem) {
@@ -212,7 +212,7 @@ void RulesetParser::parseActions_Make_singleComponent(Rule::MakeAction &make,
     throw "Unrecognized type of element found when parsing 'MAKE' action: "s + something->Value();
 }
 
-void RulesetParser::parseActions_Add(Rule::Stetement &statement,
+void RulesetParser::parseActions_Add(Rule::Statement &statement,
                                      XMLElement const* const additions)
 {
   FOREACH_XML_ELEMENT(additions, add) {

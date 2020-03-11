@@ -37,7 +37,7 @@
                   '{ Statements '}
             </source>
         </rule>
-        
+
         <function
           name="addToImportsIfNotExists"
           apply="call"
@@ -54,9 +54,8 @@
                   Imports [^ Addition]
             </source>
         </function>
-        ...
     </lib>
-  
+
     <points-of-interest>
         <point
           id="package_name"
@@ -75,7 +74,6 @@
           keyword="method"
           value-of="method_name"
           />
-        ...
     </points-of-interest>
 
     <pointcuts>
@@ -90,14 +88,17 @@
             </replacement-patterns>
             <pointcuts>
                 <pointcut name="*">
-                    <reference type="repeat import_declaration" as="Additions"/>
+                    <reference
+                      type="repeat import_declaration"
+                      as="Additions"
+                      />
                     <paste-algorithm>
-                        <call
-                          op="addToImportsIfNotExists"
+                        <insert-call
+                          function="addToImportsIfNotExists"
                           params=""
-                          apply-to="Imports">
-                            <each element-of="Additions"/>
-                        </call>
+                          apply-to="Imports"
+                          each-element-of="Additions"
+                          />
                     </paste-algorithm>
                 </pointcut>
             </pointcuts>
@@ -121,14 +122,16 @@
             </replacement-patterns>
             <pointcuts>
                 <pointcut name="before">
-                    <reference type="repeat statement" as="Additions"/>
+                    <reference
+                      type="repeat statement"
+                      as="Additions"
+                      />
                     <paste-algorithm>
-                        <insert-as-is/>
+                        <insert-reference
+                        />
                     </paste-algorithm>
                 </pointcut>
-                ...
             </pointcuts>
         </keyword>
-        ...
     </pointcuts>
 </annotation>

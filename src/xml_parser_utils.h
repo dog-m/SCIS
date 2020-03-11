@@ -5,15 +5,11 @@
 #include <functional>
 #include <tinyxml2/tinyxml2.h>
 
-#ifndef FOREACH_XML_NODE
 #define FOREACH_XML_NODE(C, E) \
   for (auto E = C->FirstChild(); E; E = E->NextSibling())
-#endif
 
-#ifndef FOREACH_XML_ELEMENT
 #define FOREACH_XML_ELEMENT(C, E) \
   for (auto E = C->FirstChildElement(); E; E = E->NextSiblingElement())
-#endif
 
 /// throws std::string
 tinyxml2::XMLElement const* expectedPath(tinyxml2::XMLNode const* root,

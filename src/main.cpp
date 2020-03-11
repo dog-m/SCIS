@@ -86,25 +86,25 @@ static auto tryLoadAndParse(const char* fileName)
 
 
 
-static auto loadAndParseGrammar(string_view && fileName)
+static auto loadAndParseGrammar(string_view && filename)
 {
-  auto const xml = txl::Interpreter::grammarToXML(fileName);
+  auto const xml = txl::Interpreter::grammarToXML(filename);
   SCIS_DEBUG("Grammar size: " << xml.size());
 
   return tryParse<txl::GrammarParser>(xml.data());
 }
 
-static auto loadAndParseRuleset(string_view && fileName)
+static auto loadAndParseRuleset(string_view && filename)
 {
-  auto const xml = txl::Interpreter::rulesetToXML(fileName);
+  auto const xml = txl::Interpreter::rulesetToXML(filename);
   SCIS_DEBUG("Ruleset size: " << xml.size());
 
   return tryParse<scis::RulesetParser>(xml.data());
 }
 
-static auto loadAndParseFragment(string_view && fileName)
+static auto loadAndParseFragment(string_view && filename)
 {
-  return tryLoadAndParse<scis::FragmentParser>(fileName.data());
+  return tryLoadAndParse<scis::FragmentParser>(filename.data());
 }
 
 
