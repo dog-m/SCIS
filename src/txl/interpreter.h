@@ -14,7 +14,9 @@ namespace txl {
   {
     static void test();
 
-    static string grammarToXML(string_view const& grammarFileName);
+    static string grammarToXML(string_view const& fileName);
+
+    static string rulesetToXML(string_view const& fileName);
   };
 
 } // TXL

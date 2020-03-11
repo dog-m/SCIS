@@ -13,6 +13,8 @@ namespace txl {
   struct Wrapper final
   {
     static bool NOOP_READER(string const&);
+    
+    static bool LOG_READER(string const& line);
 
     static void runNoInput(initializer_list<string_view> && params,
                            ReaderFunction const& errReader,

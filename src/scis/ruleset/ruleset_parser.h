@@ -27,6 +27,9 @@ namespace scis {
     void parseCompoundContext(string const& id,
                               XMLElement const* const compound_context);
 
+    void parseContextDisjunction(CompoundContext::Disjunction & disjunction,
+                                 XMLElement const* const chain_element);
+
     void parseRules(XMLElement const* const rules);
 
     void parseRuleStatements(Rule *const rule,

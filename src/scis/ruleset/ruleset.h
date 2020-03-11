@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <optional>
 
+#include <ostream> // TODO: remove
+
 namespace scis {
 
   using namespace std;
@@ -13,7 +15,7 @@ namespace scis {
   struct Fragment {
     string path;
 
-    string getSource(string const& rootDir) const { return "?"; }
+    string getSource(string const& rootDir) const;
   };
 
   struct Pattern {
@@ -24,6 +26,9 @@ namespace scis {
 
   struct Context {
     string id;
+
+    virtual ~Context() = default;
+    virtual void dump(ostream &str) = 0; // TODO: remove
   };
 
   struct BasicContext : public Context {
@@ -34,6 +39,8 @@ namespace scis {
     };
 
     vector<Constraint> constraints;
+
+    void dump(ostream &str) override; // TODO: remove
   }; // BasicContext
 
   struct CompoundContext : public Context {
@@ -46,6 +53,7 @@ namespace scis {
     using Conjunction = vector<Disjunction>;
 
     Conjunction references;
+    void dump(ostream &str) override; // TODO: remove
   };
 
   struct Rule {
@@ -64,14 +72,21 @@ namespace scis {
     struct Action {};
 
     struct MakeAction : public Action {
-      struct Component {};
+      struct Component {
+        virtual ~Component() = default;
+        virtual void dump(ostream &str) = 0; // TODO: remove
+      };
 
       struct StringComponent : public Component {
         string text;
+
+        void dump(ostream &str) override; // TODO: remove
       };
 
       struct ConstantComponent : public Component {
         string id;
+
+        void dump(ostream &str) override; // TODO: remove
       };
 
       string target;
@@ -100,6 +115,8 @@ namespace scis {
     vector<Fragment> fragments;
     unordered_map<string_view, unique_ptr<Context>> contexts;
     unordered_map<string_view, unique_ptr<Rule>> rules;
+
+    void dump(ostream &str);
   };
 
 } // SCIS

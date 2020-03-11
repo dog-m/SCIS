@@ -1,7 +1,7 @@
 #include "logging.h"
-#include "txl/interpreter.h"
-#include "txl/grammar.h"
+
 #include "txl/grammar_parser.h"
+#include "scis/ruleset/ruleset_parser.h"
 
 #include "tinyxml2/tinyxml2.h"
 
@@ -53,13 +53,13 @@ using namespace tinyxml2;
 
 
 
-static unique_ptr<txl::Grammar> loadAndParseGrammar(string_view && fileName)
+static auto loadAndParseGrammar(string_view && fileName)
 {
-  auto const grammarXMLSource = txl::Interpreter::grammarToXML(fileName);
-  SCIS_DEBUG("Grammar size: " << grammarXMLSource.size());
+  auto const xmlSource = txl::Interpreter::grammarToXML(fileName);
+  SCIS_DEBUG("Grammar size: " << xmlSource.size());
 
   XMLDocument doc(true, COLLAPSE_WHITESPACE);
-  if (auto result = doc.Parse(grammarXMLSource.data()); result != XML_SUCCESS) {
+  if (auto result = doc.Parse(xmlSource.data()); result != XML_SUCCESS) {
     SCIS_ERROR("XML Loading failed: " << doc.ErrorIDToName(result));
     terminate();
   }
@@ -67,6 +67,24 @@ static unique_ptr<txl::Grammar> loadAndParseGrammar(string_view && fileName)
     SCIS_DEBUG("XML loaded normaly");
 
   txl::GrammarParser parser;
+  return parser.parse(doc);
+}
+
+
+static auto loadAndParseRuleset(string_view && fileName)
+{
+  auto const xmlSource = txl::Interpreter::rulesetToXML(fileName);
+  SCIS_DEBUG("Ruleset size: " << xmlSource.size());
+
+  XMLDocument doc(true, COLLAPSE_WHITESPACE);
+  if (auto result = doc.Parse(xmlSource.data()); result != XML_SUCCESS) {
+    SCIS_ERROR("XML Loading failed: " << doc.ErrorIDToName(result));
+    terminate();
+  }
+  else
+    SCIS_DEBUG("XML loaded normaly");
+
+  scis::RulesetParser parser;
   return parser.parse(doc);
 }
 
@@ -84,6 +102,11 @@ int main(/*int argc, char** argv*/)
 
   SCIS_INFO("As DOT:");
   grm->toDOT(cout);
+
+  // ---
+
+  auto const ruleset = loadAndParseRuleset("./example/add_logging_to_Main_main.yml");
+  ruleset->dump(cout);
 
   return 0;
 }

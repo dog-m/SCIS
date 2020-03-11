@@ -10,7 +10,7 @@ context method:
   { poi:method_name = "main" }
 
 context class_and_method:
-  class & method
+  class & (method | A | !B) & !C
 
 rules:
   print_usefull_message_to_the_log:

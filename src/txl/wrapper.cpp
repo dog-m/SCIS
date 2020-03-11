@@ -21,6 +21,12 @@ using namespace txl;
 
 bool Wrapper::NOOP_READER(string const&)
 {
+  return false;
+}
+
+bool Wrapper::LOG_READER(string const& line)
+{
+  cout << line << endl;
   return true;
 }
 

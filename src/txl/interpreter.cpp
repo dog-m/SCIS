@@ -14,12 +14,26 @@ void txl::Interpreter::test()
   });
 }
 
-string txl::Interpreter::grammarToXML(string_view const& grammarFileName)
+string txl::Interpreter::grammarToXML(string_view const& fileName)
 {
   stringstream result;
 
-  txl::Wrapper::runNoInput({ grammarFileName.data(), "./txl_grammar.txl", "-xml" },
+  txl::Wrapper::runNoInput({ fileName.data(), "./txl_grammar.txl", "-xml" },
                            txl::Wrapper::NOOP_READER,
+                           [&](string const& line) {
+    result << line << endl;
+    return true;
+  });
+
+  return result.str();
+}
+
+string txl::Interpreter::rulesetToXML(string_view const& fileName)
+{
+  stringstream result;
+
+  txl::Wrapper::runNoInput({ fileName.data(), "./ruleset_grammar.txl", "-xml" },
+                           txl::Wrapper::NOOP_READER, // FIXME: add error handling
                            [&](string const& line) {
     result << line << endl;
     return true;

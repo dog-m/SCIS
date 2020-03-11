@@ -29,16 +29,17 @@ void RulesetParser::parseUsedFragments(XMLElement const* const fragments)
 void RulesetParser::parseContexts(XMLElement const* const contexts)
 {
   FOREACH_XML_NODE(contexts, ctx) {
-    auto const name = expectedPath(ctx, { "context_name", "id" })->GetText();
+    auto const id = expectedPath(ctx, { "context_name", "id" })->GetText();
     auto const something = expectedPath(ctx, { "basic_context_or_compound_context" })->FirstChildElement();
+    SCIS_DEBUG("Found context \'" << id << '\'');
 
     if (something->Name() == "basic_context"sv)
-      parseBasicContext(name, something);
+      parseBasicContext(id, something);
     else
       if (something->Name() == "compound_context"sv)
-        parseBasicContext(name, something);
+        parseCompoundContext(id, something);
     else
-      throw "Unknown context type: "s + name;
+      throw "Unknown context type. ID = "s + id;
   }
 }
 
@@ -56,7 +57,7 @@ void RulesetParser::parseBasicContext(string const& id,
     mergeTextRecursive(constraint.id, property);
 
     if (constraint.id.empty())
-      throw "Cant find ID in constraint of context [" + id + "]";
+      throw "Incorrect ID in constraints of context [" + id + "]";
 
     constraint.op = expectedPath(item, { "context_op" })->GetText();
 
@@ -72,9 +73,37 @@ void RulesetParser::parseCompoundContext(string const& id,
   auto ctx = make_unique<CompoundContext>();
   ctx->id = id;
 
-  ctx; // FIXME: compound context
+  auto const chain = expectedPath(compound_context, { "cnf_entry", "cnf_expression_lists", "repeat_cnf_expression_chain_and" });
+  FOREACH_XML_ELEMENT(chain, element) {
+    auto& disjunction = ctx->references.emplace_back(/* empty */);
+    auto const chain_element = expectedPath(element, { "cnf_expression_chain_or" });
+    parseContextDisjunction(disjunction, chain_element);
+  }
+
+  // TODO: check if every context (id) exists in compound context
 
   ruleset->contexts.emplace(id, std::move(ctx));
+}
+
+void RulesetParser::parseContextDisjunction(CompoundContext::Disjunction &disjunction,
+                                            XMLElement const* const chain_element)
+{
+  auto const something = chain_element->FirstChildElement();
+
+  // is it a single element?
+  if (something->Name() == "cnf_expression_element"sv) {
+    auto& ref = disjunction.emplace_back(/* empty */);
+    ref.negation = something->FirstChildElement("opt_literal");
+    mergeTextRecursive(ref.id, expectedPath(something, { "cnf_var_or_const" }));
+  }
+  else
+    // is it a sequence?
+    if (something->Name() == "repeat_cnf_expression_element_chain"sv) {
+      FOREACH_XML_ELEMENT(something, element)
+        parseContextDisjunction(disjunction, element);
+    }
+  else
+    throw "Unrecognized context disjunction element "s + (something ? something->Name() : "NULL");
 }
 
 void RulesetParser::parseRules(XMLElement const* const rules)
@@ -83,7 +112,7 @@ void RulesetParser::parseRules(XMLElement const* const rules)
     auto rule = make_unique<Rule>();
 
     rule->id = expectedPath(singleRule, { "id" })->GetText();
-    SCIS_DEBUG("Found rule " << rule->id);
+    SCIS_DEBUG("Found rule \'" << rule->id << '\'');
 
     parseRuleStatements(rule.get(), expectedPath(singleRule, { "repeat_rule_statement" }));
 
@@ -190,7 +219,7 @@ void RulesetParser::parseActions_Add(Rule::Stetement &statement,
     auto& act = statement.actionAdd.emplace_back(/* empty */);
     act.fragmentId = expectedPath(add, { "id" })->GetText();
 
-    // FIXME: check ID in imported fragments
+    // TODO: check ID in imported fragments
 
     auto const optArgs = add->FirstChildElement("opt_template_args");
     if (optArgs) {
