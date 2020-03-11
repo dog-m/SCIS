@@ -10,7 +10,7 @@ context method:
   { poi:method_name = "main" }
 
 context class_and_method:
-  class & (method | A | !B) & !C
+  class & method
 
 rules:
   print_usefull_message_to_the_log:
@@ -26,6 +26,4 @@ rules:
       make:
         msg <- $pointcut + " " + $node + " block in " + $file + " class, in " + $method_name + " method";
       add:
-        logging_message(msg),
-        logging_message_a(msg),
-        logging_message_b(msg)
+        logging_message(msg)

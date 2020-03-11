@@ -4,7 +4,7 @@
 using namespace std;
 using namespace scis;
 
-string Fragment::getSource(string const& rootDir) const
+string FragmentRequest::getSource(string const& rootDir) const
 {
   return "["s + __PRETTY_FUNCTION__ + "] is not implemented"s;
 }
@@ -55,23 +55,23 @@ void Rule::MakeAction::ConstantComponent::dump(ostream &str)
 
 void Ruleset::dump(ostream &str)
 {
-  SCIS_INFO("Fragments:");
+  str << "fragments:" << endl;
   for (auto const& f : fragments)
-    str << f.path << endl;
+    str << "  " << f.path << endl;
 
-  SCIS_INFO("Contexts:");
+  str << "contexts:" << endl;
   for (auto const& [_, f] : contexts) {
-    str << f->id << ": ";
+    str << "  " << f->id << ": ";
     f->dump(str);
     str << endl;
   }
 
-  SCIS_INFO("Rules:");
+  str << "rules:" << endl;
   for (auto const& [_, r] : rules) {
-    str << r->id << ":" << endl;
+    str << "  " << r->id << ":" << endl;
 
     for (auto const& s : r->statements) {
-      str << "  @" << s.location.contextId;
+      str << "    @" << s.location.contextId;
       for (auto const& p : s.location.path) {
         str << " -> ";
 
@@ -85,9 +85,9 @@ void Ruleset::dump(ostream &str)
       }
       str << " #" << s.location.pointcut << endl;
 
-      str << (s.actionMake.empty() ? "" : "  make:") << endl;
+      str << (s.actionMake.empty() ? "" : "    make:\n");
       for (auto const& m : s.actionMake) {
-        str << "    " << m.target << " <- ";
+        str << "      " << m.target << " <- ";
 
         auto countC = m.components.size();
         for (auto const& c : m.components) {
@@ -99,9 +99,9 @@ void Ruleset::dump(ostream &str)
         str << endl;
       }
 
-      str << (s.actionMake.empty() ? "" : "  add:") << endl;
+      str << (s.actionAdd.empty() ? "" : "    add:") << endl;
       for (auto const& a : s.actionAdd) {
-        str << "    " << a.fragmentId << '(';
+        str << "      " << a.fragmentId << '(';
 
         auto countA = a.args.size();
         for (auto const& c : a.args) {
@@ -116,6 +116,6 @@ void Ruleset::dump(ostream &str)
       str << endl;
     }
 
-    str << endl << "----------" << endl;
+    str << "----------" << endl;
   }
 }

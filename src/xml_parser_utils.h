@@ -2,6 +2,7 @@
 #define XML_PARSER_UTILS_H
 
 #include <string>
+#include <functional>
 #include <tinyxml2/tinyxml2.h>
 
 #ifndef FOREACH_XML_NODE
@@ -18,7 +19,14 @@
 tinyxml2::XMLElement const* expectedPath(tinyxml2::XMLNode const* root,
                                          std::initializer_list<const char *> &&path);
 
+/// throws std::string
+tinyxml2::XMLAttribute const* expectedAttribute(tinyxml2::XMLElement const* xmlElement,
+                                                const char *const attrName);
+
 void mergeTextRecursive(std::string &text,
                         tinyxml2::XMLNode const* const node);
+
+void processCommaseparatedList(const char* const text,
+                               std::function<void (std::string const&)> &&handler);
 
 #endif // XML_PARSER_UTILS_H

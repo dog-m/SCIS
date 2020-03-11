@@ -1,7 +1,8 @@
 #include "logging.h"
 
 #include "txl/grammar_parser.h"
-#include "scis/ruleset/ruleset_parser.h"
+#include "scis/ruleset_parser.h"
+#include "scis/fragment_parser.h"
 
 #include "tinyxml2/tinyxml2.h"
 
@@ -53,39 +54,57 @@ using namespace tinyxml2;
 
 
 
-static auto loadAndParseGrammar(string_view && fileName)
+template<typename Parser>
+static auto tryParse(const char* xml)
 {
-  auto const xmlSource = txl::Interpreter::grammarToXML(fileName);
-  SCIS_DEBUG("Grammar size: " << xmlSource.size());
-
   XMLDocument doc(true, COLLAPSE_WHITESPACE);
-  if (auto result = doc.Parse(xmlSource.data()); result != XML_SUCCESS) {
+  if (auto result = doc.Parse(xml); result != XML_SUCCESS) {
     SCIS_ERROR("XML Loading failed: " << doc.ErrorIDToName(result));
     terminate();
   }
   else
     SCIS_DEBUG("XML loaded normaly");
 
-  txl::GrammarParser parser;
+  Parser parser;
+  return parser.parse(doc);
+}
+
+template<typename Parser>
+static auto tryLoadAndParse(const char* fileName)
+{
+  XMLDocument doc(true, COLLAPSE_WHITESPACE);
+  if (auto result = doc.LoadFile(fileName); result != XML_SUCCESS) {
+    SCIS_ERROR("XML Loading failed: " << doc.ErrorIDToName(result));
+    terminate();
+  }
+  else
+    SCIS_DEBUG("XML loaded normaly");
+
+  Parser parser;
   return parser.parse(doc);
 }
 
 
+
+static auto loadAndParseGrammar(string_view && fileName)
+{
+  auto const xml = txl::Interpreter::grammarToXML(fileName);
+  SCIS_DEBUG("Grammar size: " << xml.size());
+
+  return tryParse<txl::GrammarParser>(xml.data());
+}
+
 static auto loadAndParseRuleset(string_view && fileName)
 {
-  auto const xmlSource = txl::Interpreter::rulesetToXML(fileName);
-  SCIS_DEBUG("Ruleset size: " << xmlSource.size());
+  auto const xml = txl::Interpreter::rulesetToXML(fileName);
+  SCIS_DEBUG("Ruleset size: " << xml.size());
 
-  XMLDocument doc(true, COLLAPSE_WHITESPACE);
-  if (auto result = doc.Parse(xmlSource.data()); result != XML_SUCCESS) {
-    SCIS_ERROR("XML Loading failed: " << doc.ErrorIDToName(result));
-    terminate();
-  }
-  else
-    SCIS_DEBUG("XML loaded normaly");
+  return tryParse<scis::RulesetParser>(xml.data());
+}
 
-  scis::RulesetParser parser;
-  return parser.parse(doc);
+static auto loadAndParseFragment(string_view && fileName)
+{
+  return tryLoadAndParse<scis::FragmentParser>(fileName.data());
 }
 
 
@@ -95,7 +114,7 @@ static auto loadAndParseRuleset(string_view && fileName)
 int main(/*int argc, char** argv*/)
 {
   auto const grm = loadAndParseGrammar("./example/lang/java/grammar.txl");
-
+  SCIS_INFO("Language grammar:");
   SCIS_INFO("As TXL:");
   for (auto const& [_, type] : grm->types)
     type->toTXLDefinition(cout);
@@ -106,7 +125,14 @@ int main(/*int argc, char** argv*/)
   // ---
 
   auto const ruleset = loadAndParseRuleset("./example/add_logging_to_Main_main.yml");
+  SCIS_INFO("Ruleset:");
   ruleset->dump(cout);
+
+  // ---
+
+  auto const fragment = loadAndParseFragment("./example/fragments/java/logging/message.xml");
+  SCIS_INFO("Fragment:");
+  fragment->dump(cout);
 
   return 0;
 }

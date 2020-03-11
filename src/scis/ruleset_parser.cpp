@@ -17,7 +17,7 @@ void RulesetParser::parseStringTemplate(Pattern &pattern,
 
 void RulesetParser::parseUsedFragments(XMLElement const* const fragments)
 {
-  FOREACH_XML_NODE(fragments, fragment) {
+  FOREACH_XML_ELEMENT(fragments, fragment) {
     auto const path = expectedPath(fragment, { "stringlit" })->GetText();
     auto& newFragment = ruleset->fragments.emplace_back(/* empty */);
     newFragment.path = path;
@@ -28,7 +28,7 @@ void RulesetParser::parseUsedFragments(XMLElement const* const fragments)
 
 void RulesetParser::parseContexts(XMLElement const* const contexts)
 {
-  FOREACH_XML_NODE(contexts, ctx) {
+  FOREACH_XML_ELEMENT(contexts, ctx) {
     auto const id = expectedPath(ctx, { "context_name", "id" })->GetText();
     auto const something = expectedPath(ctx, { "basic_context_or_compound_context" })->FirstChildElement();
     SCIS_DEBUG("Found context \'" << id << '\'');
@@ -50,7 +50,7 @@ void RulesetParser::parseBasicContext(string const& id,
   ctx->id = id;
 
   auto const list = expectedPath(basic_context, { "list_basic_context_constraint" });
-  FOREACH_XML_NODE(list, item) {
+  FOREACH_XML_ELEMENT(list, item) {
     auto& constraint = ctx->constraints.emplace_back(/* empty */);
 
     auto const property = expectedPath(item, { "context_property" });
@@ -108,7 +108,7 @@ void RulesetParser::parseContextDisjunction(CompoundContext::Disjunction &disjun
 
 void RulesetParser::parseRules(XMLElement const* const rules)
 {
-  FOREACH_XML_NODE(rules, singleRule) {
+  FOREACH_XML_ELEMENT(rules, singleRule) {
     auto rule = make_unique<Rule>();
 
     rule->id = expectedPath(singleRule, { "id" })->GetText();
@@ -127,7 +127,7 @@ void RulesetParser::parseRules(XMLElement const* const rules)
 void RulesetParser::parseRuleStatements(Rule *const rule,
                                         XMLElement const* const statements)
 {
-  FOREACH_XML_NODE(statements, singleStmt) {
+  FOREACH_XML_ELEMENT(statements, singleStmt) {
     auto& statement = rule->statements.emplace_back(/* empty */);
     parseStatementLocation(statement, expectedPath(singleStmt, { "rule_path" }));
     parseStatementActions(statement, expectedPath(singleStmt, { "rule_actions" }));
@@ -144,7 +144,7 @@ void RulesetParser::parseStatementLocation(Rule::Stetement &statement,
 
   // set path
   auto const pathElements = expectedPath(path, { "repeat_path_item_with_arrow" });
-  FOREACH_XML_NODE(pathElements, itemWithArrow) {
+  FOREACH_XML_ELEMENT(pathElements, itemWithArrow) {
     auto const item = expectedPath(itemWithArrow, { "path_item" });
     auto& el = statement.location.path.emplace_back(/* empty */);
     el.modifier = expectedPath(item, { "modifier", "id" })->GetText();
@@ -179,7 +179,7 @@ void RulesetParser::parseStatementActions(Rule::Stetement &statement,
 void RulesetParser::parseActions_Make(Rule::Stetement &statement,
                                       XMLElement const* const makes)
 {
-  FOREACH_XML_NODE(makes, makeItem) {
+  FOREACH_XML_ELEMENT(makes, makeItem) {
     auto& make = statement.actionMake.emplace_back(/* empty */);
     make.target = expectedPath(makeItem, { "id" })->GetText();
 
@@ -188,7 +188,7 @@ void RulesetParser::parseActions_Make(Rule::Stetement &statement,
     parseActions_Make_singleComponent(make, chainHead);
 
     // and other elements
-    FOREACH_XML_NODE(chainHead->NextSibling(), ss)
+    FOREACH_XML_ELEMENT(chainHead->NextSibling(), ss)
       parseActions_Make_singleComponent(make, expectedPath(ss, { "stringlit_or_constant" }));
   }
 }
@@ -215,7 +215,7 @@ void RulesetParser::parseActions_Make_singleComponent(Rule::MakeAction &make,
 void RulesetParser::parseActions_Add(Rule::Stetement &statement,
                                      XMLElement const* const additions)
 {
-  FOREACH_XML_NODE(additions, add) {
+  FOREACH_XML_ELEMENT(additions, add) {
     auto& act = statement.actionAdd.emplace_back(/* empty */);
     act.fragmentId = expectedPath(add, { "id" })->GetText();
 
@@ -239,7 +239,7 @@ unique_ptr<Ruleset> RulesetParser::parse(XMLDocument const& doc)
     parseUsedFragments(expectedPath(&doc, { "program", "repeat_use_fragment_statement" }));
 
     // contexts are optional
-    auto const contexts = expectedPath(&doc, { "program" })->FirstChildElement("repeat_context_definition");
+    auto const contexts = doc.RootElement()->FirstChildElement("repeat_context_definition");
     if (contexts)
       parseContexts(contexts);
 

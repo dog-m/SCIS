@@ -12,7 +12,7 @@ namespace scis {
 
   using namespace std;
 
-  struct Fragment {
+  struct FragmentRequest {
     string path;
 
     string getSource(string const& rootDir) const;
@@ -112,7 +112,7 @@ namespace scis {
   }; // Rule
 
   struct Ruleset {
-    vector<Fragment> fragments;
+    vector<FragmentRequest> fragments;
     unordered_map<string_view, unique_ptr<Context>> contexts;
     unordered_map<string_view, unique_ptr<Rule>> rules;
 

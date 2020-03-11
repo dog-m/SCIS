@@ -4,8 +4,6 @@
 #include "ruleset.h"
 #include <tinyxml2/tinyxml2.h>
 
-#include "fragment_parser.h"
-
 namespace scis {
 
   using namespace tinyxml2;

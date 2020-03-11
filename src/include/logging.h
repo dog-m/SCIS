@@ -13,6 +13,6 @@
 
 #define SCIS_INFO(I)    (std::cerr << "[INFO] " << I << std::endl)
 #define SCIS_WARNING(W) (std::cerr << "[WARNING] " << W << std::endl)
-#define SCIS_ERROR(E)   (std::cerr << "[ERROR] " << E << std::endl)
+#define SCIS_ERROR(E)   {std::cerr << "[ERROR] " << E << std::endl << std::flush; terminate();}(0)
 
 #endif // LOGGING_H

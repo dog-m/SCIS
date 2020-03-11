@@ -29,7 +29,7 @@ void GrammarParser::parseDefinition(XMLElement const* const definition)
   // process alternatives
   auto const alternativeVariants = definition->FirstChildElement("repeat_barLiteralsAndTypes");
   if (alternativeVariants)
-    FOREACH_XML_NODE(alternativeVariants, item) {
+    FOREACH_XML_ELEMENT(alternativeVariants, item) {
       variant = &type->variants.emplace_back(/* empty */);
       parseLiteralsOrTypes(variant, expectedPath(item, { "repeat_literalOrType" }));
     }
@@ -38,7 +38,7 @@ void GrammarParser::parseDefinition(XMLElement const* const definition)
 void GrammarParser::parseLiteralsOrTypes(Grammar::TypeVariant* const typeVariant,
                                          XMLElement const* const literalsOrTypes)
 {
-  FOREACH_XML_NODE(literalsOrTypes, item) {
+  FOREACH_XML_ELEMENT(literalsOrTypes, item) {
     auto const something = item->FirstChildElement();
     string_view const name = something->Name();
     if (name == "type") {
@@ -160,7 +160,7 @@ unique_ptr<Grammar> GrammarParser::parse(XMLDocument const& doc)
   try {
     auto const statements = expectedPath(&doc, { "program", "repeat_statement" });
 
-    FOREACH_XML_NODE(statements, statement)
+    FOREACH_XML_ELEMENT(statements, statement)
       if (auto const definition = statement->FirstChildElement("defineStatement"))
         parseDefinition(definition);
 

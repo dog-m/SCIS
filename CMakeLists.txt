@@ -36,17 +36,27 @@ if(Boost_FOUND)
       src/txl/grammar.cpp
       src/txl/grammar_parser.h
       src/txl/grammar_parser.cpp
+
       src/txl/interpreter.h
       src/txl/interpreter.cpp
+
       src/txl/wrapper.h
       src/txl/wrapper.cpp
 
-      src/scis/ruleset/fragment_parser.h
-      src/scis/ruleset/fragment_parser.cpp
-      src/scis/ruleset/ruleset.h
-      src/scis/ruleset/ruleset.cpp
-      src/scis/ruleset/ruleset_parser.h
-      src/scis/ruleset/ruleset_parser.cpp
+      src/scis/annotation.h
+      src/scis/annotation.cpp
+      src/scis/annotation_parser.h
+      src/scis/annotation_parser.cpp
+
+      src/scis/fragment.h
+      src/scis/fragment.cpp
+      src/scis/fragment_parser.h
+      src/scis/fragment_parser.cpp
+
+      src/scis/ruleset.h
+      src/scis/ruleset.cpp
+      src/scis/ruleset_parser.h
+      src/scis/ruleset_parser.cpp
 
       src/scis/txl_generator.h
       src/scis/txl_generator.cpp
