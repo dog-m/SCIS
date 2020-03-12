@@ -111,6 +111,9 @@ static auto loadAndParseFragment(string_view && filename)
 
 /* =================================================================================== */
 
+#include "xml_parser_utils.h"
+#include <sstream>
+
 int main(/*int argc, char** argv*/)
 {
   auto const grm = loadAndParseGrammar("./example/lang/java/grammar.txl");

@@ -23,11 +23,11 @@ void FragmentParser::parseCode(XMLElement const* const code)
 {
   // base params
   if (auto const black_list = code->FindAttribute("black-list"))
-    processCommaseparatedList(black_list->Value(), [&](string const& id) {
+    processList(',', black_list->Value(), [&](string const& id) {
       fragment->black_list.push_back(id);
     });
   if (auto const params = code->FindAttribute("params"))
-    processCommaseparatedList(params->Value(), [&](string const& id) {
+    processList(',', params->Value(), [&](string const& id) {
       fragment->params.push_back(id);
     });
 

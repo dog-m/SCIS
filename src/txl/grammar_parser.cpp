@@ -17,10 +17,10 @@ static unordered_set<string_view> const TYPE_MODIFIERS {
 
 void GrammarParser::parseDefinition(XMLElement const* const definition)
 {
-  auto const type_id = expectedPath(definition, { "typeid", "id" })->GetText();
-  SCIS_DEBUG("Found definition of " << type_id);
+  auto const typeId = expectedPath(definition, { "typeid", "id" })->GetText();
+  SCIS_DEBUG("Found definition of " << typeId);
 
-  auto const type = grammar->findOrAddTypeByName(type_id);
+  auto const type = grammar->findOrAddTypeByName(typeId);
 
   // process first template variant
   auto variant = &type->variants.emplace_back(/* empty */);
@@ -83,7 +83,7 @@ void GrammarParser::parseType(Grammar::TypeVariant* const typeVariant,
   else
     typeRef->repeater = nullopt;
 
-  typeVariant->pattern.push_back(std::move(typeRef));
+  typeVariant->pattern.emplace_back(std::move(typeRef));
 }
 
 string GrammarParser::parseNameFromTypeid(XMLElement const* const type_id)

@@ -11,6 +11,9 @@
 #define FOREACH_XML_ELEMENT(C, E) \
   for (auto E = C->FirstChildElement(); E; E = E->NextSiblingElement())
 
+#define FOREACH_XML_ATTRIBUTE(E, A) \
+  for (auto A = E->FirstAttribute(); A; A = A->Next())
+
 /// throws std::string
 tinyxml2::XMLElement const* expectedPath(tinyxml2::XMLNode const* root,
                                          std::initializer_list<const char *> &&path);
@@ -22,7 +25,8 @@ tinyxml2::XMLAttribute const* expectedAttribute(tinyxml2::XMLElement const* xmlE
 void mergeTextRecursive(std::string &text,
                         tinyxml2::XMLNode const* const node);
 
-void processCommaseparatedList(const char* const text,
-                               std::function<void (std::string const&)> &&handler);
+void processList(char const delimitter,
+                 const char* const text,
+                 std::function<void (std::string const&)> &&handler);
 
 #endif // XML_PARSER_UTILS_H

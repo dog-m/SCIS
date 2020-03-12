@@ -8,17 +8,15 @@
                 <imports type="repeat import_declaration"/>
                 <class type="class_declaration">
                     <method type="method_declaration">
-                        <var>
-                            <if type="if_statement">
-                                <else type="else_clause"/>
-                            </if>
-                            <switch type="switch_statement">
-                                <case type="switch_alternative"/>
-                            </switch>
-                            <for type="for_statement"/>
-                            <while type="while_statement"/>
-                            ...
-                        </var>
+                        <if type="if_statement">
+                            <else type="else_clause"/>
+                        </if>
+                        <switch type="switch_statement">
+                            <case type="switch_alternative"/>
+                        </switch>
+                        <for type="for_statement"/>
+                        <while type="while_statement"/>
+                        ...
                     </method>
                 </class>
             </package>
@@ -60,13 +58,13 @@
         <point
           id="package_name"
           keyword="package"
-          value-of="package_header::package_name"
+          value-of="package_header:package_name"
           />
 
         <point
           id="class_name"
           keyword="class"
-          value-of="class_header::class_name"
+          value-of="class_header:class_name"
           />
 
         <point
@@ -87,7 +85,7 @@
                 </pattern>
             </replacement-patterns>
             <pointcuts>
-                <pointcut name="*">
+                <pointcut name="all">
                     <reference
                       type="repeat import_declaration"
                       as="Additions"

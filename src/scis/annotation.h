@@ -13,12 +13,15 @@ namespace scis {
   struct GrammarAnnotation {
 
     struct Pointcut {
-      struct Action {};
+      struct Step {
+        string function;
+        unordered_map<string, string> args; // TODO: get better idea
+      };
 
       string name;
       string refType;
       string refAlias;
-      vector<unique_ptr<Action>> aglorithm;
+      vector<Step> aglorithm;
     }; // Pointcut
 
     struct Pattern {
@@ -39,8 +42,10 @@ namespace scis {
     struct DirectedAcyclicGraph {
       struct Keyword {
         string id;
+        string type;
         unordered_map<string_view, unique_ptr<Pointcut>> pointcuts;
         vector<Pattern> replacement_patterns;
+        vector<string> subnodes;
       };
 
       unordered_map<string_view, unique_ptr<Keyword>> keywords;

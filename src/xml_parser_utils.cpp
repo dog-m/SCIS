@@ -36,15 +36,24 @@ void mergeTextRecursive(string &text,
       mergeTextRecursive(text, item);
 }
 
-void processCommaseparatedList(const char * const text,
-                               std::function<void (string const&)> && handler)
+void processList(char const delimitter,
+                 char const* const text,
+                 std::function<void (string const&)> && handler)
 {
+  string str;
   std::stringstream stream(text);
-  for (std::string str; stream >> str;) {
-    handler(str);
+  while( stream.good() ) {
+      // skip spaces before useful data
+      while (stream.peek() == ' ')
+        stream.ignore();
 
-    // skip delimitters
-    while (stream.peek() == ',' || stream.peek() == ' ')
-      stream.ignore();
+      // grab data
+      getline(stream, str, delimitter);
+
+      // clear spaces after data
+      while (!str.empty() && str.back() == ' ')
+        str.pop_back();
+
+      handler(str);
   }
 }
