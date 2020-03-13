@@ -124,7 +124,7 @@ void GrammarParser::parseLiteral(Grammar::TypeVariant* const typeVariant,
   auto txt = make_unique<Grammar::PlainText>();
   txt->text = text;
 
-  typeVariant->pattern.push_back(std::move(txt));
+  typeVariant->pattern.emplace_back(std::move(txt));
 }
 
 void GrammarParser::mergeTextRecursiveNoComment(string &text,
@@ -150,7 +150,7 @@ void GrammarParser::parseOptionalText(Grammar::TypeVariant* const typeVariant,
   optText->modifier = expectedPath(type, { "opt_typeModifier", "typeModifier" })->GetText();
   optText->text = text;
 
-  typeVariant->pattern.push_back(std::move(optText));
+  typeVariant->pattern.emplace_back(std::move(optText));
 }
 
 unique_ptr<Grammar> GrammarParser::parse(XMLDocument const& doc)

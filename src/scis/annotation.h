@@ -26,18 +26,27 @@ namespace scis {
     }; // Pointcut
 
     struct Pattern {
-      struct Block {};
+      struct Block {
+        virtual ~Block() = default;
+        virtual void dump(ostream &str) = 0;
+      };
 
       struct TextBlock : public Block {
         string text;
+
+        void dump(ostream &str) override;
       };
 
       struct PointcutLocation : public Block {
         string name;
+
+        void dump(ostream &str) override;
       };
 
       struct TypeReference : public Block {
         string typeId;
+
+        void dump(ostream &str) override;
       };
 
       string searchType;

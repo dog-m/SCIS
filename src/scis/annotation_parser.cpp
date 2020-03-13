@@ -28,13 +28,12 @@ void AnnotationParser::parseKeyword(XMLElement const* const keyword)
   auto word = make_unique<GrammarAnnotation::DirectedAcyclicGraph::Keyword>();
 
   // base params
-  auto const name = keyword->Name();
-  word->id = name;
+  word->id = keyword->Name();
   word->type = expectedAttribute(keyword, "type")->Value();
   FOREACH_XML_ELEMENT(keyword, subtype)
     word->subnodes.push_back(subtype->Name());
 
-  annotation->grammar.graph.keywords.emplace(name, std::move(word));
+  annotation->grammar.graph.keywords.emplace(word->id, std::move(word));
 
   parseKeywordSubtypes(keyword);
 }
@@ -79,8 +78,7 @@ void AnnotationParser::parsePointsOfInterest(XMLElement const* const root)
   FOREACH_XML_ELEMENT(root, element) {
     auto poi = make_unique<GrammarAnnotation::PointOfInterest>();
 
-    auto const id = expectedAttribute(element, "id")->Value();
-    poi->id = "poi:"s + id;
+    poi->id = "poi:"s + expectedAttribute(element, "id")->Value();
 
     poi->keyword = expectedAttribute(element, "keyword")->Value();
 
@@ -88,7 +86,7 @@ void AnnotationParser::parsePointsOfInterest(XMLElement const* const root)
       poi->valueTypePath.emplace_back(txlTypeId);
     });
 
-    annotation->pointsOfInterest.emplace(id, std::move(poi));
+    annotation->pointsOfInterest.emplace(poi->id, std::move(poi));
   }
 }
 
@@ -152,8 +150,7 @@ void AnnotationParser::parsePointcutsForKeyword(XMLElement const* const root)
   FOREACH_XML_ELEMENT(expectedPath(root, { "pointcuts" }), point) {
     auto pointcut = make_unique<GrammarAnnotation::Pointcut>();
 
-    auto const name = expectedAttribute(point, "name")->Value();
-    pointcut->name = name;
+    pointcut->name = expectedAttribute(point, "name")->Value();
 
     auto const ref = expectedPath(point, { "reference" });
     pointcut->refType = expectedAttribute(ref, "type")->Value();
@@ -168,7 +165,7 @@ void AnnotationParser::parsePointcutsForKeyword(XMLElement const* const root)
         step.args.emplace(argument->Name(), argument->Value());
     }
 
-    keyword->pointcuts.emplace(name, std::move(pointcut));
+    keyword->pointcuts.emplace(pointcut->name, std::move(pointcut));
   }
 }
 

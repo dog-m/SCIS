@@ -64,7 +64,7 @@ void RulesetParser::parseBasicContext(string const& id,
     parseStringTemplate(constraint.value, expectedPath(item, { "string_template", "stringlit" }));
   }
 
-  ruleset->contexts.emplace(id, std::move(ctx));
+  ruleset->contexts.emplace(ctx->id, std::move(ctx));
 }
 
 void RulesetParser::parseCompoundContext(string const& id,
@@ -82,7 +82,7 @@ void RulesetParser::parseCompoundContext(string const& id,
 
   // TODO: check if every context (id) exists in compound context
 
-  ruleset->contexts.emplace(id, std::move(ctx));
+  ruleset->contexts.emplace(ctx->id, std::move(ctx));
 }
 
 void RulesetParser::parseContextDisjunction(CompoundContext::Disjunction &disjunction,
@@ -129,6 +129,7 @@ void RulesetParser::parseRuleStatements(Rule *const rule,
 {
   FOREACH_XML_ELEMENT(statements, singleStmt) {
     auto& statement = rule->statements.emplace_back(/* empty */);
+
     parseStatementLocation(statement, expectedPath(singleStmt, { "rule_path" }));
     parseStatementActions(statement, expectedPath(singleStmt, { "rule_actions" }));
   }
@@ -145,8 +146,9 @@ void RulesetParser::parseStatementLocation(Rule::Statement &statement,
   // set path
   auto const pathElements = expectedPath(path, { "repeat_path_item_with_arrow" });
   FOREACH_XML_ELEMENT(pathElements, itemWithArrow) {
-    auto const item = expectedPath(itemWithArrow, { "path_item" });
     auto& el = statement.location.path.emplace_back(/* empty */);
+
+    auto const item = expectedPath(itemWithArrow, { "path_item" });
     el.modifier = expectedPath(item, { "modifier", "id" })->GetText();
     el.statementId = expectedPath(item, { "statement_name", "id" })->GetText();
 
@@ -181,6 +183,7 @@ void RulesetParser::parseActions_Make(Rule::Statement &statement,
 {
   FOREACH_XML_ELEMENT(makes, makeItem) {
     auto& make = statement.actionMake.emplace_back(/* empty */);
+
     make.target = expectedPath(makeItem, { "id" })->GetText();
 
     // process first element
@@ -199,13 +202,17 @@ void RulesetParser::parseActions_Make_singleComponent(Rule::MakeAction &make,
   auto const something = stringlitOrConstant->FirstChildElement();
   if (something->Name() == "string_constant"sv) {
     auto ptr = make_unique<Rule::MakeAction::ConstantComponent>();
+
     ptr->id = expectedPath(something, { "id" })->GetText();
+
     make.components.emplace_back(std::move(ptr));
   }
   else
     if (something->Name() == "stringlit"sv) {
       auto ptr = make_unique<Rule::MakeAction::StringComponent>();
+
       ptr->text = something->GetText();
+
       make.components.emplace_back(std::move(ptr));
     }
   else
@@ -217,6 +224,7 @@ void RulesetParser::parseActions_Add(Rule::Statement &statement,
 {
   FOREACH_XML_ELEMENT(additions, add) {
     auto& act = statement.actionAdd.emplace_back(/* empty */);
+
     act.fragmentId = expectedPath(add, { "id" })->GetText();
 
     // TODO: check ID in imported fragments
