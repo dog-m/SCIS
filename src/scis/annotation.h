@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <ostream>
 
 namespace scis {
 
@@ -33,6 +34,10 @@ namespace scis {
 
       struct PointcutLocation : public Block {
         string name;
+      };
+
+      struct TypeReference : public Block {
+        string typeId;
       };
 
       string searchType;
@@ -84,6 +89,8 @@ namespace scis {
     GrammarDescription grammar;
     vector<unique_ptr<Function>> library;
     unordered_map<string_view, unique_ptr<PointOfInterest>> pointsOfInterest;
+
+    void dump(ostream &str);
   }; // GrammarAnnotation
 
 } // scis

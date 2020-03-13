@@ -3,6 +3,7 @@
 #include "txl/grammar_parser.h"
 #include "scis/ruleset_parser.h"
 #include "scis/fragment_parser.h"
+#include "scis/annotation_parser.h"
 
 #include "tinyxml2/tinyxml2.h"
 
@@ -107,6 +108,11 @@ static auto loadAndParseFragment(string_view && filename)
   return tryLoadAndParse<scis::FragmentParser>(filename.data());
 }
 
+static auto loadAndParseAnnotation(string_view && filename)
+{
+  return tryLoadAndParse<scis::AnnotationParser>(filename.data());
+}
+
 
 
 /* =================================================================================== */
@@ -136,6 +142,11 @@ int main(/*int argc, char** argv*/)
   auto const fragment = loadAndParseFragment("./example/fragments/java/logging/message.xml");
   SCIS_INFO("Fragment:");
   fragment->dump(cout);
+
+  // ---
+  auto const annotation = loadAndParseAnnotation("./example/lang/java/annotation.xml");
+  SCIS_INFO("Annotation:");
+  annotation->dump(cout);
 
   return 0;
 }

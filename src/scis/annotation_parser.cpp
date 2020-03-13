@@ -135,6 +135,15 @@ void AnnotationParser::parsePointcutsForKeyword(XMLElement const* const root)
             throw "Unrecognized element <"s + elementName + ">"s;
         }
       else
+        // probably a type-reference comment
+        if (auto const comm = block->ToComment()) {
+          auto ref = make_unique<GrammarAnnotation::Pattern::TypeReference>();
+
+          ref->typeId = comm->Value();
+
+          pattern.blocks.emplace_back(std::move(ref));
+        }
+      else
         throw "Unknown element in pointcut"s;
     }
   }

@@ -109,12 +109,12 @@
             <replacement-patterns>
                 <pattern search-type="statement">
                     <p name="before"/>
-                    if ( <?condition?> ) {
+                    if ( <!--condition--> ) {
                         <p name="before-body"/>
-                        <?statement?>
+                        <!--statement-->
                         <p name="after-body"/>
                     }
-                    <?opt_else_clause?>
+                    <!--opt_else_clause-->
                     <p name="after"/>
                 </pattern>
             </replacement-patterns>
