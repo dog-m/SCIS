@@ -62,6 +62,7 @@ namespace scis {
         vector<string> subnodes;
       };
 
+      vector<Keyword const*> topKeywords;
       unordered_map<string_view, unique_ptr<Keyword>> keywords;
     }; // DAG
 

@@ -4,17 +4,20 @@
 using namespace std;
 using namespace txl;
 
-void Grammar::PlainText::toTXL(ostream &ss) const
+void Grammar::PlainText::toTXL(ostream &ss, optional<NamingFunction> const) const
 {
   // BUG: potential formating bug here
-  if (text.front() != '\'')
+  if (!text.empty() && text.front() != '\'')
     ss << '\'';
 
   ss << text;
 }
 
-void Grammar::TypeReference::toTXL(ostream &ss) const
+void Grammar::TypeReference::toTXL(ostream &ss, optional<NamingFunction> const namer) const
 {
+  if (namer.has_value())
+    ss << namer.value()(name) << ' ';
+
   ss << "["
      << (modifier.has_value() ? modifier.value() + " " : "")
      << name
@@ -22,7 +25,7 @@ void Grammar::TypeReference::toTXL(ostream &ss) const
      << "]";
 }
 
-void Grammar::OptionalPlainText::toTXL(ostream &ss) const
+void Grammar::OptionalPlainText::toTXL(ostream &ss, optional<NamingFunction> const) const
 {
   ss << "[" << modifier << ' ' << text << "]";
 }
@@ -35,6 +38,20 @@ void Grammar::TypeVariant::toTXL(ostream &ss,
   auto count = pattern.size();
   for (auto const& literal : pattern) {
     literal->toTXL(ss);
+
+    // separate parts from each other
+    if (count --> 1)
+      ss << ' ';
+  }
+}
+
+void Grammar::TypeVariant::toTXLWithNames(ostream& ss, const Grammar::NamingFunction namer) const
+{
+  ss << "    ";
+
+  auto count = pattern.size();
+  for (auto const& literal : pattern) {
+    literal->toTXL(ss, namer);
 
     // separate parts from each other
     if (count --> 1)

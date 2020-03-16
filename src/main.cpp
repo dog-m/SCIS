@@ -10,47 +10,6 @@
 using namespace std;
 using namespace tinyxml2;
 
-#define NODISCARD [[nodiscard]]
-
-/* =================================================================================== */
-
-
-
-/*static void rebuildShortestPathsBFS(TypeGraph &graph,
-                                    TypeNode *const start)
-{
-  using NodeRef = TypeNode*;
-
-  unordered_set<NodeRef> visited;
-  deque<pair<NodeRef, NodeRef>> queue;
-
-  auto constexpr INF_DISTANCE = decltype(TypeNode::distanceToRoot)(-1);
-  for (auto &[_, node] : graph.types) {
-    node->distanceToRoot = INF_DISTANCE;
-    node->shortestPathToRoot = nullptr;
-  }
-
-  queue.push_back(make_pair(nullptr, start));
-
-  while (!queue.empty()) {
-    auto const [root, node] = queue.front();
-    queue.pop_front();
-
-    decltype(INF_DISTANCE) const newDistance = root ? root->distanceToRoot + 1 : 0;
-    if (newDistance < node->distanceToRoot) {
-      node->distanceToRoot = newDistance;
-      node->shortestPathToRoot = root;
-    }
-    visited.insert(node);
-
-    for (auto const target : node->pointingTo)
-      if (visited.find(target) == visited.cend())
-        queue.push_back(make_pair(node, target));
-  }
-}*/
-
-
-
 /* =================================================================================== */
 
 

@@ -16,7 +16,9 @@ void BasicContext::dump(ostream &str)
   for (auto const& c : constraints) {
     str << c.id << ' '
         << c.op << ' '
-        << (c.value.somethingBefore ? "..." : "") << c.value.text << (c.value.somethingAfter ? "..." : "");
+        << (c.value.somethingBefore ? "..." : "")
+        << '\'' << c.value.text << '\''
+        << (c.value.somethingAfter ? "..." : "");
 
     if (count --> 1)
       str << ", ";

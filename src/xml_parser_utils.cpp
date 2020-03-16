@@ -57,3 +57,8 @@ void processList(char const delimitter,
       handler(str);
   }
 }
+
+void unescapeString(string& str)
+{
+  str.erase(std::remove(str.begin(), str.end(), '\"' ), str.end());
+}

@@ -15,7 +15,7 @@ keys
 end keys
 
 compounds 
-    ->  <-  ...  <=  >=  !=
+    ->  <-  ...  <=  >=  ~=
 end compounds
 
 comments 
@@ -74,7 +74,7 @@ define string_template
 end define
 
 define context_op
-    '= | '< | '<= | '> | '>= | '!=
+    '= | '< | '<= | '> | '>= | '~=
 end define
 
 define context_property

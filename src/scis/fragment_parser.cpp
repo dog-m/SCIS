@@ -79,3 +79,16 @@ unique_ptr<Fragment> FragmentParser::parse(XMLDocument const&doc)
 
   return std::move(fragment);
 }
+
+unique_ptr<Fragment> FragmentParser::parse(const string_view& filename)
+{
+  XMLDocument doc(true, COLLAPSE_WHITESPACE);
+  if (auto result = doc.LoadFile(filename.data()); result != XML_SUCCESS) {
+    SCIS_ERROR("Failed to load \'" << filename << "\'. Reason: " << doc.ErrorIDToName(result));
+    terminate();
+  }
+  else
+    SCIS_DEBUG("XML loaded normaly");
+
+  return parse(doc);
+}

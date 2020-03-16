@@ -20,6 +20,8 @@ namespace scis {
 
   public:
     unique_ptr<scis::Fragment> parse(XMLDocument const& doc);
+
+    unique_ptr<scis::Fragment> parse(string_view const& filename);
   };
 
 } // TXL

@@ -60,7 +60,7 @@ namespace scis {
     struct Location {
       struct PathElement {
         string modifier;
-        string statementId;
+        string keywordId;
         optional<Pattern> pattern = nullopt;
       };
 

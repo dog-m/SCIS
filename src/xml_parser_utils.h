@@ -29,4 +29,6 @@ void processList(char const delimitter,
                  const char* const text,
                  std::function<void (std::string const&)> &&handler);
 
+void unescapeString(std::string &str);
+
 #endif // XML_PARSER_UTILS_H

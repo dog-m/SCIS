@@ -12,6 +12,7 @@ void RulesetParser::parseStringTemplate(Pattern &pattern,
 {
   pattern.somethingBefore = core->PreviousSiblingElement("opt_literal");
   pattern.text = core->GetText();
+  unescapeString(pattern.text);
   pattern.somethingAfter = core->NextSiblingElement("opt_literal");
 }
 
@@ -21,6 +22,7 @@ void RulesetParser::parseUsedFragments(XMLElement const* const fragments)
     auto const path = expectedPath(fragment, { "stringlit" })->GetText();
     auto& newFragment = ruleset->fragments.emplace_back(/* empty */);
     newFragment.path = path;
+    unescapeString(newFragment.path);
 
     SCIS_DEBUG("Found fragment request: " << path);
   }
@@ -150,7 +152,7 @@ void RulesetParser::parseStatementLocation(Rule::Statement &statement,
 
     auto const item = expectedPath(itemWithArrow, { "path_item" });
     el.modifier = expectedPath(item, { "modifier", "id" })->GetText();
-    el.statementId = expectedPath(item, { "statement_name", "id" })->GetText();
+    el.keywordId = expectedPath(item, { "statement_name", "id" })->GetText();
 
     if (auto const optTmp = item->FirstChildElement("opt_param_template")) {
       // actual string
