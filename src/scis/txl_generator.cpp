@@ -190,7 +190,13 @@ void TXLGenerator::doStuff()
 
   // уточняющая функция
   struct RefinementFunction : public CallChainElement {
-    ;
+    string matchingType;
+
+    void prepareBody() override {
+      auto& stmt = body.emplace_back(/* empty */);
+      stmt.action = "replace * [" + matchingType + "]";
+      stmt.text = "_ [" + matchingType + "]";
+    }
   };
 
   // функция, выплняющая инструментирование
@@ -209,6 +215,7 @@ void TXLGenerator::doStuff()
       // FIXME: global context
       if (stmt.location.contextId == "@")
         continue;
+
       auto const context = ruleset->contexts.at(stmt.location.contextId).get();
       SCIS_DEBUG("Processing statement");
 
@@ -344,8 +351,8 @@ void TXLGenerator::doStuff()
 
           rFunc->copyParamsFrom(callChain.back().get());
 
-          rFunc;
-          el;
+          rFunc->matchingType = annotation->grammar.graph.keywords[el.keywordId]->type;
+          rFunc->skipType = rFunc->matchingType;
 
           dynamic_cast<CallChainElement*>(callChain.back().get())->connectTo(rFunc.get());
           callChain.emplace_back(std::move(rFunc));
