@@ -3,9 +3,9 @@
 using namespace std;
 using namespace scis;
 
-//using SimpleFunction = function< FunctionCall::Result (FunctionCall const&) >;
+using SimpleFunction = function< FunctionCall::Result (FunctionCall const&) >;
 
-/*static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
+static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
 
   { "insert-fragment", [](FunctionCall const& call) -> FunctionCall::Result
     {
@@ -36,12 +36,12 @@ using namespace scis;
     }
   },
 
-};*/
+};
 
-bool call(FunctionCall const& params,
-          FFF const& resultHandler)
+bool callAlgorithmCommand(FunctionCall const& params,
+                          FunctionResultHandler const& resultHandler)
 {
-  /*auto const func = STANDARD_FUNCTIONS.find(params.function);
+  auto const func = STANDARD_FUNCTIONS.find(params.function);
   if (func == STANDARD_FUNCTIONS.cend())
     return false;
   else
@@ -50,8 +50,7 @@ bool call(FunctionCall const& params,
       return true;
     } catch (...) {
       return false;
-    }*/
-  return true;
+    }
 }
 
 string getUniqueId()

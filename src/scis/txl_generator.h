@@ -36,8 +36,9 @@ namespace scis {
 
     void addToCallChain(unique_ptr<CallChainFunction>&& func);
 
-    /// построение максимальных растояний до корня (BFS)
     void evaluateKeywordsDistances();
+
+    void loadRequestedFragments();
 
     void compileCollectionFunctions(string const& ruleId,
                                     Context const* const context);
@@ -53,6 +54,8 @@ namespace scis {
                                         Context const* const context);
 
     void genMain(ostream& str);
+
+    void genUtilityFunctions(ostream &str);
 
   public:
     void compile();

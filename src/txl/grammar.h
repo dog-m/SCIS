@@ -1,5 +1,5 @@
-#ifndef TXLGRAMMAR_H
-#define TXLGRAMMAR_H
+#ifndef GRAMMAR_H
+#define GRAMMAR_H
 
 #include <vector>
 #include <ostream>
@@ -74,4 +74,4 @@ namespace txl {
 
 } // TXL
 
-#endif // TXLGRAMMAR_H
+#endif // GRAMMAR_H

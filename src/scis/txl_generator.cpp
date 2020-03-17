@@ -10,7 +10,6 @@
 
 using namespace std;
 using namespace scis;
-//using namespace scis::generation;
 
 static string const CURRENT_NODE = "__NODE__";
 
@@ -24,8 +23,6 @@ static unordered_map<string_view, string_view> CTX_OP_INVERSION_MAPPING {
 };
 
 
-
-
 Fragment const* TXLGenerator::getFragment(string_view const& id)
 {
   auto const frag = fragments.find(id);
@@ -33,13 +30,8 @@ Fragment const* TXLGenerator::getFragment(string_view const& id)
     return frag->second.get();
 
   else {
-    static FragmentParser parser;
-
-    auto f = parser.parse(fragmentsDir + id.data() + ".xml");
-    auto const fragment = f.get();
-    fragments.emplace(make_pair(f->name, std::move(f)));
-
-    return fragment;
+    SCIS_ERROR("Unknown fragment <" << id << ">");
+    return nullptr;
   }
 }
 
@@ -60,7 +52,7 @@ void TXLGenerator::evaluateKeywordsDistances()
     queue.push_back(make_pair(key->id, 0));
 
     // make first pass over top-most keywords work
-    maxDistanceToRoot.emplace(key->id, -1);
+    maxDistanceToRoot.insert_or_assign(key->id, -1);
   }
 
   constexpr auto maxIter = 2500;
@@ -69,17 +61,39 @@ void TXLGenerator::evaluateKeywordsDistances()
     auto const [candidate, newDistance] = std::move(queue.front());
     queue.pop_front();
 
+    // check if there are any distance or not, aware of problems with std::string_view
+    if (maxDistanceToRoot.find(candidate) == maxDistanceToRoot.cend())
+      maxDistanceToRoot.insert_or_assign(candidate, -1);
+
     auto& oldDistance = maxDistanceToRoot[candidate];
     if (oldDistance < newDistance) {
       oldDistance = newDistance;
 
+      SCIS_DEBUG("annotation->grammar.graph.keywords[ " << candidate << " ]: " << annotation->grammar.graph.keywords[candidate].get());
+
       for (auto const& node : annotation->grammar.graph.keywords[candidate]->subnodes)
-        queue.push_back(make_pair(node, newDistance + 1));
+        queue.push_back(make_pair<string_view, int>(node, newDistance + 1));
     }
   }
 
+  SCIS_DEBUG("Distances:");
+  for (auto const& [keyword, distance] : maxDistanceToRoot)
+    SCIS_DEBUG(keyword << " = " << distance);
+
   if (iter > maxIter)
     SCIS_ERROR("Cycle detected in grammar annotation (see keyword-DAG)");
+}
+
+void TXLGenerator::loadRequestedFragments()
+{
+  FragmentParser parser;
+
+  for (auto const& request : ruleset->fragments) {
+    SCIS_DEBUG("Loading fragment from [" << request.path << "]");
+
+    auto fragment = parser.parse(fragmentsDir + request.path + ".xml");
+    fragments.insert_or_assign(fragment->name, std::move(fragment));
+  }
 }
 
 void TXLGenerator::compileCollectionFunctions(string const& ruleId,
@@ -113,6 +127,8 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
   // sorting keywords
   vector<string_view> sortedKeywords(keywordsUsedInContext.begin(), keywordsUsedInContext.end());
   std::sort(sortedKeywords.begin(), sortedKeywords.end(), [&](string_view a, string_view b) {
+    SCIS_DEBUG("a: " << a.data() << "\t\t| b:" << b.data());
+
       return maxDistanceToRoot.at(a) < maxDistanceToRoot.at(b);
     });
 
@@ -168,7 +184,7 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
   for (auto const& par : fFunc->params)
     fVarName.insert(make_pair(par.type, par.id));
 
-  fFunc->processingType = annotation->grammar.graph.keywords.at(lastCollector->processingType)->type;
+  fFunc->processingType = lastCollector->processingType;
 
   if (auto const compoundCtx = dynamic_cast<CompoundContext const*>(context))
     for (auto const& disjunction : compoundCtx->references)
@@ -207,7 +223,7 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
 
             stringstream pattern;
             grammar->types[type]->variants[0].toTXLWithNames(pattern, [&](string_view const& name) {
-                return fVarName[name.data()] = scis::typeToName(name);
+                return fVarName[name.data()] = typeToName(name);
                 // BUG: variable name duplication
               });
 
@@ -248,7 +264,7 @@ void TXLGenerator::compileRefinementFunctions(string const& ruleId,
     else
       SCIS_ERROR("Icorrect modifier near path element in rule <" << ruleId << ">");
 
-    rFunc->name = ruleId + "_filter_" + path.keywordId + scis::getUniqueId() + to_string(__LINE__);
+    rFunc->name = ruleId + "_refiner_" + path.keywordId + getUniqueId() + to_string(__LINE__);
     rFunc->copyParamsFrom(currentCallChain.back().get());
 
     rFunc->skipType = annotation->grammar.graph.keywords[path.keywordId]->type;
@@ -272,7 +288,7 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
   auto const& pattern = keyword->replacement_patterns[0]; // BUG: only first pattern variant used
   auto const& workingType = keyword->type;
 
-  iFunc->name = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + scis::getUniqueId() + to_string(__LINE__);
+  iFunc->name = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + getUniqueId() + to_string(__LINE__);
   iFunc->copyParamsFrom(currentCallChain.back().get());
   iFunc->searchType = pattern.searchType;
   iFunc->processingType = currentCallChain.back()->processingType;
@@ -283,7 +299,7 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
     stmt.action = "deconstruct " + CURRENT_NODE;
 
     stringstream ss;
-    grammar->types.at(workingType)->variants[0].toTXLWithNames(ss, scis::typeToName); // BUG: only first variant used
+    grammar->types.at(workingType)->variants[0].toTXLWithNames(ss, typeToName); // BUG: only first variant used
     stmt.text = ss.str();
   }
 
@@ -355,7 +371,7 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
 
       else
         if (auto ref = dynamic_cast<GrammarAnnotation::Pattern::TypeReference*>(ptr)) {
-          replacement += scis::typeToName(ref->typeId) + ' ';
+          replacement += typeToName(ref->typeId) + ' ';
           // TODO: check if type exists in a current node
         }
       else
@@ -364,20 +380,20 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
           if (pt->name == ruleStmt.location.pointcut) {
             string algorithmResult;
 
-            auto const handler = [&](scis::FunctionCall::Result const& result) {
+            auto const handler = [&](FunctionCall::Result const& result) {
               if (!result.byText.empty())
                 algorithmResult += result.byText + " ";
             };
 
             // execute algorithm
-            for (auto const& call : algo)
-              scis::call({
-                                .function = call.function,
-                                .args = call.args,
-                                .preparedFragment = preparedFragment,
-                                .iFunc = iFunc.get()
-                              },
-                              handler);
+            for (auto const& step : algo)
+              ::callAlgorithmCommand({
+                                       .function = step.function,
+                                       .args = step.args,
+                                       .preparedFragment = preparedFragment,
+                                       .iFunc = iFunc.get()
+                                     },
+                                     handler);
 
             // append result
             replacement += algorithmResult + " ";
@@ -397,26 +413,31 @@ void TXLGenerator::genMain(ostream& str)
 {
   TXLFunction main;
   main.name = "main";
-  auto& stmt = main.statements.emplace_back(/* empty */);
-  // FIXME: quick and dirty
-  stmt.action = R"("
-                  replace [program]
-                    Program [program]
-                  by
-                    Program
-                ")";
-  stmt.text = "";
 
-  for (auto const& chain : callTree) {
-    stmt.text += "[" + chain.front()->name + "]\n";
-  }
+  auto& replaceStmt = main.statements.emplace_back(/* empty */);
+  replaceStmt.action = "replace [program]";
+  replaceStmt.text = "Program [program]";
+
+  auto& byStmt = main.statements.emplace_back(/* empty */);
+  byStmt.action = "by";
+  byStmt.text = "Program\n";
+
+  for (auto const& chain : callTree)
+    byStmt.text += "\t\t[" + chain.front()->name + "]\n";
 
   main.generateTXL(str);
+}
+
+void TXLGenerator::genUtilityFunctions(ostream& str)
+{
+  for (auto const& f : annotation->library)
+    f->name;; // FIXME: !!! implement !!!
 }
 
 // NOTE: assumption: conjunctions are correct and contain references only to basic contexts
 void TXLGenerator::compile()
 {
+  loadRequestedFragments();
   evaluateKeywordsDistances();
 
   for (auto const& [_, rule] : ruleset->rules) {
@@ -465,4 +486,6 @@ void TXLGenerator::generateCode(ostream& str)
 
   // generate main function
   genMain(str);
+
+  genUtilityFunctions(str);
 }

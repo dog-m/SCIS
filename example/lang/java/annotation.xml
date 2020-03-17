@@ -70,7 +70,7 @@
         <point
           id="method_name"
           keyword="method"
-          value-of="method_name"
+          value-of="method_declarator:method_name"
           />
     </points-of-interest>
 

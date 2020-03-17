@@ -72,8 +72,8 @@ static auto loadAndParseAnnotation(string_view && filename)
 
 /* =================================================================================== */
 
-#include "xml_parser_utils.h"
-#include <sstream>
+//#include "xml_parser_utils.h"
+//#include <sstream>
 
 int main(/*int argc, char** argv*/)
 {
@@ -96,6 +96,7 @@ int main(/*int argc, char** argv*/)
   auto const annotation = loadAndParseAnnotation("./example/lang/java/annotation.xml");
   SCIS_INFO("Annotation:");
   annotation->dump(cout);*/
+
   scis::TXLGenerator generator;
   SCIS_DEBUG("Loading grammar");
   generator.grammar = loadAndParseGrammar("./example/lang/java/grammar.txl");

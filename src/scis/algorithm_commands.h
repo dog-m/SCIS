@@ -1,38 +1,33 @@
 #ifndef ALGORITHM_COMMANDS_H
 #define ALGORITHM_COMMANDS_H
 
-#include <string>
-#include <unordered_map>
-#include <functional>
 #include "txl_generator_commons.h"
+#include <functional>
 
 namespace scis {
-
-  using namespace std;
-  //using namespace scis::generation;
 
   /// pass data around only
   struct FunctionCall {
     struct Result {
       //string replaceText;
-      string byText;
+      std::string byText;
     };
 
-    string function;
-    unordered_map<string, string> args;
-    string preparedFragment;
-    InstrumentationFunction * iFunc;
+    std::string function;
+    std::unordered_map<std::string, std::string> args;
+    std::string preparedFragment;
+    /*generation::*/InstrumentationFunction * iFunc;
   }; // FunctionCall
 
-  using FFF = function<void (FunctionCall::Result const&)>;
-
-  bool call(FunctionCall const& params,
-            FFF const& resultHandler);
-
-  string getUniqueId();
-
-  string typeToName(string_view const& typeName);
+  using FunctionResultHandler = std::function<void (FunctionCall::Result const&)>;
 
 } // scis
+
+bool callAlgorithmCommand(scis::FunctionCall const& params,
+                          scis::FunctionResultHandler const& resultHandler);
+
+std::string getUniqueId();
+
+std::string typeToName(std::string_view const& typeName);
 
 #endif // ALGORITHM_COMMANDS_H

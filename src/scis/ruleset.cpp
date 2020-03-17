@@ -4,11 +4,6 @@
 using namespace std;
 using namespace scis;
 
-string FragmentRequest::getSource(string const& rootDir) const
-{
-  return "["s + __PRETTY_FUNCTION__ + "] is not implemented"s;
-}
-
 void BasicContext::dump(ostream &str)
 {
   str << "{ ";
@@ -52,7 +47,8 @@ void Rule::MakeAction::StringComponent::dump(ostream &str)
 
 void Rule::MakeAction::StringComponent::toTXL(ostream& str)
 {
-  str << " [+ \"" << text << "\"]";
+  // WARNING: text already have quotes
+  str << " [+ " << text << "]";
 }
 
 void Rule::MakeAction::ConstantComponent::dump(ostream &str)

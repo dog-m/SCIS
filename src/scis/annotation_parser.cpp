@@ -13,7 +13,15 @@ void AnnotationParser::parseGrammar(XMLElement const* const root)
   annotation->grammar.language = expectedAttribute(root, "language")->Value();
   annotation->grammar.txlSourceFilename = expectedAttribute(root, "src")->Value();
 
-  parseKeywordSubtypes(expectedPath(root, { "keyword-DAG" }));
+  FOREACH_XML_ELEMENT(expectedPath(root, { "keyword-DAG" }), subtype)
+    if (subtype->Attribute("type")) {
+      parseKeyword(subtype);
+
+      // fill tops
+      auto const newKeyword = subtype->Name();
+      auto const newTopKeyword = annotation->grammar.graph.keywords.at(newKeyword).get();
+      annotation->grammar.graph.topKeywords.push_back(newTopKeyword);
+    }
 }
 
 inline void AnnotationParser::parseKeywordSubtypes(const XMLElement* const root)
@@ -33,7 +41,7 @@ void AnnotationParser::parseKeyword(XMLElement const* const keyword)
   FOREACH_XML_ELEMENT(keyword, subtype)
     word->subnodes.push_back(subtype->Name());
 
-  annotation->grammar.graph.keywords.emplace(word->id, std::move(word));
+  annotation->grammar.graph.keywords.insert_or_assign(word->id, std::move(word));
 
   parseKeywordSubtypes(keyword);
 }
@@ -86,7 +94,7 @@ void AnnotationParser::parsePointsOfInterest(XMLElement const* const root)
       poi->valueTypePath.emplace_back(txlTypeId);
     });
 
-    annotation->pointsOfInterest.emplace(poi->id, std::move(poi));
+    annotation->pointsOfInterest.insert_or_assign(poi->id, std::move(poi));
   }
 }
 
@@ -162,10 +170,10 @@ void AnnotationParser::parsePointcutsForKeyword(XMLElement const* const root)
 
       step.function = action->Name();
       FOREACH_XML_ATTRIBUTE(action, argument)
-        step.args.emplace(argument->Name(), argument->Value());
+        step.args.insert_or_assign(argument->Name(), argument->Value());
     }
 
-    keyword->pointcuts.emplace(pointcut->name, std::move(pointcut));
+    keyword->pointcuts.insert_or_assign(pointcut->name, std::move(pointcut));
   }
 }
 

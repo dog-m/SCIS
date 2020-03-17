@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <optional>
 
-#include <ostream> // TODO: remove
+#include <ostream>
 
 namespace scis {
 
@@ -14,8 +14,6 @@ namespace scis {
 
   struct FragmentRequest {
     string path;
-
-    string getSource(string const& rootDir) const;
   };
 
   struct Pattern {

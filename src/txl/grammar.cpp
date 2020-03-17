@@ -90,12 +90,13 @@ Grammar::Type* Grammar::findOrAddTypeByName(string_view const& name)
   if (auto const x = types.find(name); x != types.cend())
     return x->second.get();
   else {
-    auto const newType = new Type();
+    auto newType = make_unique<Type>();
     newType->name = name;
+    auto const type = newType.get();
 
-    types.emplace(name, newType);
+    types.insert_or_assign(newType->name, std::move(newType));
 
-    return newType;
+    return type;
   }
 }
 

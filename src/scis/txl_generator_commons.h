@@ -85,6 +85,6 @@ namespace scis {
     void generateStatements() override;
   };
 
-}
+} // scis
 
 #endif // TXL_GENERATOR_COMMONS_H

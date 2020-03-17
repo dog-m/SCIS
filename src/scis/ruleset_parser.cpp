@@ -66,7 +66,7 @@ void RulesetParser::parseBasicContext(string const& id,
     parseStringTemplate(constraint.value, expectedPath(item, { "string_template", "stringlit" }));
   }
 
-  ruleset->contexts.emplace(ctx->id, std::move(ctx));
+  ruleset->contexts.insert_or_assign(ctx->id, std::move(ctx));
 }
 
 void RulesetParser::parseCompoundContext(string const& id,
@@ -84,7 +84,7 @@ void RulesetParser::parseCompoundContext(string const& id,
 
   // TODO: check if every context (id) exists in compound context
 
-  ruleset->contexts.emplace(ctx->id, std::move(ctx));
+  ruleset->contexts.insert_or_assign(ctx->id, std::move(ctx));
 }
 
 void RulesetParser::parseContextDisjunction(CompoundContext::Disjunction &disjunction,
@@ -122,7 +122,7 @@ void RulesetParser::parseRules(XMLElement const* const rules)
     if (ruleset->rules.find(rule->id) != ruleset->rules.cend())
       SCIS_WARNING("Rule overwriting detected!");
 
-    ruleset->rules.emplace(rule->id, std::move(rule));
+    ruleset->rules.insert_or_assign(rule->id, std::move(rule));
   }
 }
 

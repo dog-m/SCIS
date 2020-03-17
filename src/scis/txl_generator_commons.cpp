@@ -20,15 +20,15 @@ void TXLFunction::generateTXL(ostream& ss)
   ss << endl;
 
   if (skipType.has_value())
-    ss << "  skipping [" << skipType.value() << ']' << endl;
+    ss << '\t' << "skipping [" << skipType.value() << ']' << endl;
 
   generateStatements();
 
   for (auto const& stmt : statements)
-    ss << stmt.action << endl
-       << stmt.text << endl;
+    ss << '\t' << stmt.action << endl
+       << "\t\t" << stmt.text << endl;
 
-  ss << "end " << ruleOrFunction();
+  ss << "end " << ruleOrFunction() << endl;
 }
 
 string_view TXLFunction::ruleOrFunction()
@@ -45,7 +45,7 @@ void CallChainFunction::connectTo(CallChainFunction* const other)
 void CollectionFunction::generateStatements()
 {
   auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace * [" + processingType + "]";
+  replaceStmt.action = "replace $ [" + processingType + "]";
   replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
 
   string paramNamesList = "";
@@ -107,8 +107,6 @@ void InstrumentationFunction::generateStatements()
   auto& replaceStmt = statements.emplace_front(/* empty */);
   replaceStmt.action = "replace [" + searchType + "]";
   replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
-
-  ; // FIXME: InstrumentationFunction::gen is incomplete
 
   auto& byStmt = statements.emplace_back(/* empty */);
   byStmt.action = "by";

@@ -1,5 +1,5 @@
-#ifndef TXLINTERPRETER_H
-#define TXLINTERPRETER_H
+#ifndef INTERPRETER_H
+#define INTERPRETER_H
 
 #include "logging.h"
 #include <string>
@@ -21,4 +21,4 @@ namespace txl {
 
 } // TXL
 
-#endif // TXLINTERPRETER_H
+#endif // INTERPRETER_H

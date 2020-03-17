@@ -1,5 +1,5 @@
-#ifndef GRAMMARPARSER_H
-#define GRAMMARPARSER_H
+#ifndef GRAMMAR_PARSER_H
+#define GRAMMAR_PARSER_H
 
 #include <vector>
 #include <memory>
@@ -44,4 +44,4 @@ namespace txl {
 
 } // TXL
 
-#endif // GRAMMARPARSER_H
+#endif // GRAMMAR_PARSER_H

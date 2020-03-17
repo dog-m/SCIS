@@ -1,5 +1,5 @@
-#ifndef TXLWRAPPER_H
-#define TXLWRAPPER_H
+#ifndef WRAPPER_H
+#define WRAPPER_H
 
 #include <functional>
 #include <vector>
@@ -25,4 +25,4 @@ namespace txl {
 
 } // TXL
 
-#endif // TXLWRAPPER_H
+#endif // WRAPPER_H
