@@ -4,10 +4,12 @@
 #include <string>
 #include <unordered_map>
 #include <functional>
+#include "txl_generator_commons.h"
 
-namespace scis::algorithm {
+namespace scis {
 
   using namespace std;
+  //using namespace scis::generation;
 
   /// pass data around only
   struct FunctionCall {
@@ -16,13 +18,20 @@ namespace scis::algorithm {
       string byText;
     };
 
-    string const& function;
-    unordered_map<string, string> const& args;
-    string const& preparedFragment;
+    string function;
+    unordered_map<string, string> args;
+    string preparedFragment;
+    InstrumentationFunction * iFunc;
   }; // FunctionCall
 
+  using FFF = function<void (FunctionCall::Result const&)>;
+
   bool call(FunctionCall const& params,
-            function<void(FunctionCall::Result const&)> const& resultHandler);
+            FFF const& resultHandler);
+
+  string getUniqueId();
+
+  string typeToName(string_view const& typeName);
 
 } // scis
 

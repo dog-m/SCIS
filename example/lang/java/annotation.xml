@@ -91,11 +91,13 @@
                       as="Additions"
                       />
                     <paste-algorithm>
+                        <fragment-to-variable
+                          name="Additions"
+                          type="repeat import_declaration"
+                          />
                         <insert-call
                           function="addToImportsIfNotExists"
-                          params=""
-                          apply-to="Imports"
-                          each-element-of="Additions"
+                          params="each Additions"
                           />
                     </paste-algorithm>
                 </pointcut>
@@ -114,7 +116,7 @@
                         <!--statement-->
                         <p name="after-body"/>
                     }
-                    <!--opt_else_clause-->
+                    <!--opt else_clause-->
                     <p name="after"/>
                 </pattern>
             </replacement-patterns>
@@ -125,8 +127,8 @@
                       as="Additions"
                       />
                     <paste-algorithm>
-                        <insert-reference
-                        />
+                        <insert-fragment
+                          />
                     </paste-algorithm>
                 </pointcut>
             </pointcuts>

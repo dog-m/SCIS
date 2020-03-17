@@ -10,6 +10,7 @@
 
 using namespace std;
 using namespace scis;
+//using namespace scis::generation;
 
 static string const CURRENT_NODE = "__NODE__";
 
@@ -23,136 +24,7 @@ static unordered_map<string_view, string_view> CTX_OP_INVERSION_MAPPING {
 };
 
 
-static auto getUniqueId()
-{
-  static uint64_t id = 0;
-  return "uid" + to_string(id++);
-}
 
-static string typeToName(string_view const& typeName) {
-  string processed;
-  bool useUpperCase = true;
-  for (auto const c : typeName) {
-    if (c == ' ' || c == '_') {
-      useUpperCase = true;
-      continue;
-    }
-
-    if (useUpperCase) {
-      processed.push_back(toupper(c));
-      useUpperCase = false;
-    }
-    else
-      processed.push_back(c);
-  }
-
-  return processed;
-}
-
-
-void TXLGenerator::TXLFunction::copyParamsFrom(TXLGenerator::TXLFunction const* const from)
-{
-  params.insert(params.end(), from->params.cbegin(), from->params.cend());
-}
-
-void TXLGenerator::TXLFunction::generateTXL(ostream& ss)
-{
-  ss << ruleOrFunction() << " " << name;
-  for (auto const& p : params)
-    ss << ' ' << p.id << " [" << p.type << ']';
-  ss << endl;
-
-  if (skipType.has_value())
-    ss << "  skipping [" << skipType.value() << ']' << endl;
-
-  generateStatements();
-
-  for (auto const& stmt : statements)
-    ss << stmt.action << endl
-       << stmt.text << endl;
-
-  ss << "end " << ruleOrFunction();
-}
-
-string_view TXLGenerator::TXLFunction::ruleOrFunction()
-{
-  return isRule ? "rule" : "function";
-}
-
-void TXLGenerator::CallChainFunction::connectTo(TXLGenerator::CallChainFunction* const other)
-{
-  this->callTo = other;
-  other->callFrom = this;
-}
-
-void TXLGenerator::CollectionFunction::generateStatements()
-{
-  auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace * [" + processingType + "]";
-  replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
-
-  string paramNamesList = "";
-  for (auto const& p : params)
-    paramNamesList += p.id + ' ';
-
-  auto& byStmt = statements.emplace_back(/* empty */);
-  byStmt.action = "by";
-  byStmt.text = CURRENT_NODE + " [" + callTo->name + ' ' + paramNamesList + CURRENT_NODE + ']';
-}
-
-void TXLGenerator::FilteringFunction::generateStatements()
-{
-  auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace $ ["s + processingType + ']';
-  replaceStmt.text = CURRENT_NODE + " ["s + processingType + "]";
-
-  for (auto const& where : wheres) {
-    auto& whereStmt = statements.emplace_back(/* empty */);
-    whereStmt.action = "where";
-
-    whereStmt.text = where.target;
-    for (auto const& op : where.operators) {
-      whereStmt.text += " [" + op.name;
-
-      for (auto const& arg : op.args)
-        whereStmt.text += ' ' + arg;
-
-      whereStmt.text += "]";
-    }
-  }
-
-  string paramNamesList = "";
-  for (auto const& p : params)
-    paramNamesList += p.id + ' ';
-
-  auto& byStmt = statements.emplace_back(/* empty */);
-  byStmt.action = "by";
-  byStmt.text = CURRENT_NODE + " [" + callTo->name + ' ' + paramNamesList + ']';
-}
-
-void TXLGenerator::RefinementFunction::generateStatements()
-{
-  auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace * [" + processingType + "]";
-  replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
-
-  string paramNamesList = "";
-  for (auto const& p : params)
-    paramNamesList += p.id + ' ';
-
-  auto& byStmt = statements.emplace_back(/* empty */);
-  byStmt.action = "by";
-  byStmt.text = CURRENT_NODE + " [" + callTo->name + ' ' + paramNamesList + ']';
-}
-
-void TXLGenerator::InstrumentationFunction::generateStatements()
-{
-  auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace [" + processingType + "]";
-  replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
-
-  ; // FIXME: InstrumentationFunction::gen is incomplete
-}
 
 Fragment const* TXLGenerator::getFragment(string_view const& id)
 {
@@ -171,7 +43,7 @@ Fragment const* TXLGenerator::getFragment(string_view const& id)
   }
 }
 
-void TXLGenerator::addToCallChain(unique_ptr<TXLGenerator::CallChainFunction>&& func)
+void TXLGenerator::addToCallChain(unique_ptr<CallChainFunction>&& func)
 {
   if (!currentCallChain.empty())
     currentCallChain.back()->connectTo(func.get());
@@ -335,7 +207,7 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
 
             stringstream pattern;
             grammar->types[type]->variants[0].toTXLWithNames(pattern, [&](string_view const& name) {
-                return fVarName[name.data()] = typeToName(name);
+                return fVarName[name.data()] = scis::typeToName(name);
                 // BUG: variable name duplication
               });
 
@@ -376,7 +248,7 @@ void TXLGenerator::compileRefinementFunctions(string const& ruleId,
     else
       SCIS_ERROR("Icorrect modifier near path element in rule <" << ruleId << ">");
 
-    rFunc->name = ruleId + "_filter_" + path.keywordId + getUniqueId() + to_string(__LINE__);
+    rFunc->name = ruleId + "_filter_" + path.keywordId + scis::getUniqueId() + to_string(__LINE__);
     rFunc->copyParamsFrom(currentCallChain.back().get());
 
     rFunc->skipType = annotation->grammar.graph.keywords[path.keywordId]->type;
@@ -397,12 +269,13 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
   auto iFunc = make_unique<InstrumentationFunction>();
   auto const keyword = annotation->grammar.graph.keywords[ruleStmt.location.path.back().keywordId].get(); // BUG: empty path?
   auto const& algo = keyword->pointcuts[ruleStmt.location.pointcut]->aglorithm;
-  auto const& pattern = keyword->replacement_patterns[0];
+  auto const& pattern = keyword->replacement_patterns[0]; // BUG: only first pattern variant used
   auto const& workingType = keyword->type;
 
-  iFunc->name = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + getUniqueId() + to_string(__LINE__);
+  iFunc->name = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + scis::getUniqueId() + to_string(__LINE__);
   iFunc->copyParamsFrom(currentCallChain.back().get());
-  iFunc->processingType = pattern.searchType;
+  iFunc->searchType = pattern.searchType;
+  iFunc->processingType = currentCallChain.back()->processingType;
 
   // deconstruct current node
   {
@@ -410,7 +283,7 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
     stmt.action = "deconstruct " + CURRENT_NODE;
 
     stringstream ss;
-    grammar->types.at(workingType)->variants[0].toTXLWithNames(ss, typeToName); // BUG: only first variant used
+    grammar->types.at(workingType)->variants[0].toTXLWithNames(ss, scis::typeToName); // BUG: only first variant used
     stmt.text = ss.str();
   }
 
@@ -473,35 +346,48 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
 
     // ----
 
-    auto& byStmt = iFunc->statements.emplace_back(/* empty */);
-    byStmt.action = "by";
-    byStmt.text = "";
-
+    string replacement = "";
     for (auto const& block : pattern.blocks) {
       auto const ptr = block.get();
 
       if (auto txt = dynamic_cast<GrammarAnnotation::Pattern::TextBlock*>(ptr))
-        byStmt.text += txt->text + ' ';
+        replacement += txt->text + ' ';
 
       else
         if (auto ref = dynamic_cast<GrammarAnnotation::Pattern::TypeReference*>(ptr)) {
-          byStmt.text += ref->typeId + ' ';
-          // TODO: check if type exists in current node
+          replacement += scis::typeToName(ref->typeId) + ' ';
+          // TODO: check if type exists in a current node
         }
       else
         if (auto pt = dynamic_cast<GrammarAnnotation::Pattern::PointcutLocation*>(ptr)) {
           // TODO: add pointcut name wildcard
-          if (pt->name == ruleStmt.location.pointcut)
+          if (pt->name == ruleStmt.location.pointcut) {
+            string algorithmResult;
+
+            auto const handler = [&](scis::FunctionCall::Result const& result) {
+              if (!result.byText.empty())
+                algorithmResult += result.byText + " ";
+            };
+
             // execute algorithm
-            for (auto const& call : algo) {
-              call.function;
-              call.args;
-              preparedFragment; // FIXME: !!! incomplete !!!
-            }
+            for (auto const& call : algo)
+              scis::call({
+                                .function = call.function,
+                                .args = call.args,
+                                .preparedFragment = preparedFragment,
+                                .iFunc = iFunc.get()
+                              },
+                              handler);
+
+            // append result
+            replacement += algorithmResult + " ";
+          }
         }
       else
         SCIS_ERROR("Undefined pattern block");
     }
+
+    iFunc->replacement = replacement;
   }
 
   addToCallChain(std::move(iFunc));
@@ -510,17 +396,27 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
 void TXLGenerator::genMain(ostream& str)
 {
   TXLFunction main;
-  main;
+  main.name = "main";
+  auto& stmt = main.statements.emplace_back(/* empty */);
+  // FIXME: quick and dirty
+  stmt.action = R"("
+                  replace [program]
+                    Program [program]
+                  by
+                    Program
+                ")";
+  stmt.text = "";
 
-  callTree; // FIXME: !!! incomplete !!!
+  for (auto const& chain : callTree) {
+    stmt.text += "[" + chain.front()->name + "]\n";
+  }
 
   main.generateTXL(str);
 }
 
+// NOTE: assumption: conjunctions are correct and contain references only to basic contexts
 void TXLGenerator::compile()
 {
-  ; // NOTE: assumption: conjunctions are correct and contain references only to basic contexts
-
   evaluateKeywordsDistances();
 
   for (auto const& [_, rule] : ruleset->rules) {
@@ -556,9 +452,17 @@ void TXLGenerator::compile()
 void TXLGenerator::generateCode(ostream& str)
 {
   SCIS_DEBUG("Generating TXL sources");
-  callTree;
 
-  genMain(str); // FIXME: !!! incomplete !!!
+  // generate utility functions
 
-  str << endl << __PRETTY_FUNCTION__ << endl;
+  // generate all chains
+  for (auto const& chain : callTree)
+    for (auto const& func : chain) {
+      str << endl;
+      func->generateTXL(str);
+      str << endl;
+    }
+
+  // generate main function
+  genMain(str);
 }

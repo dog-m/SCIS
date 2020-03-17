@@ -2,8 +2,9 @@
 
 #include "txl/grammar_parser.h"
 #include "scis/ruleset_parser.h"
-#include "scis/fragment_parser.h"
 #include "scis/annotation_parser.h"
+
+#include "scis/txl_generator.h"
 
 #include "tinyxml2/tinyxml2.h"
 
@@ -62,11 +63,6 @@ static auto loadAndParseRuleset(string_view && filename)
   return tryParse<scis::RulesetParser>(xml.data());
 }
 
-static auto loadAndParseFragment(string_view && filename)
-{
-  return tryLoadAndParse<scis::FragmentParser>(filename.data());
-}
-
 static auto loadAndParseAnnotation(string_view && filename)
 {
   return tryLoadAndParse<scis::AnnotationParser>(filename.data());
@@ -81,7 +77,7 @@ static auto loadAndParseAnnotation(string_view && filename)
 
 int main(/*int argc, char** argv*/)
 {
-  auto const grm = loadAndParseGrammar("./example/lang/java/grammar.txl");
+  /*auto const grm = loadAndParseGrammar("./example/lang/java/grammar.txl");
   SCIS_INFO("Language grammar:");
   SCIS_INFO("As TXL:");
   for (auto const& [_, type] : grm->types)
@@ -97,15 +93,24 @@ int main(/*int argc, char** argv*/)
   ruleset->dump(cout);
 
   // ---
-
-  auto const fragment = loadAndParseFragment("./example/fragments/java/logging/message.xml");
-  SCIS_INFO("Fragment:");
-  fragment->dump(cout);
-
-  // ---
   auto const annotation = loadAndParseAnnotation("./example/lang/java/annotation.xml");
   SCIS_INFO("Annotation:");
-  annotation->dump(cout);
+  annotation->dump(cout);*/
+  scis::TXLGenerator generator;
+  SCIS_DEBUG("Loading grammar");
+  generator.grammar = loadAndParseGrammar("./example/lang/java/grammar.txl");
+
+  SCIS_DEBUG("Loading annotation");
+  generator.annotation = loadAndParseAnnotation("./example/lang/java/annotation.xml");
+
+  SCIS_DEBUG("Loading ruleset");
+  generator.ruleset = loadAndParseRuleset("./example/add_logging_to_Main_main.yml");
+
+  generator.processingFilename = "*dir/test.java*";
+  generator.fragmentsDir = "./example/fragments/java/";
+
+  generator.compile();
+  generator.generateCode(cout);
 
   return 0;
 }

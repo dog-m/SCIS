@@ -7,95 +7,22 @@
 #include "ruleset.h"
 
 #include "fragment_parser.h"
-#include <deque>
+#include "txl_generator_commons.h"
 
 namespace scis {
 
   using namespace std;
+  //using namespace scis::generation;
 
-  struct TXLGenerator {
-
-    // sub-types
-
-    struct TXLFunction {
-      struct Parameter {
-        string id;
-        string type;
-      };
-
-      struct Statement {
-        string action;
-        string text;
-      };
-
-      bool isRule = false;
-      string name = "???";
-      vector<Parameter> params;
-      string processingType = "???";
-      deque<Statement> statements;
-      optional<string> skipType = nullopt;
-
-      virtual ~TXLFunction() = default;
-
-      virtual void generateStatements() {}
-
-      void copyParamsFrom(TXLFunction const *const from);
-
-      void generateTXL(ostream &ss);
-
-      string_view ruleOrFunction();
-    }; // TXLFunction
-
-    struct CallChainElement {
-      /// calleR
-      TXLFunction const* callFrom = nullptr;
-      /// calleE
-      TXLFunction const* callTo = nullptr;
-    };
-
-    struct CallChainFunction : public TXLFunction, public CallChainElement {
-      void connectTo(CallChainFunction *const other);
-    };
-
-    /// Used by filtering function
-    struct CollectionFunction : public CallChainFunction {
-      string processingKeyword;
-
-      void generateStatements() override;
-    };
-
-    struct FilteringFunction : public CallChainFunction {
-      struct Where {
-        struct CallElement {
-          string name;
-          vector<string> args;
-        };
-
-        string target;
-        vector<CallElement> operators;
-      }; // Where
-
-      vector<Where> wheres;
-
-      void generateStatements() override;
-    }; // FilteringFunction
-
-    struct RefinementFunction : public CallChainFunction {
-      void generateStatements() override;
-    };
-
-    struct InstrumentationFunction : public CallChainFunction {
-      void generateStatements() override;
-    };
-
-    // private data
-
+  class TXLGenerator {
+  public:
     unique_ptr<txl::Grammar> grammar;
     unique_ptr<GrammarAnnotation> annotation;
     unique_ptr<Ruleset> ruleset;
-    string processingFilename = "???/???.???"; // FIXME: add file name
+    string processingFilename = "???.???"; // FIXME: add file name
     string fragmentsDir = "./";
 
+  protected:
     unordered_map<string_view, unique_ptr<Fragment>> fragments;
 
     unordered_map<string_view, int> maxDistanceToRoot;

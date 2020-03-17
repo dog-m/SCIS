@@ -61,6 +61,9 @@ if(Boost_FOUND)
       src/scis/algorithm_commands.h
       src/scis/algorithm_commands.cpp
 
+      src/scis/txl_generator_commons.h
+      src/scis/txl_generator_commons.cpp
+
       src/scis/txl_generator.h
       src/scis/txl_generator.cpp
 
