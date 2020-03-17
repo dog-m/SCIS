@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <ostream>
+#include <unordered_map>
 
 namespace scis {
 
@@ -18,19 +19,28 @@ namespace scis {
 
     struct SourceBlock {
       virtual ~SourceBlock() = default;
-      virtual void dump(ostream &str) = 0;
+      virtual void dump(ostream &str) const = 0;
+
+      virtual void toTXL(ostream &str,
+                         unordered_map<string_view, string_view> const& param2arg) const = 0;
     };
 
     struct TextBlock : public SourceBlock {
       string text;
 
-      void dump(ostream &str) override;
+      void dump(ostream &str) const override;
+
+      void toTXL(ostream &str,
+                 unordered_map<string_view, string_view> const& param2arg) const override;
     };
 
     struct ParamReference : public SourceBlock {
       string id;
 
-      void dump(ostream &str) override;
+      void dump(ostream &str) const override;
+
+      void toTXL(ostream &str,
+                 unordered_map<string_view, string_view> const& param2arg) const override;
     };
 
     string language;
@@ -41,7 +51,9 @@ namespace scis {
     vector<string> params;
     vector<unique_ptr<SourceBlock>> source;
 
-    void dump(ostream &str);
+    void dump(ostream &str) const;
+
+    void toTXL(ostream &str, const vector<string>& args) const;
   }; // Fragment
 
 } // scis

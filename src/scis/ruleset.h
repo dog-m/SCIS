@@ -75,18 +75,24 @@ namespace scis {
       struct Component {
         virtual ~Component() = default;
         virtual void dump(ostream &str) = 0; // TODO: remove
+
+        virtual void toTXL(ostream &str) = 0;
       };
 
       struct StringComponent : public Component {
         string text;
 
         void dump(ostream &str) override; // TODO: remove
+
+        void toTXL(ostream &str) override;
       };
 
       struct ConstantComponent : public Component {
         string id;
 
         void dump(ostream &str) override; // TODO: remove
+
+        void toTXL(ostream &str) override;
       };
 
       string target;

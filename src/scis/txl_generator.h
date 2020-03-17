@@ -47,25 +47,23 @@ namespace scis {
     }; // TXLFunction
 
     struct CallChainElement {
-      /// вызываЮЩИЙ элемент в цепочке
+      /// calleR
       TXLFunction const* callFrom = nullptr;
-      /// вызываЕМЫЙ элемент
+      /// calleE
       TXLFunction const* callTo = nullptr;
     };
 
     struct CallChainFunction : public TXLFunction, public CallChainElement {
-
       void connectTo(CallChainFunction *const other);
     };
 
-    // функция для сбора информации для функции фильтрации
+    /// Used by filtering function
     struct CollectionFunction : public CallChainFunction {
       string processingKeyword;
 
       void generateStatements() override;
     };
 
-    // функция фильтрации
     struct FilteringFunction : public CallChainFunction {
       struct Where {
         struct CallElement {
@@ -82,15 +80,11 @@ namespace scis {
       void generateStatements() override;
     }; // FilteringFunction
 
-    // уточняющая функция
     struct RefinementFunction : public CallChainFunction {
       void generateStatements() override;
     };
 
-    // функция, выплняющая инструментирование
-    struct InstrumentationFunction : public TXLFunction {
-      ;
-
+    struct InstrumentationFunction : public CallChainFunction {
       void generateStatements() override;
     };
 
@@ -99,19 +93,24 @@ namespace scis {
     unique_ptr<txl::Grammar> grammar;
     unique_ptr<GrammarAnnotation> annotation;
     unique_ptr<Ruleset> ruleset;
+    string processingFilename = "???/???.???"; // FIXME: add file name
+    string fragmentsDir = "./";
 
-    unordered_map<string_view, unique_ptr<Fragment>> fragLibrary;
+    unordered_map<string_view, unique_ptr<Fragment>> fragments;
 
     unordered_map<string_view, int> maxDistanceToRoot;
 
-    using CallChain = vector<unique_ptr<TXLFunction>>;
+    using CallChain = vector<unique_ptr<CallChainFunction>>;
+
     CallChain currentCallChain;
     vector<CallChain> callTree;
 
-    Fragment const* getFragment(string_view const& name);
+    Fragment const* getFragment(string_view const& id);
+
+    void addToCallChain(unique_ptr<CallChainFunction>&& func);
 
     /// построение максимальных растояний до корня (BFS)
-    void evaluateDistances();
+    void evaluateKeywordsDistances();
 
     void compileCollectionFunctions(string const& ruleId,
                                     Context const* const context);

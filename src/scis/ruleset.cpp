@@ -50,9 +50,23 @@ void Rule::MakeAction::StringComponent::dump(ostream &str)
   str << text;
 }
 
+void Rule::MakeAction::StringComponent::toTXL(ostream& str)
+{
+  str << " [+ \"" << text << "\"]";
+}
+
 void Rule::MakeAction::ConstantComponent::dump(ostream &str)
 {
   str << "$" + id;
+}
+
+void Rule::MakeAction::ConstantComponent::toTXL(ostream& str)
+{
+  string upcase = id;
+  for (auto& c : upcase)
+    c = toupper(c);
+
+  str << " [quote " << upcase << "]";
 }
 
 void Ruleset::dump(ostream &str)
@@ -77,7 +91,7 @@ void Ruleset::dump(ostream &str)
       for (auto const& p : s.location.path) {
         str << " -> ";
 
-        str << '[' << p.modifier << "] " << p.statementId;
+        str << '[' << p.modifier << "] " << p.keywordId;
         if (p.pattern.has_value())
           str << " ("
                << (p.pattern->somethingBefore ? "..." : "")

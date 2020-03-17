@@ -58,6 +58,9 @@ if(Boost_FOUND)
       src/scis/ruleset_parser.h
       src/scis/ruleset_parser.cpp
 
+      src/scis/algorithm_commands.h
+      src/scis/algorithm_commands.cpp
+
       src/scis/txl_generator.h
       src/scis/txl_generator.cpp
 
