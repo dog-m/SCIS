@@ -38,8 +38,8 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
 
 };
 
-bool callAlgorithmCommand(FunctionCall const& params,
-                          FunctionResultHandler const& resultHandler)
+bool scis::callAlgorithmCommand(FunctionCall const& params,
+                                FunctionResultHandler const& resultHandler)
 {
   auto const func = STANDARD_FUNCTIONS.find(params.function);
   if (func == STANDARD_FUNCTIONS.cend())
@@ -53,13 +53,13 @@ bool callAlgorithmCommand(FunctionCall const& params,
     }
 }
 
-string getUniqueId()
+string scis::getUniqueId()
 {
   static uint64_t id = 0;
   return "uid" + to_string(id++);
 }
 
-string typeToName(const string_view& typeName)
+string scis::makeNameFromType(const string_view& typeName)
 {
   string processed;
 

@@ -11,6 +11,9 @@ namespace scis {
 
   using namespace std;
 
+  inline string const CURRENT_NODE = "__NODE__";
+  inline string const VOID_NODE = "__VOID__";
+
   struct TXLFunction {
     struct Parameter {
       string id;

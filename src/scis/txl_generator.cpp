@@ -11,8 +11,6 @@
 using namespace std;
 using namespace scis;
 
-static string const CURRENT_NODE = "__NODE__";
-
 static unordered_map<string_view, string_view> CTX_OP_INVERSION_MAPPING {
   { "=", "~=" },
   { "~=", "=" },
@@ -156,7 +154,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
       //cFunc->skipType = lastCollector->processingType; // BUG: potential skipping bug
     }
 
-    cFunc->name = ruleId + "_collector_" + context->id + "_" + cFunc->processingKeyword + to_string(__LINE__);
+    cFunc->name = ruleId + "_collector_" + context->id + "_" + cFunc->processingKeyword + to_string(__LINE__) + getUniqueId();
     cFunc->processingKeyword = keyword;
     cFunc->processingType = annotation->grammar.graph.keywords.at(keyword)->type;
     cFunc->skipType = cFunc->processingType; // BUG: potential skipping bug
@@ -171,7 +169,7 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
   // add context filtering function
   auto fFunc = make_unique<FilteringFunction>();
 
-  fFunc->name = ruleId + "_filter_" + context->id + to_string(__LINE__);
+  fFunc->name = ruleId + "_filter_" + context->id + to_string(__LINE__) + getUniqueId();
   fFunc->copyParamsFrom(currentCallChain.back().get());
 
   // plus one parameter (result) from last collection function
@@ -180,11 +178,13 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
   fParam.id = lastCollector->processingKeyword;
   fParam.type = lastCollector->processingType;
 
-  unordered_map<string, string> fVarName; // FIXME: introduce variables once
+  unordered_map<string, string> type2name; // FIXME: introduce variables once
   for (auto const& par : fFunc->params)
-    fVarName.insert(make_pair(par.type, par.id));
+    type2name.insert(make_pair(par.type, par.id));
 
   fFunc->processingType = lastCollector->processingType;
+
+  ;// FIXME: !!! incorrect process understanding !!!
 
   if (auto const compoundCtx = dynamic_cast<CompoundContext const*>(context))
     for (auto const& disjunction : compoundCtx->references)
@@ -192,63 +192,76 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
         // FIXME: compound -> basic context resolution
         auto const basicCtx = dynamic_cast<BasicContext*>(ruleset->contexts.at(element.id).get());
 
-        // BUG: only first POI used
-        auto const& constraint = basicCtx->constraints.front();
-
-        auto& where = fFunc->wheres.emplace_back(/* empty */);
-        auto const poi = annotation->pointsOfInterest[constraint.id].get();
-
-        // create string variable
-        if (poi->valueTypePath.empty()) {
-          auto const& targetType = annotation->grammar.graph.keywords[poi->keyword]->type;
-          where.target = fVarName[targetType] + "_str";
-
-          auto& constructStmt = fFunc->statements.emplace_back(/* empty */);
-          constructStmt.action = "construct " + where.target + " [stringlit]";
-          constructStmt.text = "_ [quote " + fVarName[targetType] + "]";
-        }
-        else {
-          auto const& topType = annotation->grammar.graph.keywords[poi->keyword]->type;
-          vector<string> path;
-          path.insert(path.begin(), poi->valueTypePath.cbegin(), poi->valueTypePath.cend());
-          path.insert(path.begin(), topType);
-
-          for (auto const& type : path) {
-            // skip last
-            if (type == path.back())
-              break;
-
-            auto& deconstructStmt = fFunc->statements.emplace_back(/* empty */);
-            deconstructStmt.action = "deconstruct " + fVarName[type];
-
-            stringstream pattern;
-            grammar->types[type]->variants[0].toTXLWithNames(pattern, [&](string_view const& name) {
-                return fVarName[name.data()] = typeToName(name);
-                // BUG: variable name duplication
-              });
-
-            deconstructStmt.text = pattern.str();
-          }
-
-          auto const& lastType = path.back();
-          where.target = fVarName[lastType] + "_str";
-
-          auto& constructStmt = fFunc->statements.emplace_back(/* empty */);
-          constructStmt.action = "construct " + lastType + " [stringlit]";
-          constructStmt.text = "_ [quote " + fVarName[lastType] + "]";
-        }
-
-        // FIXME: case: different context constraints for the same node
-        auto& call = where.operators.emplace_back(/* empty */);
-        call.name = element.negation ? CTX_OP_INVERSION_MAPPING[constraint.op] : constraint.op;
-        // FIXME: string templates
-        call.args.push_back(constraint.value.text);
+        compileBasicContext(basicCtx, element.negation, fFunc.get(), type2name);
       }
 
   else
-    SCIS_ERROR("Filtering for basic contexts not implemented");// FIXME: missing basic contexts in filters
+    if (auto const basicCtx = dynamic_cast<BasicContext const*>(context))
+      compileBasicContext(basicCtx, false, fFunc.get(), type2name);
+
+  else
+    SCIS_ERROR("Unrecognized context type");
 
   addToCallChain(std::move(fFunc));
+}
+
+void TXLGenerator::compileBasicContext(BasicContext const* const context,
+                                       bool const topLevelNegation,
+                                       FilteringFunction *const fFunc,
+                                       unordered_map<string, string>& type2name)
+{
+  // BUG: only first POI used
+  auto const& constraint = context->constraints.front();
+
+  auto& where = fFunc->wheres.emplace_back(/* empty */);
+  auto const poi = annotation->pointsOfInterest[constraint.id].get();
+
+  // create string variable
+  if (poi->valueTypePath.empty()) {
+    auto const& targetType = annotation->grammar.graph.keywords[poi->keyword]->type;
+    where.target = type2name[targetType] + "_str";
+
+    auto& constructStmt = fFunc->statements.emplace_back(/* empty */);
+    constructStmt.action = "construct " + where.target + " [stringlit]";
+    constructStmt.text = "_ [quote " + type2name[targetType] + "]";
+  }
+  else {
+    auto const& topType = annotation->grammar.graph.keywords[poi->keyword]->type;
+    vector<string> path;
+    path.insert(path.begin(), poi->valueTypePath.cbegin(), poi->valueTypePath.cend());
+    path.insert(path.begin(), topType);
+
+    for (auto const& type : path) {
+      // skip last
+      if (type == path.back())
+        break;
+
+      auto& deconstructStmt = fFunc->statements.emplace_back(/* empty */);
+      deconstructStmt.action = "deconstruct " + type2name[type];
+
+      stringstream pattern;
+      grammar->types[type]->variants[0].toTXLWithNames(pattern, [&](string_view const& name) {
+          return type2name[name.data()] = makeNameFromType(name);
+          // BUG: variable name duplication
+        });
+
+      deconstructStmt.text = pattern.str();
+    }
+
+    auto const& lastType = path.back();
+    where.target = type2name[lastType] + "_str";
+
+    auto& constructStmt = fFunc->statements.emplace_back(/* empty */);
+    constructStmt.action = "construct " + lastType + " [stringlit]";
+    constructStmt.text = "_ [quote " + type2name[lastType] + "]";
+  }
+
+  // FIXME: case: different context constraints for the same node
+  auto& call = where.operators.emplace_back(/* empty */);
+  call.name = topLevelNegation ? CTX_OP_INVERSION_MAPPING[constraint.op] : constraint.op;
+
+  // FIXME: string templates
+  call.args.push_back('\"' + constraint.value.text + '\"');
 }
 
 void TXLGenerator::compileRefinementFunctions(string const& ruleId,
@@ -264,10 +277,10 @@ void TXLGenerator::compileRefinementFunctions(string const& ruleId,
     else
       SCIS_ERROR("Icorrect modifier near path element in rule <" << ruleId << ">");
 
-    rFunc->name = ruleId + "_refiner_" + path.keywordId + getUniqueId() + to_string(__LINE__);
+    rFunc->name = ruleId + "_refiner_" + path.keywordId + to_string(__LINE__) + getUniqueId();
     rFunc->copyParamsFrom(currentCallChain.back().get());
 
-    rFunc->skipType = annotation->grammar.graph.keywords[path.keywordId]->type;
+    rFunc->skipType = annotation->grammar.graph.keywords.at(path.keywordId)->type;
     rFunc->processingType = rFunc->skipType.value();
 
     // FIXME: templates in refinement functions
@@ -283,12 +296,12 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
 {
   // add instrumentation function
   auto iFunc = make_unique<InstrumentationFunction>();
-  auto const keyword = annotation->grammar.graph.keywords[ruleStmt.location.path.back().keywordId].get(); // BUG: empty path?
-  auto const& algo = keyword->pointcuts[ruleStmt.location.pointcut]->aglorithm;
+  auto const keyword = annotation->grammar.graph.keywords.at(ruleStmt.location.path.back().keywordId).get(); // BUG: empty path?
+  auto const& algo = keyword->pointcuts.at(ruleStmt.location.pointcut)->aglorithm;
   auto const& pattern = keyword->replacement_patterns[0]; // BUG: only first pattern variant used
   auto const& workingType = keyword->type;
 
-  iFunc->name = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + getUniqueId() + to_string(__LINE__);
+  iFunc->name = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + to_string(__LINE__) + getUniqueId();
   iFunc->copyParamsFrom(currentCallChain.back().get());
   iFunc->searchType = pattern.searchType;
   iFunc->processingType = currentCallChain.back()->processingType;
@@ -299,7 +312,7 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
     stmt.action = "deconstruct " + CURRENT_NODE;
 
     stringstream ss;
-    grammar->types.at(workingType)->variants[0].toTXLWithNames(ss, typeToName); // BUG: only first variant used
+    grammar->types.at(workingType)->variants[0].toTXLWithNames(ss, makeNameFromType); // BUG: only first variant used
     stmt.text = ss.str();
   }
 
@@ -371,7 +384,7 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
 
       else
         if (auto ref = dynamic_cast<GrammarAnnotation::Pattern::TypeReference*>(ptr)) {
-          replacement += typeToName(ref->typeId) + ' ';
+          replacement += makeNameFromType(ref->typeId) + ' ';
           // TODO: check if type exists in a current node
         }
       else
@@ -430,8 +443,20 @@ void TXLGenerator::genMain(ostream& str)
 
 void TXLGenerator::genUtilityFunctions(ostream& str)
 {
-  for (auto const& f : annotation->library)
-    f->name;; // FIXME: !!! implement !!!
+  // FIXME: utility function call policy ignored
+
+  for (auto const& function : annotation->library) {
+    auto const kind = function->isRule ? "rule" : "function";
+    str << endl << kind << ' ' << function->name;
+
+    for (auto const& parameter : function->params)
+      str << ' ' << parameter.id << " [" << parameter.type << "]";
+    str << endl;
+
+    str << '\t' << function->source << endl;
+
+    str << "end " << kind << endl;
+  }
 }
 
 // NOTE: assumption: conjunctions are correct and contain references only to basic contexts
@@ -475,6 +500,7 @@ void TXLGenerator::generateCode(ostream& str)
   SCIS_DEBUG("Generating TXL sources");
 
   // generate utility functions
+  genUtilityFunctions(str);
 
   // generate all chains
   for (auto const& chain : callTree)
@@ -486,6 +512,4 @@ void TXLGenerator::generateCode(ostream& str)
 
   // generate main function
   genMain(str);
-
-  genUtilityFunctions(str);
 }

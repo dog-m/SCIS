@@ -52,6 +52,7 @@ void AnnotationParser::parseLibrary(XMLElement const* const root)
     auto function = make_unique<GrammarAnnotation::Function>();
 
     function->name = expectedAttribute(func, "name")->Value();
+    function->isRule = func->Name() == "rule"sv;
 
     string_view const policy = expectedAttribute(func, "apply")->Value();
     if (policy == "after-all")

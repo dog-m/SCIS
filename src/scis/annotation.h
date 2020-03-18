@@ -85,6 +85,7 @@ namespace scis {
       };
 
       string name;
+      bool isRule = false;
       FunctionPolicy callPolicy = FunctionPolicy::DIRECT_CALL;
       vector<Parameter> params;
       string source;

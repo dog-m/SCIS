@@ -3,10 +3,6 @@
 using namespace std;
 using namespace scis;
 
-// FIXME: remove duplicates
-static string const CURRENT_NODE = "__NODE__";
-
-
 void TXLFunction::copyParamsFrom(TXLFunction const* const from)
 {
   params.insert(params.end(), from->params.cbegin(), from->params.cend());

@@ -7,17 +7,19 @@
             <package type="package_declaration">
                 <imports type="repeat import_declaration"/>
                 <class type="class_declaration">
-                    <method type="method_declaration">
-                        <if type="if_statement">
-                            <else type="else_clause"/>
-                        </if>
-                        <switch type="switch_statement">
-                            <case type="switch_alternative"/>
-                        </switch>
-                        <for type="for_statement"/>
-                        <while type="while_statement"/>
-                        ...
-                    </method>
+                    <body type="class_or_interface_body">
+                        <method type="method_declaration">
+                            <if type="if_statement">
+                                <else type="else_clause"/>
+                            </if>
+                            <switch type="switch_statement">
+                                <case type="switch_alternative"/>
+                            </switch>
+                            <for type="for_statement"/>
+                            <while type="while_statement"/>
+                            ...
+                        </method>
+                    </body>
                 </class>
             </package>
         </keyword-DAG>
@@ -98,6 +100,37 @@
                         <insert-call
                           function="addToImportsIfNotExists"
                           params="each Additions"
+                          />
+                    </paste-algorithm>
+                </pointcut>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="body"
+          >
+            <replacement-patterns>
+                <pattern search-type="class_or_interface_body">
+                    {
+                        <!--repeat class_body_declaration-->
+                        <p name="all"/>
+                    } <!--opt literal-->
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="all">
+                    <reference
+                      type="repeat class_body_declaration"
+                      as="NewFields"
+                      />
+                    <paste-algorithm>
+                        <fragment-to-variable
+                          name="NewFields"
+                          type="repeat class_body_declaration"
+                          />
+                        <insert-call
+                          function="."
+                          params="RepeatClassBodyDeclaration"
                           />
                     </paste-algorithm>
                 </pointcut>

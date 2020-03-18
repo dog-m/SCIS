@@ -15,18 +15,23 @@ void Grammar::PlainText::toTXL(ostream &ss, optional<NamingFunction> const) cons
 
 void Grammar::TypeReference::toTXL(ostream &ss, optional<NamingFunction> const namer) const
 {
+  auto const prefix = (modifier.has_value() ? modifier.value() + " " : "");
+
   if (namer.has_value())
-    ss << namer.value()(name) << ' ';
+    ss << namer.value()(prefix + name) << ' ';
 
   ss << "["
-     << (modifier.has_value() ? modifier.value() + " " : "")
+     << prefix
      << name
      << repeater.value_or("")
      << "]";
 }
 
-void Grammar::OptionalPlainText::toTXL(ostream &ss, optional<NamingFunction> const) const
+void Grammar::OptionalPlainText::toTXL(ostream &ss, optional<NamingFunction> const namer) const
 {
+  if (namer.has_value())
+    ss << namer.value()(modifier + "_literal") << ' ';
+
   ss << "[" << modifier << ' ' << text << "]";
 }
 

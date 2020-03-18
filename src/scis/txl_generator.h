@@ -46,6 +46,11 @@ namespace scis {
     void compileFilteringFunction(string const& ruleId,
                                   Context const* const context);
 
+    void compileBasicContext(BasicContext const* const context,
+                             bool const topLevelNegation,
+                             FilteringFunction* const fFunc,
+                             unordered_map<string, string>& type2name);
+
     void compileRefinementFunctions(string const& ruleId,
                                     Rule::Statement const& ruleStmt);
 
