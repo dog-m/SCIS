@@ -41,6 +41,8 @@ namespace scis {
     void dump(ostream &str) override; // TODO: remove
   }; // BasicContext
 
+  inline unique_ptr<BasicContext> const GLOBAL_CONTEXT {};
+
   struct CompoundContext : public Context {
     struct Reference {
       bool negation = false;
@@ -52,7 +54,7 @@ namespace scis {
 
     Conjunction references;
     void dump(ostream &str) override; // TODO: remove
-  };
+  }; // CompoundContext
 
   struct Rule {
     struct Location {

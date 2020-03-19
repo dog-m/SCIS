@@ -41,6 +41,13 @@ namespace scis {
     void generateTXL(ostream &ss);
 
     string_view ruleOrFunction();
+
+    void createVariable(string const& name,
+                        string const& type,
+                        string const& value);
+
+    void deconstructVariable(string const& name,
+                             string const& pattern);
   }; // TXLFunction
 
   struct CallChainElement {

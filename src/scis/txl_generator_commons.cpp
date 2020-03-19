@@ -32,6 +32,23 @@ string_view TXLFunction::ruleOrFunction()
   return isRule ? "rule" : "function";
 }
 
+void TXLFunction::createVariable(string const& name,
+                                 string const& type,
+                                 string const& value)
+{
+  auto& stmt = statements.emplace_back(/* empty */);
+  stmt.action = "construct " + name + " [" + type + "]";
+  stmt.text = value;
+}
+
+void TXLFunction::deconstructVariable(string const& name,
+                                      string const& pattern)
+{
+  auto& stmt = statements.emplace_back(/* empty */);
+  stmt.action = "deconstruct " + name;
+  stmt.text = pattern;
+}
+
 void CallChainFunction::connectTo(CallChainFunction* const other)
 {
   this->callTo = other;

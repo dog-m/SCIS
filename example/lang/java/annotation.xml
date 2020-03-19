@@ -1,7 +1,7 @@
 <annotation>
     <grammar
       language="java"
-      src="java.grm"
+      src="lang/java/grammar.txl"
       >
         <keyword-DAG>
             <package type="package_declaration">
@@ -82,13 +82,13 @@
           >
             <replacement-patterns>
                 <pattern search-type="repeat import_declaration">
-                    Imports
+                    __NODE__
                     <p name="all"/>
                 </pattern>
             </replacement-patterns>
             <pointcuts>
                 <pointcut name="all">
-                    <reference
+                    <fragment
                       type="repeat import_declaration"
                       as="Additions"
                       />
@@ -112,25 +112,49 @@
             <replacement-patterns>
                 <pattern search-type="class_or_interface_body">
                     {
-                        <!--repeat class_body_declaration-->
                         <p name="all"/>
+                        <!--repeat class_body_declaration-->
                     } <!--opt literal-->
                 </pattern>
             </replacement-patterns>
             <pointcuts>
                 <pointcut name="all">
-                    <reference
+                    <fragment
                       type="repeat class_body_declaration"
                       as="NewFields"
                       />
                     <paste-algorithm>
-                        <fragment-to-variable
-                          name="NewFields"
-                          type="repeat class_body_declaration"
+                        <insert-fragment
                           />
-                        <insert-call
-                          function="."
-                          params="RepeatClassBodyDeclaration"
+                    </paste-algorithm>
+                </pointcut>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="method"
+          >
+            <replacement-patterns>
+                <pattern search-type="method_declaration">
+                    <!--repeat modifier--> <!--opt generic_parameter--> <!--type_specifier--> <!--method_declarator--> <!--opt throws-->
+                    {
+                        <p name="before_body"/>
+                        <!--block-->
+                        <p name="after_body"/>
+                    }
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before_body">
+                    <fragment
+                      type="repeat statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <deconstruct-variable
+                          type="method_body"
+                          />
+                        <insert-fragment
                           />
                     </paste-algorithm>
                 </pointcut>
@@ -142,20 +166,22 @@
           name="if"
           >
             <replacement-patterns>
-                <pattern search-type="statement">
-                    <p name="before"/>
-                    if ( <!--condition--> ) {
-                        <p name="before-body"/>
-                        <!--statement-->
-                        <p name="after-body"/>
+                <pattern search-type="if_statement">
+                    if (true) {
+                        <p name="before"/>
+                        if ( <!--condition--> ) {
+                            <p name="before_body"/>
+                            <!--statement-->
+                            <p name="after_body"/>
+                        }
+                        <!--opt else_clause-->
+                        <p name="after"/>
                     }
-                    <!--opt else_clause-->
-                    <p name="after"/>
                 </pattern>
             </replacement-patterns>
             <pointcuts>
                 <pointcut name="before">
-                    <reference
+                    <fragment
                       type="repeat statement"
                       as="Additions"
                       />
@@ -164,6 +190,9 @@
                           />
                     </paste-algorithm>
                 </pointcut>
+                <pointcut name="before_body" clone="if::before"/>
+                <pointcut name="after_body" clone="if::before"/>
+                <pointcut name="after" clone="if::before"/>
             </pointcuts>
         </keyword>
     </pointcuts>

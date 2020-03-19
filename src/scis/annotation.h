@@ -20,8 +20,8 @@ namespace scis {
       };
 
       string name;
-      string refType;
-      string refAlias;
+      string fragType;
+      string fragAlias;
       vector<Step> aglorithm;
     }; // Pointcut
 

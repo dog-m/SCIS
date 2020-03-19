@@ -27,18 +27,26 @@ namespace scis {
 
     unordered_map<string_view, int> maxDistanceToRoot;
 
-    using CallChain = vector<unique_ptr<CallChainFunction>>;
+    using CallChain = vector<CallChainFunction*>;
 
     CallChain currentCallChain;
     vector<CallChain> callTree;
 
+    vector<unique_ptr<TXLFunction>> functions;
+    TXLFunction* mainFunction = nullptr;
+
     Fragment const* getFragment(string_view const& id);
 
-    void addToCallChain(unique_ptr<CallChainFunction>&& func);
+    void addToCallChain(CallChainFunction *const func);
 
     void evaluateKeywordsDistances();
 
     void loadRequestedFragments();
+
+    template <typename Kind>
+    Kind* createFunction();
+
+    string keywordToName(string const& keyword);
 
     void compileCollectionFunctions(string const& ruleId,
                                     Context const* const context);
@@ -58,9 +66,11 @@ namespace scis {
                                         Rule::Statement const& ruleStmt,
                                         Context const* const context);
 
-    void genMain(ostream& str);
+    void compileMain();
 
     void genUtilityFunctions(ostream &str);
+
+    void genTXLImports(ostream &str);
 
   public:
     void compile();

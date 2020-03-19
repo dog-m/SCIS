@@ -37,7 +37,7 @@ void GrammarAnnotation::dump(ostream& str)
     str << "  pointcuts (" << keyword->pointcuts.size() << "):" << endl;
     for (auto const& [_, point] : keyword->pointcuts) {
       str << "    name: \'" << point->name << '\'' << endl
-          << "    ref: " << point->refAlias << " [" << point->refType << "]" << endl;
+          << "    ref: " << point->fragAlias << " [" << point->fragType << "]" << endl;
 
       str << "    algorithm (" << point->aglorithm.size() << " steps):" << endl;
       for (auto const& x : point->aglorithm) {

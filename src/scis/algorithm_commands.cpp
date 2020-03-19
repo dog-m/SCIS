@@ -1,4 +1,5 @@
 #include "algorithm_commands.h"
+#include <sstream>
 
 using namespace std;
 using namespace scis;
@@ -28,9 +29,18 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
 
   { "fragment-to-variable", [](FunctionCall const& call) -> FunctionCall::Result // FIXME: !!! incomplete !!!
     {
-      auto& stmt = call.iFunc->statements.emplace_back();
-      stmt.action = "construct " + call.args.at("name") + " [" + call.args.at("type") + "]";
-      stmt.text = call.preparedFragment;
+      call.iFunc->createVariable(call.args.at("name"), call.args.at("type"), call.preparedFragment);
+
+      return {};
+    }
+  },
+
+  { "deconstruct-variable", [](FunctionCall const& call) -> FunctionCall::Result // FIXME: !!! incomplete !!!
+    {
+      auto const& type = call.args.at("type");
+      stringstream pattern;
+      call.grammar->types.at(type)->variants[0].toTXLWithNames(pattern, makeNameFromType);
+      call.iFunc->deconstructVariable(makeNameFromType(type), pattern.str());
 
       return {};
     }

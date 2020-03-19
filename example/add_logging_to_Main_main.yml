@@ -3,14 +3,14 @@ use fragment "logging/fields"
 use fragment "logging/init"
 use fragment "logging/message"
 
-context class:
+context class_m:
   { poi:class_name = "Main" }
 
-context method:
+context method_m:
   { poi:method_name = "main" }
 
-context class_and_method:
-  class & method
+context class_and_method_m:
+  class_m & method_m
 
 rules:
   print_usefull_message_to_the_log:
@@ -18,11 +18,15 @@ rules:
       add:
         logging_dependencies
   
-    @class -> [first] body # all:
+    @class_m -> [first] body # all:
       add:
         logging_fields
   
-    @class_and_method -> [first] if # before:
+    @method_m -> [first] method # before_body:
+      add:
+        logging_init
+  
+    @class_and_method_m -> [first] if # before:
       make:
         msg <- $pointcut + " " + $node + " block in " + $file + " class, in " + $method_name + " method";
       add:

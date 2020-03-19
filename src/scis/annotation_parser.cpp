@@ -7,6 +7,8 @@ using namespace tinyxml2;
 
 #include "../xml_parser_utils.h"
 
+constexpr string_view CLONNING_PATH_SEPARATOR = "::";
+
 void AnnotationParser::parseGrammar(XMLElement const* const root)
 {
   // base params
@@ -161,17 +163,42 @@ void AnnotationParser::parsePointcutsForKeyword(XMLElement const* const root)
 
     pointcut->name = expectedAttribute(point, "name")->Value();
 
-    auto const ref = expectedPath(point, { "reference" });
-    pointcut->refType = expectedAttribute(ref, "type")->Value();
-    pointcut->refAlias = expectedAttribute(ref, "as")->Value();
+    if (auto const clone = point->FindAttribute("clone")) {
+      // copy from another pointcut
+      string_view const path = clone->Value();
 
-    auto const algo = expectedPath(point, { "paste-algorithm" });
-    FOREACH_XML_ELEMENT(algo, action) {
-      auto& step = pointcut->aglorithm.emplace_back(/* empty */);
+      auto const sep = path.find(CLONNING_PATH_SEPARATOR);
+      if (sep == string_view::npos)
+        throw "Invalid path to source pointcut for " + pointcut->name;
 
-      step.function = action->Name();
-      FOREACH_XML_ATTRIBUTE(action, argument)
-        step.args.insert_or_assign(argument->Name(), argument->Value());
+      auto const srcKeyword = path.substr(0, sep);
+      auto const srcName = path.substr(sep + CLONNING_PATH_SEPARATOR.size());
+
+      // FIXME: deffer pointcut clonning
+      try {
+        auto const src = annotation->grammar.graph.keywords.at(srcKeyword)->pointcuts.at(srcName).get();
+        pointcut->fragType = src->fragType;
+        pointcut->fragAlias = src->fragAlias;
+        // BUG: potential bug in algorithm clonning
+        pointcut->aglorithm.insert(pointcut->aglorithm.begin(), src->aglorithm.cbegin(), src->aglorithm.cend());
+      } catch (...) {
+        throw "Original pointcut <"s + path.data() + "> for <" + pointcut->name + "> has not been created";
+      }
+    }
+    else {
+      // original pointcut
+      auto const frag = expectedPath(point, { "fragment" });
+      pointcut->fragType = expectedAttribute(frag, "type")->Value();
+      pointcut->fragAlias = expectedAttribute(frag, "as")->Value();
+
+      auto const algo = expectedPath(point, { "paste-algorithm" });
+      FOREACH_XML_ELEMENT(algo, action) {
+        auto& step = pointcut->aglorithm.emplace_back(/* empty */);
+
+        step.function = action->Name();
+        FOREACH_XML_ATTRIBUTE(action, argument)
+          step.args.insert_or_assign(argument->Name(), argument->Value());
+      }
     }
 
     keyword->pointcuts.insert_or_assign(pointcut->name, std::move(pointcut));

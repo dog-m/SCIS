@@ -2,6 +2,7 @@
 #define ALGORITHM_COMMANDS_H
 
 #include "txl_generator_commons.h"
+#include "../txl/grammar.h"
 #include <functional>
 
 namespace scis {
@@ -19,6 +20,7 @@ namespace scis {
     unordered_map<string, string> args;
     string preparedFragment;
     /*generation::*/InstrumentationFunction * iFunc;
+    txl::Grammar const* grammar;
   }; // FunctionCall
 
   using FunctionResultHandler = function<void (FunctionCall::Result const&)>;
