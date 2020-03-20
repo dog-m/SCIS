@@ -12,7 +12,17 @@ namespace scis {
   using namespace std;
 
   inline string const CURRENT_NODE = "__NODE__";
+
   inline string const VOID_NODE = "__VOID__";
+  inline string const VOID_NODE_TYPE = "any";
+  inline string const VOID_NODE_VALUE = "%( void )%";
+
+  inline string const CONTEXT_FUNCTION_PREFIX = "__belongs_to_context___";
+
+  inline string const CONTEXT_FUNCTION_NEGATIVE_PREFIX = "__not" + CONTEXT_FUNCTION_PREFIX;
+
+  string contextNameToFunctionName(string const& context,
+                                   bool const negative = false);
 
   struct TXLFunction {
     struct Parameter {
@@ -45,6 +55,9 @@ namespace scis {
     void createVariable(string const& name,
                         string const& type,
                         string const& value);
+
+    void addParameter(string const& name,
+                      string const& type);
 
     void deconstructVariable(string const& name,
                              string const& pattern);

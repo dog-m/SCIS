@@ -45,7 +45,7 @@ namespace scis {
 
   struct CompoundContext : public Context {
     struct Reference {
-      bool negation = false;
+      bool isNegative = false;
       string id;
     };
 

@@ -28,7 +28,7 @@ void CompoundContext::dump(ostream &str)
     str << '(';
     auto countOr = disj.size();
     for (auto const& ref : disj) {
-      str << (ref.negation ? "!" : "") << ref.id;
+      str << (ref.isNegative ? "!" : "") << ref.id;
 
       if (countOr --> 1)
         str << " | ";

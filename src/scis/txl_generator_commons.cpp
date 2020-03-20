@@ -41,6 +41,14 @@ void TXLFunction::createVariable(string const& name,
   stmt.text = value;
 }
 
+void TXLFunction::addParameter(string const& name,
+                               string const& type)
+{
+  auto& param = params.emplace_back(/* empty */);
+  param.id = name;
+  param.type = type;
+}
+
 void TXLFunction::deconstructVariable(string const& name,
                                       string const& pattern)
 {
@@ -73,8 +81,8 @@ void CollectionFunction::generateStatements()
 void FilteringFunction::generateStatements()
 {
   auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace $ ["s + processingType + ']';
-  replaceStmt.text = CURRENT_NODE + " ["s + processingType + "]";
+  replaceStmt.action = "replace $ [" + processingType + ']';
+  replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
 
   for (auto const& where : wheres) {
     auto& whereStmt = statements.emplace_back(/* empty */);
@@ -97,13 +105,15 @@ void FilteringFunction::generateStatements()
 
   auto& byStmt = statements.emplace_back(/* empty */);
   byStmt.action = "by";
-  byStmt.text = CURRENT_NODE + " [" + callTo->name + ' ' + paramNamesList + ']';
+  byStmt.text = CURRENT_NODE + " [" + callTo->name + " " + paramNamesList + "]";
 }
 
 void RefinementFunction::generateStatements()
 {
+  string const repeatModifier = isRule ? "$" : "*";
+
   auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace * [" + processingType + "]";
+  replaceStmt.action = "replace " + repeatModifier + " [" + processingType + "]";
   replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
 
   string paramNamesList = "";
@@ -112,7 +122,7 @@ void RefinementFunction::generateStatements()
 
   auto& byStmt = statements.emplace_back(/* empty */);
   byStmt.action = "by";
-  byStmt.text = CURRENT_NODE + " [" + callTo->name + ' ' + paramNamesList + ']';
+  byStmt.text = CURRENT_NODE + " [" + callTo->name + " " + paramNamesList + "]";
 }
 
 void InstrumentationFunction::generateStatements()
@@ -124,4 +134,11 @@ void InstrumentationFunction::generateStatements()
   auto& byStmt = statements.emplace_back(/* empty */);
   byStmt.action = "by";
   byStmt.text = replacement;
+}
+
+string scis::contextNameToFunctionName(string const& context,
+                                       bool const negative)
+{
+  return negative ? CONTEXT_FUNCTION_NEGATIVE_PREFIX : CONTEXT_FUNCTION_PREFIX
+         + context;
 }

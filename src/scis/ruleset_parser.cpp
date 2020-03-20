@@ -95,7 +95,7 @@ void RulesetParser::parseContextDisjunction(CompoundContext::Disjunction &disjun
   // is it a single element?
   if (something->Name() == "cnf_expression_element"sv) {
     auto& ref = disjunction.emplace_back(/* empty */);
-    ref.negation = something->FirstChildElement("opt_literal");
+    ref.isNegative = something->FirstChildElement("opt_literal");
     mergeTextRecursive(ref.id, expectedPath(something, { "cnf_var_or_const" }));
   }
   else

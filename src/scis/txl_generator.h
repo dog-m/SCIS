@@ -17,24 +17,30 @@ namespace scis {
   class TXLGenerator {
   public:
     unique_ptr<txl::Grammar> grammar;
+
     unique_ptr<GrammarAnnotation> annotation;
+
     unique_ptr<Ruleset> ruleset;
-    string processingFilename = "???.???"; // FIXME: add file name
-    string fragmentsDir = "./";
+
+    string processingFilename; // FIXME: add file name
+
+    string fragmentsDir;
 
   protected:
     unordered_map<string_view, unique_ptr<Fragment>> fragments;
 
     unordered_map<string_view, int> maxDistanceToRoot;
 
-    using CallChain = vector<CallChainFunction*>;
-
-    CallChain currentCallChain;
-    vector<CallChain> callTree;
+    vector<CallChainFunction*> currentCallChain;
 
     vector<unique_ptr<TXLFunction>> functions;
     TXLFunction* mainFunction = nullptr;
 
+    deque<TXLFunction const*> addToMain;
+
+    unordered_map<string_view, TXLFunction const*> contextCheckers;
+
+  protected:
     Fragment const* getFragment(string_view const& id);
 
     void addToCallChain(CallChainFunction *const func);
@@ -47,6 +53,21 @@ namespace scis {
     Kind* createFunction();
 
     string keywordToName(string const& keyword);
+
+    void sortKeywords(vector<string_view> &keywords) const;
+
+    void compileContextCheckers();
+
+    TXLFunction* prepareContextChecker(Context const* const context);
+
+    void registerContextChecker(Context const* const context,
+                                TXLFunction const* const checker);
+
+    TXLFunction const* findContextCheckerByContextName(string const& name);
+
+    bool compileBasicContext(BasicContext const* const context);
+
+    bool compileCompoundContext(CompoundContext const* const context);
 
     void compileCollectionFunctions(string const& ruleId,
                                     Context const* const context);
@@ -68,7 +89,7 @@ namespace scis {
 
     void compileMain();
 
-    void genUtilityFunctions(ostream &str);
+    void compileUtilityFunctions();
 
     void genTXLImports(ostream &str);
 

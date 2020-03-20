@@ -13,6 +13,8 @@ using namespace scis;
 
 constexpr auto DAG_DISTANCES_SEARCH_LIMMIT = 2500;
 
+constexpr auto CONTEXT_DEPENDENCY_WAITING_LIMMIT = 5200;
+
 static unordered_map<string_view, string_view> CTX_OP_INVERSION_MAPPING {
   { "=", "~=" },
   { "~=", "=" },
@@ -75,8 +77,9 @@ void TXLGenerator::evaluateKeywordsDistances()
   for (auto const& [keyword, distance] : maxDistanceToRoot)
     cerr << keyword << " = " << distance << endl;
 
+  // dumb way to check for loops
   if (iter >= DAG_DISTANCES_SEARCH_LIMMIT)
-    SCIS_ERROR("Cycle detected in grammar annotation (see keyword-DAG)");
+    SCIS_ERROR("Cycles detected in grammar annotation (see keyword-DAG)");
 }
 
 void TXLGenerator::loadRequestedFragments()
@@ -94,6 +97,143 @@ void TXLGenerator::loadRequestedFragments()
 string TXLGenerator::keywordToName(string const& keyword)
 {
   return "kw_" + makeNameFromType(keyword);
+}
+
+void TXLGenerator::sortKeywords(vector<string_view>& keywords) const
+{
+  std::sort(keywords.begin(), keywords.end(),
+            [&](string_view const& a, string_view const& b) {
+      return maxDistanceToRoot.at(a) < maxDistanceToRoot.at(b);
+    });
+}
+
+void TXLGenerator::compileContextCheckers()
+{
+  deque<Context const*> deferredContextCheckers;
+  // put all contexts into queue
+  for (auto const& [_, context] : ruleset->contexts)
+    deferredContextCheckers.push_back(context.get());
+
+  // process all
+  auto iter = 0;
+  while (!deferredContextCheckers.empty() && iter++ < CONTEXT_DEPENDENCY_WAITING_LIMMIT) {
+    auto const context = std::move(deferredContextCheckers.front());
+    deferredContextCheckers.pop_front();
+
+    bool success = true;
+
+    if (auto const basicCtx = dynamic_cast<BasicContext const*>(context))
+      success = compileBasicContext(basicCtx);
+    else if (auto const compoundCtx = dynamic_cast<CompoundContext const*>(context))
+      success = compileCompoundContext(compoundCtx);
+    else
+      SCIS_ERROR("Unrecognized context type");
+
+    if (!success)
+      deferredContextCheckers.push_back(context);
+  }
+
+  // dumb way to check for loops
+  if (iter >= CONTEXT_DEPENDENCY_WAITING_LIMMIT)
+    SCIS_ERROR("Cycles detected in contexts");
+}
+
+TXLFunction* TXLGenerator::prepareContextChecker(const Context* const context)
+{
+  auto const checker = createFunction<TXLFunction>();
+  checker->name = contextNameToFunctionName(context->id);
+
+  // always match
+  auto& mStmt = checker->statements.emplace_back(/* empty */);
+  mStmt.action = "match [any]";
+  mStmt.text = "_ [any]";
+
+  // create garbage variable as primary target for 'when' conditions
+  checker->createVariable(VOID_NODE, VOID_NODE_TYPE, VOID_NODE_VALUE);
+
+  return checker;
+}
+
+void TXLGenerator::registerContextChecker(Context const* const context,
+                                          TXLFunction const* const checker)
+{
+  // register for later use
+  // FIXME: check for context duplication
+  contextCheckers.insert_or_assign(context->id, checker);
+}
+
+TXLFunction const* TXLGenerator::findContextCheckerByContextName(string const& name)
+{
+  if (auto const c = contextCheckers.find(name); c != contextCheckers.cend())
+    return c->second;
+  else
+    return nullptr;
+}
+
+bool TXLGenerator::compileBasicContext(BasicContext const* const context)
+{
+  // check for dependencies
+  // there are no dependencies
+
+  SCIS_DEBUG("Processing basic context <" << context->id << ">");
+
+  // creating new context checking function
+  auto const checker = prepareContextChecker(context);
+
+  unordered_set<string_view> keywordsUsed;
+  // joined with 'AND' operation
+  for (size_t cNum = 0; cNum < context->constraints.size(); cNum++) {
+    auto const& constraint = context->constraints[cNum];
+    auto const& poi = annotation->pointsOfInterest[constraint.id].get();
+    // collect names for parameters
+    keywordsUsed.insert(poi->keyword);
+
+    auto const& keyword = annotation->grammar.graph.keywords[poi->keyword].get();
+
+    // use constraint number to generate unique namesa for variables
+    cNum; keyword->type; poi->valueTypePath;
+    constraint.op; constraint.value;
+  }
+
+  // TODO: create negation form of checker or something
+
+  vector<string_view> sortedKeywords;
+  sortedKeywords.insert(sortedKeywords.begin(), keywordsUsed.begin(), keywordsUsed.end());
+  sortKeywords(sortedKeywords);
+
+  sortedKeywords; checker->params;
+
+  registerContextChecker(context, checker);
+  return true;
+}
+
+// BUG: check for context reference loops
+bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
+{
+  // check for dependencies
+  for (auto const& disjunction : context->references)
+    for (auto const& reference : disjunction)
+      if (!findContextCheckerByContextName(reference.id))
+        return false;
+
+  SCIS_DEBUG("Processing compound context <" << context->id << ">");
+
+  auto const checker = prepareContextChecker(context);
+
+  // joined with 'AND'
+  for (auto const& disjunction : context->references) {
+    // joined with 'OR'
+    for (auto const& reference : disjunction) {
+      auto const target = contextNameToFunctionName(reference.id, reference.isNegative);
+      auto const ref = findContextCheckerByContextName(reference.id);
+
+      target;
+      ref;
+    }
+  }
+
+  registerContextChecker(context, checker);
+  return true;
 }
 
 template<typename Kind>
@@ -142,10 +282,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
 
   sortedKeywords.insert(sortedKeywords.begin(), keywordsUsedInContext.begin(), keywordsUsedInContext.end());
 
-  std::sort(sortedKeywords.begin(), sortedKeywords.end(),
-            [&](string_view a, string_view b) {
-      return maxDistanceToRoot[a] < maxDistanceToRoot[b];
-    });
+  sortKeywords(sortedKeywords);
 
   SCIS_DEBUG("sorted keywords:");
   for (auto const& k : sortedKeywords)
@@ -163,9 +300,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
       cFunc->copyParamsFrom(lastCollector);
 
       // plus one parameter (result) from last collection function
-      auto& cParam = cFunc->params.emplace_back(/* empty */);
-      cParam.id = keywordToName(lastCollector->processingKeyword);
-      cParam.type = lastCollector->processingType;
+      cFunc->addParameter(keywordToName(lastCollector->processingKeyword), lastCollector->processingType);
 
       // strong chaining
       //cFunc->skipType = lastCollector->processingType; // BUG: potential skipping bug
@@ -191,9 +326,7 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
 
   // plus one parameter (result) from last collection function
   auto const lastCollector = dynamic_cast<CollectionFunction*>(currentCallChain.back());
-  auto& fParam = fFunc->params.emplace_back(/* empty */);
-  fParam.id = keywordToName(lastCollector->processingKeyword);
-  fParam.type = lastCollector->processingType;
+  fFunc->addParameter(keywordToName(lastCollector->processingKeyword), lastCollector->processingType);
 
   unordered_map<string, string> type2name; // FIXME: introduce variables once
   for (auto const& par : fFunc->params)
@@ -209,7 +342,7 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
         // FIXME: compound -> basic context resolution
         auto const basicCtx = dynamic_cast<BasicContext*>(ruleset->contexts[element.id].get());
 
-        compileBasicContext(basicCtx, element.negation, fFunc, type2name);
+        compileBasicContext(basicCtx, element.isNegative, fFunc, type2name);
       }
 
   else
@@ -233,18 +366,12 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context,
   auto& where = fFunc->wheres.emplace_back(/* empty */);
   auto const poi = annotation->pointsOfInterest[constraint.id].get();
 
-  // create string variable
-  if (poi->valueTypePath.empty()) {
-    auto const& targetType = annotation->grammar.graph.keywords[poi->keyword]->type;
-    where.target = type2name[targetType] + "_str";
+  {
+    deque<string> path;
+    if (!poi->valueTypePath.empty())
+      path.insert(path.begin(), poi->valueTypePath.cbegin(), poi->valueTypePath.cend());
 
-    fFunc->createVariable(where.target, "stringlit", "_ [quote " + type2name[targetType] + "]");
-  }
-  else {
-    auto const& topType = annotation->grammar.graph.keywords[poi->keyword]->type;
-    vector<string> path;
-    path.insert(path.begin(), poi->valueTypePath.cbegin(), poi->valueTypePath.cend());
-    path.insert(path.begin(), topType);
+    path.push_front(annotation->grammar.graph.keywords[poi->keyword]->type);
 
     for (size_t i = 0; i+1 < path.size(); i++) { // except last
       auto const& type = path[i];
@@ -255,8 +382,8 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context,
           // BUG: variable name duplication
           return type2name[name.data()] =
               name == path[i + 1] ?
-              makeNameFromType(name) :
-              "_";
+                makeNameFromType(name) :
+                "_";
         });
 
       fFunc->deconstructVariable(type2name[type], pattern.str());
@@ -433,25 +560,43 @@ void TXLGenerator::compileMain()
   byStmt.action = "by";
   byStmt.text = "Program\n";
 
-  for (auto const& chain : callTree)
-    byStmt.text += "\t\t[" + chain.front()->name + "]\n";
+  for (auto const& function : addToMain)
+    byStmt.text += "\t\t[" + function->name + "]\n";
 }
 
-void TXLGenerator::genUtilityFunctions(ostream& str)
+void TXLGenerator::compileUtilityFunctions()
 {
   // FIXME: utility function call policy ignored
 
-  for (auto const& function : annotation->library) {
-    auto const kind = function->isRule ? "rule" : "function";
-    str << endl << kind << ' ' << function->name;
+  for (auto const& func : annotation->library) {
+    auto const function = createFunction<TXLFunction>();
+    function->isRule = func->isRule;
+    function->name = func->name;
 
-    for (auto const& parameter : function->params)
-      str << ' ' << parameter.id << " [" << parameter.type << "]";
-    str << endl;
+    for (auto const& p : func->params)
+      function->addParameter(p.id, p.type);
 
-    str << '\t' << function->source << endl;
+    auto& stmt = function->statements.emplace_back(/* empty */);
+    stmt.action = func->source;
+    stmt.text = "% copied from annotation";
 
-    str << "end " << kind << endl;
+    // apply call policy
+    switch (func->callPolicy) {
+      case GrammarAnnotation::FunctionPolicy::DIRECT_CALL:
+        // do nothing
+        break;
+
+      case GrammarAnnotation::FunctionPolicy::BEFORE_ALL:
+        addToMain.push_front(function);
+        break;
+
+      case GrammarAnnotation::FunctionPolicy::AFTER_ALL:
+        addToMain.push_back(function);
+        break;
+
+      default:
+        SCIS_ERROR("Unsupported function call policy");
+    }
   }
 }
 
@@ -496,9 +641,12 @@ void TXLGenerator::compile()
       compileInstrumentationFunction(rule->id, ruleStmt, context);
 
       // add to a whole program
-      callTree.emplace_back(std::move(currentCallChain));
+      addToMain.push_back(currentCallChain.front());
+      currentCallChain.clear();
     }
   }
+
+  compileUtilityFunctions();
 
   compileMain();
 }
@@ -509,17 +657,10 @@ void TXLGenerator::generateCode(ostream& str)
 
   genTXLImports(str);
 
-  // generate utility functions
-  genUtilityFunctions(str);
-
-  // generate all chains
-  for (auto const& chain : callTree)
-    for (auto const& func : chain) {
-      str << endl;
-      func->generateTXL(str);
-      str << endl;
-    }
-
-  // generate main function
-  mainFunction->generateTXL(str);
+  // generate all functions including utilities and main
+  for (auto const& func : functions) {
+    str << endl;
+    func->generateTXL(str);
+    str << endl;
+  }
 }
