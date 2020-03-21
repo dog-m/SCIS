@@ -16,7 +16,7 @@ namespace txl {
 
     // sub-types
 
-    using NamingFunction = function<string(string_view const&)>;
+    using NamingFunction = function<string(string const&)>;
 
     struct Literal {
       virtual ~Literal() = default;

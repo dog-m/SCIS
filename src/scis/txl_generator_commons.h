@@ -17,6 +17,8 @@ namespace scis {
   inline string const VOID_NODE_TYPE = "any";
   inline string const VOID_NODE_VALUE = "%( void )%";
 
+  inline string const POI_GETTER_PREFIX = "__POI_get___";
+
   inline string const CONTEXT_FUNCTION_PREFIX = "__belongs_to_context___";
 
   inline string const CONTEXT_FUNCTION_NEGATIVE_PREFIX = "__not" + CONTEXT_FUNCTION_PREFIX;
@@ -52,15 +54,23 @@ namespace scis {
 
     string_view ruleOrFunction();
 
-    void createVariable(string const& name,
-                        string const& type,
-                        string const& value);
+    /// statement will be added on top of other statements (in source)
+    Statement& addStatementTop(string const& action,
+                               string const& text);
 
-    void addParameter(string const& name,
-                      string const& type);
+    /// statement will be added below other statements (in source)
+    Statement& addStatementBott(string const& action,
+                                string const& text);
 
-    void deconstructVariable(string const& name,
-                             string const& pattern);
+    Statement& createVariable(string const& name,
+                              string const& type,
+                              string const& value);
+
+    Parameter& addParameter(string const& name,
+                            string const& type);
+
+    Statement& deconstructVariable(string const& name,
+                                   string const& pattern);
   }; // TXLFunction
 
   struct CallChainElement {

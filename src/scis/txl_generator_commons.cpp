@@ -32,29 +32,49 @@ string_view TXLFunction::ruleOrFunction()
   return isRule ? "rule" : "function";
 }
 
-void TXLFunction::createVariable(string const& name,
-                                 string const& type,
-                                 string const& value)
+TXLFunction::Statement& TXLFunction::addStatementTop(const string& action, const string& text)
 {
-  auto& stmt = statements.emplace_back(/* empty */);
-  stmt.action = "construct " + name + " [" + type + "]";
-  stmt.text = value;
+  auto& stmt = statements.emplace_front(/* empty */);
+  stmt.action = action;
+  stmt.text = text;
+  return stmt;
 }
 
-void TXLFunction::addParameter(string const& name,
-                               string const& type)
+TXLFunction::Statement& TXLFunction::addStatementBott(const string& action, const string& text)
+{
+  auto& stmt = statements.emplace_back(/* empty */);
+  stmt.action = action;
+  stmt.text = text;
+  return stmt;
+}
+
+TXLFunction::Statement& TXLFunction::createVariable(
+    string const& name,
+    string const& type,
+    string const& value)
+{
+  return addStatementBott(
+        "construct " + name + " [" + type + "]",
+        value);
+}
+
+TXLFunction::Parameter& TXLFunction::addParameter(
+    string const& name,
+    string const& type)
 {
   auto& param = params.emplace_back(/* empty */);
   param.id = name;
   param.type = type;
+  return param;
 }
 
-void TXLFunction::deconstructVariable(string const& name,
-                                      string const& pattern)
+TXLFunction::Statement& TXLFunction::deconstructVariable(
+    string const& name,
+    string const& pattern)
 {
-  auto& stmt = statements.emplace_back(/* empty */);
-  stmt.action = "deconstruct " + name;
-  stmt.text = pattern;
+  return addStatementBott(
+        "deconstruct " + name,
+        pattern);
 }
 
 void CallChainFunction::connectTo(CallChainFunction* const other)
@@ -65,75 +85,75 @@ void CallChainFunction::connectTo(CallChainFunction* const other)
 
 void CollectionFunction::generateStatements()
 {
-  auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace $ [" + processingType + "]";
-  replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
+  addStatementTop(
+        "replace $ [" + processingType + "]",
+        CURRENT_NODE + " [" + processingType + "]");
 
   string paramNamesList = "";
   for (auto const& p : params)
-    paramNamesList += p.id + ' ';
+    paramNamesList += ' ' + p.id;
 
-  auto& byStmt = statements.emplace_back(/* empty */);
-  byStmt.action = "by";
-  byStmt.text = CURRENT_NODE + " [" + callTo->name + ' ' + paramNamesList + CURRENT_NODE + ']';
+  addStatementBott(
+        "by",
+        CURRENT_NODE + " [" + callTo->name + paramNamesList + CURRENT_NODE + ']');
 }
 
 void FilteringFunction::generateStatements()
 {
-  auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace $ [" + processingType + ']';
-  replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
+  addStatementTop(
+        "replace $ [" + processingType + "]",
+        CURRENT_NODE + " [" + processingType + "]");
 
   for (auto const& where : wheres) {
-    auto& whereStmt = statements.emplace_back(/* empty */);
-    whereStmt.action = "where";
+    auto constraint = where.target;
 
-    whereStmt.text = where.target;
     for (auto const& op : where.operators) {
-      whereStmt.text += " [" + op.name;
+      constraint += " [" + op.name;
 
       for (auto const& arg : op.args)
-        whereStmt.text += ' ' + arg;
+        constraint += ' ' + arg;
 
-      whereStmt.text += "]";
+      constraint += "]";
     }
+
+    addStatementBott("where", constraint);
   }
 
   string paramNamesList = "";
   for (auto const& p : params)
-    paramNamesList += p.id + ' ';
+    paramNamesList += ' ' + p.id;
 
-  auto& byStmt = statements.emplace_back(/* empty */);
-  byStmt.action = "by";
-  byStmt.text = CURRENT_NODE + " [" + callTo->name + " " + paramNamesList + "]";
+  addStatementBott(
+        "by",
+        CURRENT_NODE + " [" + callTo->name + paramNamesList + "]");
 }
 
 void RefinementFunction::generateStatements()
 {
   string const repeatModifier = isRule ? "$" : "*";
 
-  auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace " + repeatModifier + " [" + processingType + "]";
-  replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
+  addStatementTop(
+        "replace " + repeatModifier + " [" + processingType + "]",
+        CURRENT_NODE + " [" + processingType + "]");
 
   string paramNamesList = "";
   for (auto const& p : params)
-    paramNamesList += p.id + ' ';
+    paramNamesList += ' ' + p.id;
 
-  auto& byStmt = statements.emplace_back(/* empty */);
-  byStmt.action = "by";
-  byStmt.text = CURRENT_NODE + " [" + callTo->name + " " + paramNamesList + "]";
+  addStatementBott(
+        "by",
+        CURRENT_NODE + " [" + callTo->name + paramNamesList + "]");
 }
 
 void InstrumentationFunction::generateStatements()
 {
-  auto& replaceStmt = statements.emplace_front(/* empty */);
-  replaceStmt.action = "replace [" + searchType + "]";
-  replaceStmt.text = CURRENT_NODE + " [" + processingType + "]";
+  addStatementTop(
+        "replace [" + searchType + "]",
+        CURRENT_NODE + " [" + processingType + "]");
 
-  auto& byStmt = statements.emplace_back(/* empty */);
-  byStmt.action = "by";
-  byStmt.text = replacement;
+  addStatementBott(
+        "by",
+        replacement);
 }
 
 string scis::contextNameToFunctionName(string const& context,

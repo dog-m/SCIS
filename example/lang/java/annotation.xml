@@ -2,6 +2,7 @@
     <grammar
       language="java"
       src="lang/java/grammar.txl"
+      base-executable-sequence-type="repeat statement"
       >
         <keyword-DAG>
             <package type="package_declaration">
@@ -153,6 +154,7 @@
                     <paste-algorithm>
                         <deconstruct-variable
                           type="method_body"
+                          variant="0"
                           />
                         <insert-fragment
                           />

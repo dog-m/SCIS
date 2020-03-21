@@ -38,8 +38,12 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
   { "deconstruct-variable", [](FunctionCall const& call) -> FunctionCall::Result // FIXME: !!! incomplete !!!
     {
       auto const& type = call.args.at("type");
+      // BUG: check boundaries
+      uint8_t const variant = atoi(call.args.at("variant").data());
+
       stringstream pattern;
-      call.grammar->types.at(type)->variants[0].toTXLWithNames(pattern, makeNameFromType);
+      call.grammar->types.at(type)->variants[variant].toTXLWithNames(pattern, makeNameFromType);
+
       call.iFunc->deconstructVariable(makeNameFromType(type), pattern.str());
 
       return {};
@@ -69,7 +73,7 @@ string scis::getUniqueId()
   return "uid" + to_string(id++);
 }
 
-string scis::makeNameFromType(const string_view& typeName)
+string scis::makeNameFromType(string_view const& typeName)
 {
   string processed;
 

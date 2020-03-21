@@ -38,6 +38,8 @@ namespace scis {
 
     deque<TXLFunction const*> addToMain;
 
+    unordered_map<GrammarAnnotation::PointOfInterest const*, TXLFunction const*> poi2getter;
+
     unordered_map<string_view, TXLFunction const*> contextCheckers;
 
   protected:
@@ -58,12 +60,14 @@ namespace scis {
 
     void compileContextCheckers();
 
+    TXLFunction const* compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi);
+
     TXLFunction* prepareContextChecker(Context const* const context);
 
     void registerContextChecker(Context const* const context,
                                 TXLFunction const* const checker);
 
-    TXLFunction const* findContextCheckerByContextName(string const& name);
+    TXLFunction const* findContextCheckerByContext(string const& name);
 
     bool compileBasicContext(BasicContext const* const context);
 
