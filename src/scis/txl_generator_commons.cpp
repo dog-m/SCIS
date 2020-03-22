@@ -159,7 +159,7 @@ void InstrumentationFunction::generateStatements()
 string scis::codegen::makeFunctionNameFromContextName(string const& context,
                                                       bool const negative)
 {
-  return negative ? CONTEXT_FUNCTION_NEGATIVE_PREFIX : CONTEXT_FUNCTION_PREFIX
+  return (negative ? CONTEXT_FUNCTION_NEGATIVE_PREFIX : CONTEXT_FUNCTION_PREFIX)
          + context;
 }
 

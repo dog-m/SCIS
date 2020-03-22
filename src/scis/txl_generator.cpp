@@ -184,7 +184,7 @@ void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const*
     auto const& nextType = path[i + 1];
 
     stringstream pattern;
-    // FIXME: only first variant used
+    // NOTE: only first variant used
     grammar->types[type]->variants[0].toTXLWithNames(pattern, [&](string const& processingType) {
         return type2name[processingType.data()] =
             processingType == nextType ?
@@ -210,10 +210,11 @@ void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const*
   poi2getter[poi] = getter;
 }
 
-TXLFunction* TXLGenerator::prepareContextChecker(const Context* const context)
+TXLFunction* TXLGenerator::prepareContextChecker(Context const* const context,
+                                                 bool const positive)
 {
   auto const checker = createFunction<TXLFunction>();
-  checker->name = makeFunctionNameFromContextName(context->id);
+  checker->name = makeFunctionNameFromContextName(context->id, !positive);
 
   // always match
   checker->addStatementBott(
@@ -251,11 +252,10 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
   SCIS_DEBUG("Processing basic context <" << context->id << ">");
 
   // creating new context checking function (incl. VOID variable)
-  auto const checker = prepareContextChecker(context);
+  auto const checker = prepareContextChecker(context, true);
 
   unordered_set<string_view> keywordsUsed;
   unordered_set<GrammarAnnotation::PointOfInterest const*> POIsUsed;
-  // joined with 'AND' operation
   for (size_t cNum = 0; cNum < context->constraints.size(); cNum++) {
     auto const& constraint = context->constraints[cNum];
     auto const poi = annotation->pointsOfInterest[constraint.id].get();
@@ -293,6 +293,7 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
 
   // create "where" checks
   auto& where = checker->addStatementBott("where all", VOID_NODE);
+  // joined with 'AND' operation
   for (auto const& constraint : context->constraints) {
     auto const poi = annotation->pointsOfInterest[constraint.id].get();
     auto const& property = poi2var[poi];
@@ -300,13 +301,29 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
 
     // append expressions (pre-fix notation)
     where.text += " [" + operation + " " + property + " \"" + constraint.value.text + "\"]";
-    // FIXME: string templates
+    // TODO: string templates
   }
 
   // make it available for others (ie contexts and filtering functions)
   registerContextChecker(context, checker);
 
-  ;// TODO: create negation form of checker or something
+  // create negation form
+  compileBasicContextNagation(context, checker);
+}
+
+void TXLGenerator::compileBasicContextNagation(Context const* const context,
+                                               TXLFunction const* const contextChecker)
+{
+  auto const func = prepareContextChecker(context, false);
+  func->copyParamsFrom(contextChecker);
+
+  string paramList = "";
+  for (auto const& p : func->params)
+    paramList += " " + p.id;
+
+  func->addStatementBott(
+        "where not",
+        VOID_NODE + " [" + contextChecker->name + paramList + "]");
 }
 
 // BUG: check for context reference loops
@@ -320,7 +337,7 @@ bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
 
   SCIS_DEBUG("Processing compound context <" << context->id << ">");
 
-  auto const checker = prepareContextChecker(context);
+  auto const checker = prepareContextChecker(context, true);
 
   // joined with 'AND'
   for (auto const& disjunction : context->references) {
@@ -477,7 +494,7 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context,
       auto const& type = path[i];
 
       stringstream pattern;
-      // FIXME: only first variant used
+      // NOTE: only first variant used
       grammar->types[type]->variants[0].toTXLWithNames(pattern, [&](string const& name) {
           // BUG: variable name duplication
           return type2name[name.data()] =
@@ -501,7 +518,7 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context,
   auto& call = where.operators.emplace_back(/* empty */);
   call.name = topLevelNegation ? CTX_OP_INVERSION_MAPPING[constraint.op] : constraint.op;
 
-  // FIXME: string templates
+  // TODO: string templates
   call.args.push_back('\"' + constraint.value.text + '\"');
 }
 
@@ -527,7 +544,7 @@ void TXLGenerator::compileRefinementFunctions(string const& ruleId,
     rFunc->skipType = annotation->grammar.graph.keywords[path.keywordId]->type;
     rFunc->processingType = rFunc->skipType.value();
 
-    // FIXME: templates in refinement functions
+    // TODO: templates in refinement functions
     path.pattern;
 
     addToCallChain(rFunc);
@@ -598,7 +615,7 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
     // ----
 
     auto const fragment = getFragment(add.fragmentId);
-    // FIXME: check dependencies
+    // TODO: check dependencies
     if (fragment->language != annotation->grammar.language)
       SCIS_ERROR("Missmatched languages of fragment <" << add.fragmentId << "> and annotation");
 
@@ -681,8 +698,6 @@ void TXLGenerator::compileMain()
 
 void TXLGenerator::compileUtilityFunctions()
 {
-  // FIXME: utility function call policy ignored
-
   for (auto const& func : annotation->library) {
     auto const function = createFunction<TXLFunction>();
     function->isRule = func->isRule;

@@ -60,7 +60,8 @@ namespace scis {
 
     void compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi);
 
-    TXLFunction* prepareContextChecker(Context const* const context);
+    TXLFunction* prepareContextChecker(Context const* const context,
+                                       bool const positive);
 
     void registerContextChecker(Context const* const context,
                                 TXLFunction const* const checker);
@@ -68,6 +69,9 @@ namespace scis {
     TXLFunction const* findContextCheckerByContext(string const& name);
 
     void compileBasicContext(BasicContext const* const context);
+
+    void compileBasicContextNagation(Context const* const context,
+                                     TXLFunction const* const contextChecker);
 
     bool compileCompoundContext(CompoundContext const* const context);
 

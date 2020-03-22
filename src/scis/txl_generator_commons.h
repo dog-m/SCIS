@@ -36,7 +36,7 @@ namespace scis::codegen {
   string makeFunctionNameFromPOIName(string const& poi);
 
   string makeFunctionNameFromContextName(string const& context,
-                                         bool const negative = false);
+                                         bool const negative);
 
   struct TXLFunction {
     struct Parameter {
