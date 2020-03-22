@@ -315,11 +315,12 @@ void TXLGenerator::compileBasicContextNagation(Context const* const context,
                                                TXLFunction const* const contextChecker)
 {
   auto const func = prepareContextChecker(context, false);
+  // signature should be the same with the original context checker
   func->copyParamsFrom(contextChecker);
 
   string paramList = "";
-  for (auto const& p : func->params)
-    paramList += " " + p.id;
+  for (auto const& param : func->params)
+    paramList += " " + param.id;
 
   func->addStatementBott(
         "where not",
@@ -329,29 +330,58 @@ void TXLGenerator::compileBasicContextNagation(Context const* const context,
 // BUG: check for context reference loops
 bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
 {
+  unordered_set<string> requiredTypes;
   // check for dependencies
   for (auto const& disjunction : context->references)
-    for (auto const& reference : disjunction)
-      if (!findContextCheckerByContext(reference.id))
+    for (auto const& reference : disjunction) {
+      // each reference can be just basic context or complicated compound context
+      auto const contextChecker = findContextCheckerByContext(reference.id);
+      if (!contextChecker)
+        // failed to create a thing
         return false;
+
+      // collect types required for context checks
+      for (auto const& parameter : contextChecker->params)
+        requiredTypes.insert(parameter.type);
+    }
 
   SCIS_DEBUG("Processing compound context <" << context->id << ">");
 
   auto const checker = prepareContextChecker(context, true);
 
+  unordered_map<string, string> type2name;
+  // create parameters for this particular context checker
+  for (auto const& type : requiredTypes) {
+    auto const& param = checker->addParameter(makeNameFromType(type), type);
+    type2name[type] = param.id;
+  }
+
   // joined with 'AND'
   for (auto const& disjunction : context->references) {
+    auto& where = checker->addStatementBott("where", VOID_NODE);
     // joined with 'OR'
     for (auto const& reference : disjunction) {
+      // BUG: global context reference in a compound context
       auto const target = makeFunctionNameFromContextName(reference.id, reference.isNegative);
       auto const ref = findContextCheckerByContext(reference.id);
 
-      target;
-      ref;
+      // map arguments to callee parameters
+      string paramList = "";
+      for (auto const& param : ref->params)
+        paramList += " " + type2name[param.type];
+
+      // actual 'call'
+      where.text += " [" + target + paramList + "]";
     }
   }
 
+  // make it available for others
   registerContextChecker(context, checker);
+
+  // create negation form
+  compileBasicContextNagation(context, checker);
+
+  // everything done ok
   return true;
 }
 
