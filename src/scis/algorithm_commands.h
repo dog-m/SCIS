@@ -19,7 +19,7 @@ namespace scis {
     string function;
     unordered_map<string, string> args;
     string preparedFragment;
-    /*generation::*/InstrumentationFunction * iFunc;
+    codegen::InstrumentationFunction * iFunc;
     txl::Grammar const* grammar;
   }; // FunctionCall
 
@@ -27,10 +27,6 @@ namespace scis {
 
   bool callAlgorithmCommand(FunctionCall const& params,
                             FunctionResultHandler const& resultHandler);
-
-  string getUniqueId();
-
-  string makeNameFromType(string_view const& typeName);
 
 } // scis
 

@@ -15,6 +15,9 @@ constexpr auto DAG_DISTANCES_SEARCH_LIMMIT = 2500;
 
 constexpr auto CONTEXT_DEPENDENCY_WAITING_LIMMIT = 5200;
 
+constexpr auto TXL_TYPE_STRING = "stringlit";
+constexpr auto TXL_TYPE_ID = "id";
+
 static unordered_map<string_view, string_view> CTX_OP_INVERSION_MAPPING {
   { "=", "~=" },
   { "~=", "=" },
@@ -94,11 +97,6 @@ void TXLGenerator::loadRequestedFragments()
   }
 }
 
-string TXLGenerator::keywordToName(string const& keyword)
-{
-  return "kw_" + makeNameFromType(keyword);
-}
-
 void TXLGenerator::sortKeywords(vector<string_view>& keywords) const
 {
   std::sort(keywords.begin(), keywords.end(),
@@ -121,7 +119,7 @@ void TXLGenerator::compileContextCheckers()
     if (auto const basicCtx = dynamic_cast<BasicContext const*>(ctx)) {
       basicContexts.push_back(basicCtx);
 
-      // collecting POIs
+      // collecting points-of-interest
       for (auto const& constraint : basicCtx->constraints) {
         auto const poi = annotation->pointsOfInterest[constraint.id].get();
         allPOIs.insert(poi);
@@ -135,7 +133,7 @@ void TXLGenerator::compileContextCheckers()
 
   // create getters
   for (auto const poi : allPOIs)
-    poi2getter[poi] = compileGetterForPOI(poi);
+    compileGetterForPOI(poi);
 
   // create checking functions for basic contexts
   for (auto const ctx : basicContexts)
@@ -160,14 +158,13 @@ void TXLGenerator::compileContextCheckers()
     SCIS_ERROR("Cycles detected in contexts");
 }
 
-TXLFunction const* TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi)
+void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi)
 {
   auto const getter = createFunction<TXLFunction>();
-
-  getter->name = POI_GETTER_PREFIX + /*poi->keyword + "__" +*/ poi->id;
+  getter->name = makeFunctionNameFromPOIName(poi->id);
 
   auto const keyword = annotation->grammar.graph.keywords[poi->keyword].get();
-  auto& inputParam = getter->addParameter(keywordToName(keyword->id), keyword->type);
+  auto& inputParam = getter->addParameter(makeNameFromKeyword(keyword->id), keyword->type);
 
   getter->addStatementTop(
         "replace [stringlit]",
@@ -201,19 +198,22 @@ TXLFunction const* TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfI
   auto const& lastType = path.back();
   auto const result = type2name[lastType] + "_str";
 
-  getter->createVariable(result, "stringlit", "_ [quote " + type2name[lastType] + "]");
+  getter->createVariable(
+        result, TXL_TYPE_STRING,
+        "_ [quote " + type2name[lastType] + "]");
 
   getter->addStatementBott(
         "by",
         result);
 
-  return getter;
+  // make getter accessible for others
+  poi2getter[poi] = getter;
 }
 
 TXLFunction* TXLGenerator::prepareContextChecker(const Context* const context)
 {
   auto const checker = createFunction<TXLFunction>();
-  checker->name = contextNameToFunctionName(context->id);
+  checker->name = makeFunctionNameFromContextName(context->id);
 
   // always match
   checker->addStatementBott(
@@ -221,7 +221,9 @@ TXLFunction* TXLGenerator::prepareContextChecker(const Context* const context)
         "_ [any]");
 
   // create garbage variable as primary target for 'when' conditions
-  checker->createVariable(VOID_NODE, VOID_NODE_TYPE, VOID_NODE_VALUE);
+  checker->createVariable(
+        VOID_NODE, VOID_NODE_TYPE,
+        VOID_NODE_VALUE);
 
   return checker;
 }
@@ -242,42 +244,69 @@ TXLFunction const* TXLGenerator::findContextCheckerByContext(string const& name)
     return nullptr;
 }
 
-bool TXLGenerator::compileBasicContext(BasicContext const* const context)
+void TXLGenerator::compileBasicContext(BasicContext const* const context)
 {
-  // check for dependencies
-  // there are no dependencies
+  // check for dependencies -> there are no dependencies
 
   SCIS_DEBUG("Processing basic context <" << context->id << ">");
 
-  // creating new context checking function
+  // creating new context checking function (incl. VOID variable)
   auto const checker = prepareContextChecker(context);
 
   unordered_set<string_view> keywordsUsed;
+  unordered_set<GrammarAnnotation::PointOfInterest const*> POIsUsed;
   // joined with 'AND' operation
   for (size_t cNum = 0; cNum < context->constraints.size(); cNum++) {
     auto const& constraint = context->constraints[cNum];
     auto const poi = annotation->pointsOfInterest[constraint.id].get();
-    // collect names for parameters
+
+    // collect names for parameters and variables
     keywordsUsed.insert(poi->keyword);
-
-    auto const& keyword = annotation->grammar.graph.keywords[poi->keyword].get();
-
-    // use constraint number to generate unique namesa for variables
-    cNum; keyword->type; poi->valueTypePath;
-    constraint.op; constraint.value; // FIXME: !!! implement !!!
+    POIsUsed.insert(poi);
   }
 
+  // keep parameters in order
   vector<string_view> sortedKeywords;
   sortedKeywords.insert(sortedKeywords.begin(), keywordsUsed.begin(), keywordsUsed.end());
   sortKeywords(sortedKeywords);
 
-  sortedKeywords; checker->params;
+  // introduce parameters
+  unordered_map<string, string> type2name;
+  for (auto const& kw : sortedKeywords) {
+    auto const& param = checker->addParameter(codegen::makeNameFromKeyword(kw),
+                                              annotation->grammar.graph.keywords[kw]->type);
+    type2name[param.type] = param.id;
+  }
 
+  // instantiate variables which will keep values for POIs
+  unordered_map<decltype(POIsUsed)::key_type, string> poi2var;
+  for (auto const poi : POIsUsed) {
+    auto const getter = poi2getter[poi];
+    auto const varName = makeNameFromPOIName(poi->id) + "_str";
+    checker->createVariable(
+          varName, TXL_TYPE_STRING,
+          "_ [" + getter->name + " " + type2name[getter->params[0].type] + "]");
+
+    // save for future use
+    poi2var.insert_or_assign(poi, varName);
+  }
+
+  // create "where" checks
+  auto& where = checker->addStatementBott("where all", VOID_NODE);
+  for (auto const& constraint : context->constraints) {
+    auto const poi = annotation->pointsOfInterest[constraint.id].get();
+    auto const& property = poi2var[poi];
+    auto const operation = constraint.op;; // FIXME: wrap standard comparison operations
+
+    // append expressions (pre-fix notation)
+    where.text += " [" + operation + " " + property + " \"" + constraint.value.text + "\"]";
+    // FIXME: string templates
+  }
+
+  // make it available for others (ie contexts and filtering functions)
   registerContextChecker(context, checker);
 
-  // TODO: create negation form of checker or something
-
-  return true;
+  ;// TODO: create negation form of checker or something
 }
 
 // BUG: check for context reference loops
@@ -297,7 +326,7 @@ bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
   for (auto const& disjunction : context->references) {
     // joined with 'OR'
     for (auto const& reference : disjunction) {
-      auto const target = contextNameToFunctionName(reference.id, reference.isNegative);
+      auto const target = makeFunctionNameFromContextName(reference.id, reference.isNegative);
       auto const ref = findContextCheckerByContext(reference.id);
 
       target;
@@ -352,9 +381,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
 
   // sort keywords
   vector<string_view> sortedKeywords;
-
   sortedKeywords.insert(sortedKeywords.begin(), keywordsUsedInContext.begin(), keywordsUsedInContext.end());
-
   sortKeywords(sortedKeywords);
 
   SCIS_DEBUG("sorted keywords:");
@@ -373,7 +400,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
       cFunc->copyParamsFrom(lastCollector);
 
       // plus one parameter (result) from last collection function
-      cFunc->addParameter(keywordToName(lastCollector->processingKeyword), lastCollector->processingType);
+      cFunc->addParameter(makeNameFromKeyword(lastCollector->processingKeyword), lastCollector->processingType);
 
       // strong chaining
       //cFunc->skipType = lastCollector->processingType; // BUG: potential skipping bug
@@ -399,7 +426,7 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
 
   // plus one parameter (result) from last collection function
   auto const lastCollector = dynamic_cast<CollectionFunction*>(currentCallChain.back());
-  fFunc->addParameter(keywordToName(lastCollector->processingKeyword), lastCollector->processingType);
+  fFunc->addParameter(makeNameFromKeyword(lastCollector->processingKeyword), lastCollector->processingType);
 
   unordered_map<string, string> type2name; // FIXME: introduce variables once
   for (auto const& par : fFunc->params)
@@ -465,7 +492,9 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context,
     auto const& lastType = path.back();
     where.target = type2name[lastType] + "_str";
 
-    fFunc->createVariable(where.target, "stringlit", "_ [quote " + type2name[lastType] + "]");
+    fFunc->createVariable(
+          where.target, TXL_TYPE_STRING,
+          "_ [quote " + type2name[lastType] + "]");
   }
 
   // FIXME: case: different context constraints for the same node
@@ -479,6 +508,8 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context,
 void TXLGenerator::compileRefinementFunctions(string const& ruleId,
                                               Rule::Statement const& ruleStmt)
 {
+  ;// FIXME: !!! incorrect process understanding !!!
+
   // add path functions
   for (auto const& path : ruleStmt.location.path) {
     auto const rFunc = createFunction<RefinementFunction>();
@@ -531,11 +562,17 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
     SCIS_WARNING("Cant deconstruct type [" << workingType << "]");
 
   // introduce common variables and constants
-  iFunc->createVariable("NODE", "id", "_ [typeof " + CURRENT_NODE + "]");
+  iFunc->createVariable(
+        "NODE", TXL_TYPE_ID,
+        "_ [typeof " + CURRENT_NODE + "]");
 
-  iFunc->createVariable("POINTCUT", "id", '\'' + ruleStmt.location.pointcut);
+  iFunc->createVariable(
+        "POINTCUT", TXL_TYPE_ID,
+        '\'' + ruleStmt.location.pointcut);
 
-  iFunc->createVariable("FILE", "stringlit", "_ [+ \"" + processingFilename + "\"]");
+  iFunc->createVariable(
+        "FILE", TXL_TYPE_STRING,
+        "_ [+ \"" + processingFilename + "\"]");
 
   context;// FIXME: add variables from POI
 
@@ -548,7 +585,9 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
     for (auto const& component : make.components)
       component->toTXL(sequence);
 
-    iFunc->createVariable(make.target, "stringlit", sequence.str());
+    iFunc->createVariable(
+          make.target, TXL_TYPE_STRING,
+          sequence.str());
 
     syntheticVariables.insert(make.target);
   }
@@ -649,8 +688,8 @@ void TXLGenerator::compileUtilityFunctions()
     function->isRule = func->isRule;
     function->name = func->name;
 
-    for (auto const& p : func->params)
-      function->addParameter(p.id, p.type);
+    for (auto const& parameter : func->params)
+      function->addParameter(parameter.id, parameter.type);
 
     function->addStatementBott(
           func->source,
@@ -687,6 +726,8 @@ void TXLGenerator::compile()
   loadRequestedFragments();
 
   evaluateKeywordsDistances();
+
+  compileContextCheckers();
 
   for (auto const& [_, rule] : ruleset->rules) {
     SCIS_DEBUG("Processing rule \'" << rule->id << "\'");

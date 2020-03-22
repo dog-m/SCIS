@@ -12,7 +12,7 @@
 namespace scis {
 
   using namespace std;
-  //using namespace scis::generation;
+  using namespace scis::codegen;
 
   class TXLGenerator {
   public:
@@ -22,7 +22,7 @@ namespace scis {
 
     unique_ptr<Ruleset> ruleset;
 
-    string processingFilename; // FIXME: add file name
+    string processingFilename;
 
     string fragmentsDir;
 
@@ -54,13 +54,11 @@ namespace scis {
     template <typename Kind>
     Kind* createFunction();
 
-    string keywordToName(string const& keyword);
-
     void sortKeywords(vector<string_view> &keywords) const;
 
     void compileContextCheckers();
 
-    TXLFunction const* compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi);
+    void compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi);
 
     TXLFunction* prepareContextChecker(Context const* const context);
 
@@ -69,7 +67,7 @@ namespace scis {
 
     TXLFunction const* findContextCheckerByContext(string const& name);
 
-    bool compileBasicContext(BasicContext const* const context);
+    void compileBasicContext(BasicContext const* const context);
 
     bool compileCompoundContext(CompoundContext const* const context);
 

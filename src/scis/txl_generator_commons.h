@@ -7,7 +7,7 @@
 #include <optional>
 #include <ostream>
 
-namespace scis {
+namespace scis::codegen {
 
   using namespace std;
 
@@ -15,7 +15,7 @@ namespace scis {
 
   inline string const VOID_NODE = "__VOID__";
   inline string const VOID_NODE_TYPE = "any";
-  inline string const VOID_NODE_VALUE = "%( void )%";
+  inline string const VOID_NODE_VALUE = "% void";
 
   inline string const POI_GETTER_PREFIX = "__POI_get___";
 
@@ -23,8 +23,20 @@ namespace scis {
 
   inline string const CONTEXT_FUNCTION_NEGATIVE_PREFIX = "__not" + CONTEXT_FUNCTION_PREFIX;
 
-  string contextNameToFunctionName(string const& context,
-                                   bool const negative = false);
+  inline string const VAR_KEYWORD_PREFIX = "kw_";
+
+  string getUniqueId();
+
+  string makeNameFromType(string_view const& typeName);
+
+  string makeNameFromKeyword(string_view const& keywordName);
+
+  string makeNameFromPOIName(string const& poi);
+
+  string makeFunctionNameFromPOIName(string const& poi);
+
+  string makeFunctionNameFromContextName(string const& context,
+                                         bool const negative = false);
 
   struct TXLFunction {
     struct Parameter {
@@ -54,11 +66,11 @@ namespace scis {
 
     string_view ruleOrFunction();
 
-    /// statement will be added on top of other statements (in source)
+    /// statement will be added ON TOP of other statements (in source)
     Statement& addStatementTop(string const& action,
                                string const& text);
 
-    /// statement will be added below other statements (in source)
+    /// statement will be added BELOW other statements (in source)
     Statement& addStatementBott(string const& action,
                                 string const& text);
 

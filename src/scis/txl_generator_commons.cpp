@@ -1,7 +1,7 @@
 #include "txl_generator_commons.h"
 
 using namespace std;
-using namespace scis;
+using namespace scis::codegen;
 
 void TXLFunction::copyParamsFrom(TXLFunction const* const from)
 {
@@ -156,9 +156,57 @@ void InstrumentationFunction::generateStatements()
         replacement);
 }
 
-string scis::contextNameToFunctionName(string const& context,
-                                       bool const negative)
+string scis::codegen::makeFunctionNameFromContextName(string const& context,
+                                                      bool const negative)
 {
   return negative ? CONTEXT_FUNCTION_NEGATIVE_PREFIX : CONTEXT_FUNCTION_PREFIX
          + context;
+}
+
+string scis::codegen::getUniqueId()
+{
+  static uint64_t id = 0;
+  return "uid" + to_string(id++);
+}
+
+string scis::codegen::makeNameFromType(string_view const& typeName)
+{
+  string processed;
+
+  bool useUpperCase = true;
+  for (auto const c : typeName) {
+      if (c == ' ' || c == '_') {
+          useUpperCase = true;
+          continue;
+        }
+
+      if (useUpperCase) {
+          processed.push_back(toupper(c));
+          useUpperCase = false;
+        }
+      else
+        processed.push_back(c);
+    }
+
+  return processed;
+}
+
+string scis::codegen::makeNameFromKeyword(string_view const& keywordName)
+{
+  return "kw_" + makeNameFromType(keywordName);
+}
+
+string scis::codegen::makeNameFromPOIName(string const& poi)
+{
+  string processedPOI = poi;
+
+  for (auto& c : processedPOI)
+    c = isalpha(c) ? c : '_';
+
+  return processedPOI;
+}
+
+string scis::codegen::makeFunctionNameFromPOIName(string const& poi)
+{
+  return POI_GETTER_PREFIX + makeNameFromPOIName(poi);
 }

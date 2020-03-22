@@ -14,20 +14,20 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
     }
   },
 
-  { "insert-call", [](FunctionCall const& call) -> FunctionCall::Result // FIXME: !!! incomplete !!!
+  { "insert-call", [](FunctionCall const& call) -> FunctionCall::Result
     {
       return { .byText = "[" + call.args.at("function") + " " + call.args.at("params") + "]" };
     }
   },
 
-  { "insert-text", [](FunctionCall const& call) -> FunctionCall::Result // FIXME: !!! incomplete !!!
+  { "insert-text", [](FunctionCall const& call) -> FunctionCall::Result
     {
       string text = call.args.at("text") + " ";
       return { .byText = text };
     }
   },
 
-  { "fragment-to-variable", [](FunctionCall const& call) -> FunctionCall::Result // FIXME: !!! incomplete !!!
+  { "fragment-to-variable", [](FunctionCall const& call) -> FunctionCall::Result
     {
       call.iFunc->createVariable(call.args.at("name"), call.args.at("type"), call.preparedFragment);
 
@@ -35,16 +35,16 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
     }
   },
 
-  { "deconstruct-variable", [](FunctionCall const& call) -> FunctionCall::Result // FIXME: !!! incomplete !!!
+  { "deconstruct-variable", [](FunctionCall const& call) -> FunctionCall::Result
     {
       auto const& type = call.args.at("type");
       // BUG: check boundaries
       uint8_t const variant = atoi(call.args.at("variant").data());
 
       stringstream pattern;
-      call.grammar->types.at(type)->variants[variant].toTXLWithNames(pattern, makeNameFromType);
+      call.grammar->types.at(type)->variants[variant].toTXLWithNames(pattern, codegen::makeNameFromType);
 
-      call.iFunc->deconstructVariable(makeNameFromType(type), pattern.str());
+      call.iFunc->deconstructVariable(codegen::makeNameFromType(type), pattern.str());
 
       return {};
     }
@@ -65,32 +65,4 @@ bool scis::callAlgorithmCommand(FunctionCall const& params,
     } catch (...) {
       return false;
     }
-}
-
-string scis::getUniqueId()
-{
-  static uint64_t id = 0;
-  return "uid" + to_string(id++);
-}
-
-string scis::makeNameFromType(string_view const& typeName)
-{
-  string processed;
-
-  bool useUpperCase = true;
-  for (auto const c : typeName) {
-    if (c == ' ' || c == '_') {
-      useUpperCase = true;
-      continue;
-    }
-
-    if (useUpperCase) {
-      processed.push_back(toupper(c));
-      useUpperCase = false;
-    }
-    else
-      processed.push_back(c);
-  }
-
-  return processed;
 }
