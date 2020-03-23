@@ -25,6 +25,8 @@ namespace scis::codegen {
 
   inline string const VAR_KEYWORD_PREFIX = "kw_";
 
+  inline string const STD_WRAPPER_PREFIX = "__std__";
+
   string getUniqueId();
 
   string makeNameFromType(string_view const& typeName);

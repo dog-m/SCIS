@@ -42,10 +42,19 @@ namespace scis {
 
     unordered_map<string_view, TXLFunction const*> contextCheckers;
 
+    unordered_map<string, TXLFunction const*> operator2wrapper;
+
   protected:
     Fragment const* getFragment(string_view const& id);
 
     void addToCallChain(CallChainFunction *const func);
+
+    void wrapStandardBinnaryOperator(string const& op,
+                                     string const& type,
+                                     string const& name);
+
+    string getWrapperForOperator(string const& op,
+                                 string const& type);
 
     void evaluateKeywordsDistances();
 
@@ -81,11 +90,6 @@ namespace scis {
     void compileFilteringFunction(string const& ruleId,
                                   Context const* const context);
 
-    void compileBasicContext(BasicContext const* const context,
-                             bool const topLevelNegation,
-                             FilteringFunction* const fFunc,
-                             unordered_map<string, string>& type2name);
-
     void compileRefinementFunctions(string const& ruleId,
                                     Rule::Statement const& ruleStmt);
 
@@ -96,6 +100,8 @@ namespace scis {
     void compileMain();
 
     void compileUtilityFunctions();
+
+    void compileStandardWrappers();
 
     void genTXLImports(ostream &str);
 

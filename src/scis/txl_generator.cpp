@@ -18,13 +18,23 @@ constexpr auto CONTEXT_DEPENDENCY_WAITING_LIMMIT = 5200;
 constexpr auto TXL_TYPE_STRING = "stringlit";
 constexpr auto TXL_TYPE_ID = "id";
 
-static unordered_map<string_view, string_view> CTX_OP_INVERSION_MAPPING {
+static unordered_map<string_view, string_view> OPERATOR_INVERSION_MAPPING {
   { "=", "~=" },
   { "~=", "=" },
   { "<", ">=" },
   { "<=", ">" },
   { ">", "<=" },
   { ">=", "<" },
+};
+
+static unordered_map<string, string> OPERATOR_WRAPPER_MAPPING {
+  // TODO: make better approach
+  { "=",  STD_WRAPPER_PREFIX + "equal" },
+  { "~=", STD_WRAPPER_PREFIX + "not_equal" },
+  { "<",  STD_WRAPPER_PREFIX + "lower" },
+  { "<=", STD_WRAPPER_PREFIX + "lower_equal" },
+  { ">",  STD_WRAPPER_PREFIX + "greater" },
+  { ">=", STD_WRAPPER_PREFIX + "greater_equal" },
 };
 
 
@@ -44,6 +54,37 @@ void TXLGenerator::addToCallChain(CallChainFunction *const func)
     currentCallChain.back()->connectTo(func);
 
   currentCallChain.push_back(func);
+}
+
+void TXLGenerator::wrapStandardBinnaryOperator(
+    string const& op,
+    string const& type,
+    string const& name)
+{
+  // create simple function and fill basic info
+  auto const wrapper = createFunction<TXLFunction>();
+  wrapper->isRule = false;
+  wrapper->name = name;
+
+  // add params
+  wrapper->addParameter("A", type);
+  wrapper->addParameter("B", type);
+
+  // call original operator
+  wrapper->addStatementBott(
+        "where",
+        "A [" + op + " B]");
+
+  // make it accessible for others
+  operator2wrapper.insert_or_assign(op + type, wrapper);
+}
+
+string TXLGenerator::getWrapperForOperator(const string& op, const string& type)
+{
+  if (auto const x = operator2wrapper.find(op + type); x != operator2wrapper.cend())
+    return x->second->name;
+  else
+    SCIS_ERROR("Cant find suitable wrapper for operator \'" << op << "\' with type \'" << type << "\'");
 }
 
 void TXLGenerator::evaluateKeywordsDistances()
@@ -161,6 +202,7 @@ void TXLGenerator::compileContextCheckers()
 void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi)
 {
   auto const getter = createFunction<TXLFunction>();
+  getter->isRule = false;
   getter->name = makeFunctionNameFromPOIName(poi->id);
 
   auto const keyword = annotation->grammar.graph.keywords[poi->keyword].get();
@@ -171,7 +213,7 @@ void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const*
         "_ [stringlit]");
 
   unordered_map<string, string> type2name;
-  type2name[inputParam.type] = inputParam.id;
+  type2name.insert_or_assign(inputParam.type, inputParam.id);
 
   vector<string> path;
   path.push_back(inputParam.type);
@@ -214,6 +256,7 @@ TXLFunction* TXLGenerator::prepareContextChecker(Context const* const context,
                                                  bool const positive)
 {
   auto const checker = createFunction<TXLFunction>();
+  checker->isRule = false;
   checker->name = makeFunctionNameFromContextName(context->id, !positive);
 
   // always match
@@ -275,7 +318,7 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
   for (auto const& kw : sortedKeywords) {
     auto const& param = checker->addParameter(codegen::makeNameFromKeyword(kw),
                                               annotation->grammar.graph.keywords[kw]->type);
-    type2name[param.type] = param.id;
+    type2name.insert_or_assign(param.type, param.id);
   }
 
   // instantiate variables which will keep values for POIs
@@ -297,7 +340,7 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
   for (auto const& constraint : context->constraints) {
     auto const poi = annotation->pointsOfInterest[constraint.id].get();
     auto const& property = poi2var[poi];
-    auto const operation = constraint.op;; // FIXME: wrap standard comparison operations
+    auto const operation = getWrapperForOperator(constraint.op, TXL_TYPE_STRING);
 
     // append expressions (pre-fix notation)
     where.text += " [" + operation + " " + property + " \"" + constraint.value.text + "\"]";
@@ -318,13 +361,13 @@ void TXLGenerator::compileBasicContextNagation(Context const* const context,
   // signature should be the same with the original context checker
   func->copyParamsFrom(contextChecker);
 
-  string paramList = "";
+  string args = "";
   for (auto const& param : func->params)
-    paramList += " " + param.id;
+    args += " " + param.id;
 
   func->addStatementBott(
         "where not",
-        VOID_NODE + " [" + contextChecker->name + paramList + "]");
+        VOID_NODE + " [" + contextChecker->name + args + "]");
 }
 
 // BUG: check for context reference loops
@@ -353,7 +396,7 @@ bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
   // create parameters for this particular context checker
   for (auto const& type : requiredTypes) {
     auto const& param = checker->addParameter(makeNameFromType(type), type);
-    type2name[type] = param.id;
+    type2name.insert_or_assign(type, param.id);
   }
 
   // joined with 'AND'
@@ -366,12 +409,12 @@ bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
       auto const ref = findContextCheckerByContext(reference.id);
 
       // map arguments to callee parameters
-      string paramList = "";
+      string args = "";
       for (auto const& param : ref->params)
-        paramList += " " + type2name[param.type];
+        args += " " + type2name[param.type];
 
       // actual 'call'
-      where.text += " [" + target + paramList + "]";
+      where.text += " [" + target + args + "]";
     }
   }
 
@@ -458,6 +501,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
     cFunc->processingType = annotation->grammar.graph.keywords[keyword]->type;
     cFunc->skipType = cFunc->processingType; // BUG: potential skipping bug
 
+    // hook-up together with everything else
     addToCallChain(cFunc);
   }
 }
@@ -468,88 +512,41 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
   // add context filtering function
   auto const fFunc = createFunction<FilteringFunction>();
 
+  // setup basic info
+  fFunc->isRule = false;
   fFunc->name = ruleId + "_filter_" + context->id + to_string(__LINE__) + getUniqueId();
   fFunc->copyParamsFrom(currentCallChain.back());
 
-  // plus one parameter (result) from last collection function
   auto const lastCollector = dynamic_cast<CollectionFunction*>(currentCallChain.back());
+  fFunc->processingType = lastCollector->processingType;
+
+  // plus one parameter (result) from last collection function
   fFunc->addParameter(makeNameFromKeyword(lastCollector->processingKeyword), lastCollector->processingType);
 
-  unordered_map<string, string> type2name; // FIXME: introduce variables once
+  unordered_map<string, string> type2name;
+  // organize parameters
   for (auto const& par : fFunc->params)
     type2name.insert_or_assign(par.type, par.id);
 
-  fFunc->processingType = lastCollector->processingType;
+  // create garbage variable
+  fFunc->createVariable(
+        VOID_NODE, VOID_NODE_TYPE,
+        VOID_NODE_VALUE);
 
-  ;// FIXME: !!! incorrect process understanding !!!
+  // prepare to call context checker
+  auto const checker = contextCheckers[context->id];
 
-  if (auto const compoundCtx = dynamic_cast<CompoundContext const*>(context))
-    for (auto const& disjunction : compoundCtx->references)
-      for (auto const& element : disjunction) {
-        // FIXME: compound -> basic context resolution
-        auto const basicCtx = dynamic_cast<BasicContext*>(ruleset->contexts[element.id].get());
+  string args = "";
+  for (auto const& p : checker->params)
+    args += " " + type2name[p.type];
 
-        compileBasicContext(basicCtx, element.isNegative, fFunc, type2name);
-      }
+  // actual checks (functions should already been created)
+  fFunc->addStatementBott(
+        "where",
+        VOID_NODE + " [" + checker->name + args + "]");
 
-  else
-    if (auto const basicCtx = dynamic_cast<BasicContext const*>(context))
-      compileBasicContext(basicCtx, false, fFunc, type2name);
-
-  else
-    SCIS_ERROR("Unrecognized context type");
-
+  // hook-up together
   addToCallChain(fFunc);
-}
-
-void TXLGenerator::compileBasicContext(BasicContext const* const context,
-                                       bool const topLevelNegation,
-                                       FilteringFunction *const fFunc,
-                                       unordered_map<string, string>& type2name)
-{
-  // BUG: only first POI used
-  auto const& constraint = context->constraints.front();
-
-  auto& where = fFunc->wheres.emplace_back(/* empty */);
-  auto const poi = annotation->pointsOfInterest[constraint.id].get();
-
-  {
-    vector<string> path;
-    path.push_back(annotation->grammar.graph.keywords[poi->keyword]->type);
-
-    if (!poi->valueTypePath.empty())
-      path.insert(path.end(), poi->valueTypePath.cbegin(), poi->valueTypePath.cend());
-
-    for (size_t i = 0; i+1 < path.size(); i++) { // except last
-      auto const& type = path[i];
-
-      stringstream pattern;
-      // NOTE: only first variant used
-      grammar->types[type]->variants[0].toTXLWithNames(pattern, [&](string const& name) {
-          // BUG: variable name duplication
-          return type2name[name.data()] =
-              name == path[i + 1] ?
-                makeNameFromType(name) :
-                "_";
-        });
-
-      fFunc->deconstructVariable(type2name[type], pattern.str());
-    }
-
-    auto const& lastType = path.back();
-    where.target = type2name[lastType] + "_str";
-
-    fFunc->createVariable(
-          where.target, TXL_TYPE_STRING,
-          "_ [quote " + type2name[lastType] + "]");
-  }
-
-  // FIXME: case: different context constraints for the same node
-  auto& call = where.operators.emplace_back(/* empty */);
-  call.name = topLevelNegation ? CTX_OP_INVERSION_MAPPING[constraint.op] : constraint.op;
-
-  // TODO: string templates
-  call.args.push_back('\"' + constraint.value.text + '\"');
 }
 
 void TXLGenerator::compileRefinementFunctions(string const& ruleId,
@@ -577,6 +574,7 @@ void TXLGenerator::compileRefinementFunctions(string const& ruleId,
     // TODO: templates in refinement functions
     path.pattern;
 
+    // hook-up together
     addToCallChain(rFunc);
   }
 }
@@ -592,6 +590,8 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
   auto const& pattern = keyword->replacement_patterns[0]; // BUG: only first pattern variant used
   auto const& workingType = keyword->type;
 
+  // setup basic info
+  iFunc->isRule = false;
   iFunc->name = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + to_string(__LINE__) + getUniqueId();
   iFunc->copyParamsFrom(currentCallChain.back());
   iFunc->searchType = pattern.searchType;
@@ -705,12 +705,14 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
     iFunc->replacement = replacement;
   }
 
+  // hook-up together
   addToCallChain(iFunc);
 }
 
 void TXLGenerator::compileMain()
 {
   mainFunction = createFunction<TXLFunction>();
+  mainFunction->isRule = false;
   mainFunction->name = "main";
 
   mainFunction->addStatementTop(
@@ -760,6 +762,12 @@ void TXLGenerator::compileUtilityFunctions()
   }
 }
 
+void TXLGenerator::compileStandardWrappers()
+{
+  for (auto const& [op, name] : OPERATOR_WRAPPER_MAPPING)
+    wrapStandardBinnaryOperator(op, TXL_TYPE_STRING, name);
+}
+
 void TXLGenerator::genTXLImports(ostream& str)
 {
   str << "include \"" << annotation->grammar.txlSourceFilename << '\"' << endl;
@@ -771,6 +779,8 @@ void TXLGenerator::compile()
   loadRequestedFragments();
 
   evaluateKeywordsDistances();
+
+  compileStandardWrappers();
 
   compileContextCheckers();
 
