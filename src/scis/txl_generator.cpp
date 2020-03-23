@@ -70,6 +70,11 @@ void TXLGenerator::wrapStandardBinnaryOperator(
   wrapper->addParameter("A", type);
   wrapper->addParameter("B", type);
 
+  // always match
+  wrapper->addStatementTop(
+        "match [any]",
+        "_ [any]");
+
   // call original operator
   wrapper->addStatementBott(
         "where",

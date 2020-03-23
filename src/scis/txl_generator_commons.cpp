@@ -90,12 +90,12 @@ void CollectionFunction::generateStatements()
         CURRENT_NODE + " [" + processingType + "]");
 
   string paramNamesList = "";
-  for (auto const& p : params)
-    paramNamesList += ' ' + p.id;
+  for (auto const& param : params)
+    paramNamesList += ' ' + param.id;
 
   addStatementBott(
         "by",
-        CURRENT_NODE + " [" + callTo->name + paramNamesList + CURRENT_NODE + ']');
+        CURRENT_NODE + " [" + callTo->name + paramNamesList + " " + CURRENT_NODE + ']');
 }
 
 void FilteringFunction::generateStatements()
@@ -120,8 +120,8 @@ void FilteringFunction::generateStatements()
   }
 
   string paramNamesList = "";
-  for (auto const& p : params)
-    paramNamesList += ' ' + p.id;
+  for (auto const& param : params)
+    paramNamesList += ' ' + param.id;
 
   addStatementBott(
         "by",
