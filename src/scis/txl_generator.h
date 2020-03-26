@@ -34,9 +34,9 @@ namespace scis {
     vector<CallChainFunction*> currentCallChain;
 
     vector<unique_ptr<TXLFunction>> functions;
-    TXLFunction* mainFunction = nullptr;
+    TXLFunction* mainFunc = nullptr;
 
-    deque<TXLFunction const*> addToMain;
+    deque<TXLFunction const*> mainCallSequence;
 
     unordered_map<GrammarAnnotation::PointOfInterest const*, TXLFunction const*> poi2getter;
 
@@ -48,6 +48,10 @@ namespace scis {
     Fragment const* getFragment(string_view const& id);
 
     void addToCallChain(CallChainFunction *const func);
+
+    void resetCallChain();
+
+    TXLFunction* lastCallChainElement();
 
     void wrapStandardBinnaryOperator(string const& op,
                                      string const& type,
@@ -93,15 +97,29 @@ namespace scis {
     void compileRefinementFunctions(string const& ruleId,
                                     Rule::Statement const& ruleStmt);
 
+    void compileRefinementFunction_All(TXLFunction* const rFunc,
+                                       Rule::Location::PathElement const& path,
+                                       int const level);
+
+    void compileRefinementFunction_First(TXLFunction* const rFunc,
+                                         Rule::Location::PathElement const& path,
+                                         int const level);
+
+    void compileRefinementFunction_Level(TXLFunction* const rFunc,
+                                         Rule::Location::PathElement const& path,
+                                         int const level);
+
     void compileInstrumentationFunction(string const& ruleId,
                                         Rule::Statement const& ruleStmt,
                                         Context const* const context);
+
+    void createMain();
 
     void compileMain();
 
     void compileUtilityFunctions();
 
-    void compileStandardWrappers();
+    void compileStandardWrappers(string const& baseType);
 
     void genTXLImports(ostream &str);
 

@@ -70,6 +70,7 @@ namespace scis {
       string language;
       string txlSourceFilename;
       DirectedAcyclicGraph graph;
+      string baseSequenceType;
     };
 
     enum class FunctionPolicy {

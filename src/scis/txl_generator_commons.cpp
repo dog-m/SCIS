@@ -77,6 +77,31 @@ TXLFunction::Statement& TXLFunction::deconstructVariable(
         pattern);
 }
 
+TXLFunction::Statement& TXLFunction::importVariable(const string& name, const string& type)
+{
+  return addStatementBott(
+        "import " + name + " [" + type + "]");
+}
+
+TXLFunction::Statement& TXLFunction::exportVariableCreate(
+    string const& name,
+    string const& type,
+    string const& newValue)
+{
+  return addStatementBott(
+        "export " + name + " [" + type + "]",
+        newValue);
+}
+
+TXLFunction::Statement& TXLFunction::exportVariableUpdate(
+    string const& name,
+    string const& newValue)
+{
+  return addStatementBott(
+        "export " + name,
+        newValue);
+}
+
 void CallChainFunction::connectTo(CallChainFunction* const other)
 {
   this->callTo = other;

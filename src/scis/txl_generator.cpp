@@ -15,9 +15,6 @@ constexpr auto DAG_DISTANCES_SEARCH_LIMMIT = 2500;
 
 constexpr auto CONTEXT_DEPENDENCY_WAITING_LIMMIT = 5200;
 
-constexpr auto TXL_TYPE_STRING = "stringlit";
-constexpr auto TXL_TYPE_ID = "id";
-
 static unordered_map<string_view, string_view> OPERATOR_INVERSION_MAPPING {
   { "=", "~=" },
   { "~=", "=" },
@@ -54,6 +51,16 @@ void TXLGenerator::addToCallChain(CallChainFunction *const func)
     currentCallChain.back()->connectTo(func);
 
   currentCallChain.push_back(func);
+}
+
+void TXLGenerator::resetCallChain()
+{
+  currentCallChain.clear();
+}
+
+TXLFunction* TXLGenerator::lastCallChainElement()
+{
+  return currentCallChain.empty() ? nullptr : currentCallChain.back();
 }
 
 void TXLGenerator::wrapStandardBinnaryOperator(
@@ -488,9 +495,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
     auto const cFunc = createFunction<CollectionFunction>();
     cFunc->isRule = true; // BUG: is collector always a rule?
 
-    if (!currentCallChain.empty()) {
-      auto const lastCollector = dynamic_cast<CollectionFunction*>(currentCallChain.back());
-
+    if (auto const lastCollector = dynamic_cast<CollectionFunction*>(lastCallChainElement())) {
       // add params of last collection function
       cFunc->copyParamsFrom(lastCollector);
 
@@ -520,9 +525,9 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
   // setup basic info
   fFunc->isRule = false;
   fFunc->name = ruleId + "_filter_" + context->id + to_string(__LINE__) + getUniqueId();
-  fFunc->copyParamsFrom(currentCallChain.back());
+  auto const lastCollector = dynamic_cast<CollectionFunction*>(lastCallChainElement());
+  fFunc->copyParamsFrom(lastCollector);
 
-  auto const lastCollector = dynamic_cast<CollectionFunction*>(currentCallChain.back());
   fFunc->processingType = lastCollector->processingType;
 
   // plus one parameter (result) from last collection function
@@ -559,29 +564,90 @@ void TXLGenerator::compileRefinementFunctions(string const& ruleId,
 {
   ;// FIXME: !!! incorrect process understanding !!!
 
-  // add path functions
-  for (auto const& path : ruleStmt.location.path) {
-    auto const rFunc = createFunction<RefinementFunction>();
+  using Generator = function<void(TXLFunction* const, Rule::Location::PathElement const&, int const)>;
+  using namespace std::placeholders;
 
+  unordered_map<string, Generator> GENERATORS {
+    { "all",   bind(&TXLGenerator::compileRefinementFunction_All, this, _1, _2, _3) },
+    { "first", bind(&TXLGenerator::compileRefinementFunction_First, this, _1, _2, _3) },
+    { "level", bind(&TXLGenerator::compileRefinementFunction_Level, this, _1, _2, _3) },
+  };
+
+  // add path functions
+  auto level = 0;
+  for (auto const& path : ruleStmt.location.path) {
     // TODO: modifiers for refiement functions
-    if (path.modifier == "all" || path.modifier == "first")
-      rFunc->isRule = (path.modifier == "all");
-    else
+    auto const generator = GENERATORS.find(path.modifier);
+    if (generator == GENERATORS.cend())
       SCIS_ERROR("Icorrect modifier near path element in rule <" << ruleId << ">");
 
+    auto const rFunc = createFunction<RefinementFunction>();
     rFunc->name = ruleId + "_refiner_" + path.keywordId + to_string(__LINE__) + getUniqueId();
+
     if (!currentCallChain.empty())
       rFunc->copyParamsFrom(currentCallChain.back());
 
-    rFunc->skipType = annotation->grammar.graph.keywords[path.keywordId]->type;
-    rFunc->processingType = rFunc->skipType.value();
-
-    // TODO: templates in refinement functions
-    path.pattern;
+    rFunc->processingType = annotation->grammar.graph.keywords[path.keywordId]->type;
 
     // hook-up together
     addToCallChain(rFunc);
+
+    generator->second(rFunc, path, level);
+
+    // update level
+    ++level;
   }
+}
+
+void TXLGenerator::compileRefinementFunction_All(
+    TXLFunction* const rFunc,
+    Rule::Location::PathElement const& path,
+    int const level)
+{
+  rFunc->isRule = true;
+  rFunc->skipType = nullopt;// FIXME: refinement skipping
+  // TODO: templates in refinement functions
+  path.pattern;
+}
+
+void TXLGenerator::compileRefinementFunction_First(
+    TXLFunction* const rFunc,
+    Rule::Location::PathElement const& path,
+    int const level)
+{
+  rFunc->isRule = false;
+  rFunc->skipType = rFunc->processingType;// FIXME: refinement skipping
+  // TODO: templates in refinement functions
+  path.pattern;
+}
+
+void TXLGenerator::compileRefinementFunction_Level(
+    TXLFunction* const rFunc,
+    Rule::Location::PathElement const& path,
+    int const level)
+{
+  rFunc->isRule = false;
+  rFunc->skipType = nullopt;// FIXME: refinement skipping
+  rFunc->processingType = annotation->grammar.baseSequenceType;
+
+  string const safe = "__SKIP__" + to_string(level);
+  rFunc->exportVariableCreate(safe, TXL_TYPE_NUMBER, "0");;
+
+  auto const boxFilter = createFunction<CallChainFunction>();
+  boxFilter->name = rFunc->name + "__boxFilter"; // TODO: add postfix
+  boxFilter->copyParamsFrom(rFunc);
+  addToCallChain(boxFilter);
+
+  boxFilter;
+
+  // FIXME: !!! create once !!!
+  auto const decrement_skip = createFunction<TXLFunction>();
+  auto const do_nothing = createFunction<TXLFunction>();
+  auto const postFilter = createFunction<TXLFunction>();
+  auto const boxCounter = createFunction<TXLFunction>();
+
+  // TODO: templates in refinement functions
+  path.pattern;
 }
 
 void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
@@ -598,9 +664,12 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
   // setup basic info
   iFunc->isRule = false;
   iFunc->name = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + to_string(__LINE__) + getUniqueId();
-  iFunc->copyParamsFrom(currentCallChain.back());
+
+  auto const lastFunc = lastCallChainElement();
+
+  iFunc->copyParamsFrom(lastFunc);
   iFunc->searchType = pattern.searchType;
-  iFunc->processingType = currentCallChain.back()->processingType;
+  iFunc->processingType = lastFunc->processingType;
 
   // deconstruct current node if possible
   if (auto const type = grammar->types.find(workingType); type != grammar->types.cend()) {
@@ -714,23 +783,26 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
   addToCallChain(iFunc);
 }
 
+void TXLGenerator::createMain()
+{
+  mainFunc = createFunction<TXLFunction>();
+  mainFunc->isRule = false;
+  mainFunc->name = "main";
+}
+
 void TXLGenerator::compileMain()
 {
-  mainFunction = createFunction<TXLFunction>();
-  mainFunction->isRule = false;
-  mainFunction->name = "main";
-
-  mainFunction->addStatementTop(
+  mainFunc->addStatementTop(
         "replace [program]",
         "Program [program]");
 
-  string callSequence = "";
-  for (auto const& function : addToMain)
-    callSequence += "\t\t[" + function->name + "]\n";
+  string callSeq = "";
+  for (auto const& function : mainCallSequence)
+    callSeq += "\t\t[" + function->name + "]\n";
 
-  mainFunction->addStatementBott(
+  mainFunc->addStatementBott(
         "by",
-        "Program\n" + callSequence);
+        "Program\n" + callSeq);
 }
 
 void TXLGenerator::compileUtilityFunctions()
@@ -754,11 +826,11 @@ void TXLGenerator::compileUtilityFunctions()
         break;
 
       case GrammarAnnotation::FunctionPolicy::BEFORE_ALL:
-        addToMain.push_front(function);
+        mainCallSequence.push_front(function);
         break;
 
       case GrammarAnnotation::FunctionPolicy::AFTER_ALL:
-        addToMain.push_back(function);
+        mainCallSequence.push_back(function);
         break;
 
       default:
@@ -767,10 +839,10 @@ void TXLGenerator::compileUtilityFunctions()
   }
 }
 
-void TXLGenerator::compileStandardWrappers()
+void TXLGenerator::compileStandardWrappers(string const& baseType)
 {
   for (auto const& [op, name] : OPERATOR_WRAPPER_MAPPING)
-    wrapStandardBinnaryOperator(op, TXL_TYPE_STRING, name);
+    wrapStandardBinnaryOperator(op, baseType, name);
 }
 
 void TXLGenerator::genTXLImports(ostream& str)
@@ -785,7 +857,9 @@ void TXLGenerator::compile()
 
   evaluateKeywordsDistances();
 
-  compileStandardWrappers();
+  createMain();
+
+  compileStandardWrappers(TXL_TYPE_STRING);
 
   compileContextCheckers();
 
@@ -818,8 +892,8 @@ void TXLGenerator::compile()
       compileInstrumentationFunction(rule->id, ruleStmt, context);
 
       // add to a whole program
-      addToMain.push_back(currentCallChain.front());
-      currentCallChain.clear();
+      mainCallSequence.push_back(currentCallChain.front());
+      resetCallChain();
     }
   }
 

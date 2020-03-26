@@ -11,6 +11,10 @@ namespace scis::codegen {
 
   using namespace std;
 
+  inline string const TXL_TYPE_STRING = "stringlit";
+  inline string const TXL_TYPE_ID = "id";
+  inline string const TXL_TYPE_NUMBER = "number";
+
   inline string const CURRENT_NODE = "__NODE__";
 
   inline string const VOID_NODE = "__VOID__";
@@ -74,7 +78,7 @@ namespace scis::codegen {
 
     /// statement will be added BELOW other statements (in source)
     Statement& addStatementBott(string const& action,
-                                string const& text);
+                                string const& text = "");
 
     Statement& createVariable(string const& name,
                               string const& type,
@@ -85,6 +89,16 @@ namespace scis::codegen {
 
     Statement& deconstructVariable(string const& name,
                                    string const& pattern);
+
+    Statement& importVariable(string const& name,
+                              string const& type);
+
+    Statement& exportVariableCreate(string const& name,
+                                    string const& type,
+                                    string const& newValue);
+
+    Statement& exportVariableUpdate(string const& name,
+                                    string const& newValue);
   }; // TXLFunction
 
   struct CallChainElement {
