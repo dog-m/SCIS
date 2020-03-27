@@ -14,7 +14,16 @@ namespace scis {
   using namespace std;
   using namespace scis::codegen;
 
-  class TXLGenerator {
+  class TXLGenerator final {
+    struct RefinementFunctionGeneratorParams {
+      RefinementFunction* const rFunc;
+      Rule::Location::PathElement const& path;
+      int const queueIndex;
+      GrammarAnnotation::DirectedAcyclicGraph::Keyword const* const keyword;
+    };
+
+    using RefinementFunctionGenerator = function<void(RefinementFunctionGeneratorParams const&)>;
+
   public:
     unique_ptr<txl::Grammar> grammar;
 
@@ -97,21 +106,19 @@ namespace scis {
     void compileRefinementFunctions(string const& ruleId,
                                     Rule::Statement const& ruleStmt);
 
-    void compileRefinementFunction_All(TXLFunction* const rFunc,
-                                       Rule::Location::PathElement const& path,
-                                       int const level);
+    void compileRefinementFunction_First(RefinementFunctionGeneratorParams const& params);
 
-    void compileRefinementFunction_First(TXLFunction* const rFunc,
-                                         Rule::Location::PathElement const& path,
-                                         int const level);
+    void compileRefinementFunction_Level(RefinementFunctionGeneratorParams const& params);
 
-    void compileRefinementFunction_Level(TXLFunction* const rFunc,
-                                         Rule::Location::PathElement const& path,
-                                         int const level);
+    void compileRefinementFunction_LevelPredicate(RefinementFunctionGeneratorParams const& params);
+
+    void compileRefinementFunction_All(RefinementFunctionGeneratorParams const& params);
 
     void compileInstrumentationFunction(string const& ruleId,
                                         Rule::Statement const& ruleStmt,
                                         Context const* const context);
+
+    string prepareFragment(Fragment const* const fragment);
 
     void createMain();
 

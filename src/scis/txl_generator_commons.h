@@ -15,21 +15,19 @@ namespace scis::codegen {
   inline string const TXL_TYPE_ID = "id";
   inline string const TXL_TYPE_NUMBER = "number";
 
-  inline string const CURRENT_NODE = "__NODE__";
+  inline string const NODE_CURRENT = "__NODE__";
+  inline string const NODE_TAIL = "__TAIL__";
 
-  inline string const VOID_NODE = "__VOID__";
-  inline string const VOID_NODE_TYPE = "any";
-  inline string const VOID_NODE_VALUE = "% void";
+  inline string const NODE_VOID = "__VOID__";
+  inline string const NODE_VOID_TYPE = "any";
+  inline string const NODE_VOID_VALUE = "% void";
 
-  inline string const POI_GETTER_PREFIX = "__POI_get___";
-
-  inline string const CONTEXT_FUNCTION_PREFIX = "__belongs_to_context___";
-
-  inline string const CONTEXT_FUNCTION_NEGATIVE_PREFIX = "__not" + CONTEXT_FUNCTION_PREFIX;
-
-  inline string const VAR_KEYWORD_PREFIX = "kw_";
-
-  inline string const STD_WRAPPER_PREFIX = "__std__";
+  inline string const PREFIX_UNIQUE_ID = "uid";
+  inline string const PREFIX_POI_GETTER = "__POI_get___";
+  inline string const PREFIX_CONTEXT_FUNCTION = "__belongs_to_context___";
+  inline string const PREFIX_CONTEXT_FUNCTION_NEGATIVE = "__not" + PREFIX_CONTEXT_FUNCTION;
+  inline string const PREFIX_VAR_KEYWORD = "kw_";
+  inline string const PREFIX_STD_WRAPPER = "__std__";
 
   string getUniqueId();
 
@@ -120,23 +118,17 @@ namespace scis::codegen {
   };
 
   struct FilteringFunction : public CallChainFunction {
-    struct Where {
-      struct CallElement {
-        string name;
-        vector<string> args;
-      };
-
-      string target;
-      vector<CallElement> operators;
-    }; // Where
-
-    vector<Where> wheres;
-
     void generateStatements() override;
-  }; // FilteringFunction
+  };
 
   struct RefinementFunction : public CallChainFunction {
+    string searchType = "???";
+    bool sequential = false;
+
     void generateStatements() override;
+  };
+
+  struct RefinementFunctionSequential : public RefinementFunction {
   };
 
   struct InstrumentationFunction : public CallChainFunction {

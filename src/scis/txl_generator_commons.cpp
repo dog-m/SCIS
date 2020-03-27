@@ -112,7 +112,7 @@ void CollectionFunction::generateStatements()
 {
   addStatementTop(
         "replace $ [" + processingType + "]",
-        CURRENT_NODE + " [" + processingType + "]");
+        NODE_CURRENT + " [" + processingType + "]");
 
   string paramNamesList = "";
   for (auto const& param : params)
@@ -120,29 +120,14 @@ void CollectionFunction::generateStatements()
 
   addStatementBott(
         "by",
-        CURRENT_NODE + " [" + callTo->name + paramNamesList + " " + CURRENT_NODE + ']');
+        NODE_CURRENT + " [" + callTo->name + paramNamesList + " " + NODE_CURRENT + ']');
 }
 
 void FilteringFunction::generateStatements()
 {
   addStatementTop(
         "replace $ [" + processingType + "]",
-        CURRENT_NODE + " [" + processingType + "]");
-
-  for (auto const& where : wheres) {
-    auto constraint = where.target;
-
-    for (auto const& op : where.operators) {
-      constraint += " [" + op.name;
-
-      for (auto const& arg : op.args)
-        constraint += ' ' + arg;
-
-      constraint += "]";
-    }
-
-    addStatementBott("where", constraint);
-  }
+        NODE_CURRENT + " [" + processingType + "]");
 
   string paramNamesList = "";
   for (auto const& param : params)
@@ -150,31 +135,48 @@ void FilteringFunction::generateStatements()
 
   addStatementBott(
         "by",
-        CURRENT_NODE + " [" + callTo->name + paramNamesList + "]");
+        NODE_CURRENT + " [" + callTo->name + paramNamesList + "]");
 }
 
 void RefinementFunction::generateStatements()
 {
   string const repeatModifier = isRule ? "$" : "*";
 
-  addStatementTop(
-        "replace " + repeatModifier + " [" + processingType + "]",
-        CURRENT_NODE + " [" + processingType + "]");
-
   string paramNamesList = "";
   for (auto const& p : params)
     paramNamesList += ' ' + p.id;
 
-  addStatementBott(
-        "by",
-        CURRENT_NODE + " [" + callTo->name + paramNamesList + "]");
+  if (sequential) {
+    addStatementTop(
+          "replace " + repeatModifier + " [" + searchType + "]",
+          NODE_CURRENT + " [" + processingType + "] " + NODE_TAIL + " [" + searchType + "]");
+
+    // NOTE: checks and __NODE__ -> __SINGLE_BOX_ARRAY__
+
+    addStatementBott(
+          "construct __PROCESSED__ [" + searchType + "]",
+          "__SINGLE_BOX_ARRAY__ [" + callTo->name + paramNamesList + "]");
+
+    addStatementBott(
+          "by",
+          "__PROCESSED__ [. " + NODE_TAIL + "]");
+  }
+  else {
+    addStatementTop(
+          "replace " + repeatModifier + " [" + searchType + "]",
+          NODE_CURRENT + " [" + processingType + "]");
+
+    addStatementBott(
+          "by",
+          NODE_CURRENT + " [" + callTo->name + paramNamesList + "]");
+  }
 }
 
 void InstrumentationFunction::generateStatements()
 {
   addStatementTop(
         "replace [" + searchType + "]",
-        CURRENT_NODE + " [" + processingType + "]");
+        NODE_CURRENT + " [" + processingType + "]");
 
   addStatementBott(
         "by",
@@ -184,14 +186,14 @@ void InstrumentationFunction::generateStatements()
 string scis::codegen::makeFunctionNameFromContextName(string const& context,
                                                       bool const negative)
 {
-  return (negative ? CONTEXT_FUNCTION_NEGATIVE_PREFIX : CONTEXT_FUNCTION_PREFIX)
+  return (negative ? PREFIX_CONTEXT_FUNCTION_NEGATIVE : PREFIX_CONTEXT_FUNCTION)
          + context;
 }
 
 string scis::codegen::getUniqueId()
 {
   static uint64_t id = 0;
-  return "uid" + to_string(id++);
+  return PREFIX_UNIQUE_ID + to_string(id++);
 }
 
 string scis::codegen::makeNameFromType(string_view const& typeName)
@@ -200,25 +202,25 @@ string scis::codegen::makeNameFromType(string_view const& typeName)
 
   bool useUpperCase = true;
   for (auto const c : typeName) {
-      if (c == ' ' || c == '_') {
-          useUpperCase = true;
-          continue;
-        }
-
-      if (useUpperCase) {
-          processed.push_back(toupper(c));
-          useUpperCase = false;
-        }
-      else
-        processed.push_back(c);
+    if (c == ' ' || c == '_') {
+      useUpperCase = true;
+      continue;
     }
+
+    if (useUpperCase) {
+      processed.push_back(toupper(c));
+      useUpperCase = false;
+    }
+    else
+      processed.push_back(c);
+  }
 
   return processed;
 }
 
 string scis::codegen::makeNameFromKeyword(string_view const& keywordName)
 {
-  return "kw_" + makeNameFromType(keywordName);
+  return PREFIX_VAR_KEYWORD + makeNameFromType(keywordName);
 }
 
 string scis::codegen::makeNameFromPOIName(string const& poi)
@@ -233,5 +235,5 @@ string scis::codegen::makeNameFromPOIName(string const& poi)
 
 string scis::codegen::makeFunctionNameFromPOIName(string const& poi)
 {
-  return POI_GETTER_PREFIX + makeNameFromPOIName(poi);
+  return PREFIX_POI_GETTER + makeNameFromPOIName(poi);
 }

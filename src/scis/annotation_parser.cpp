@@ -115,6 +115,10 @@ void AnnotationParser::parsePointcutsForKeyword(XMLElement const* const root)
   auto const name = expectedAttribute(root, "name")->Value();
   auto const keyword = annotation->grammar.graph.keywords.at(name).get();
 
+  // TODO: sequences
+  if (auto const seq = root->FindAttribute("sequential"))
+    keyword->sequential = seq->BoolValue();
+
   // parsing patterns for a keyword
   auto const patterns = expectedPath(root, { "replacement-patterns" });
   FOREACH_XML_ELEMENT(patterns, pat) {

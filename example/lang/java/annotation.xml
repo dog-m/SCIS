@@ -18,6 +18,7 @@
                             </switch>
                             <for type="for_statement"/>
                             <while type="while_statement"/>
+                            <do_while type="do_statement"/>
                             ...
                         </method>
                     </body>
@@ -80,6 +81,7 @@
     <pointcuts>
         <keyword
           name="imports"
+          sequential="false"
           >
             <replacement-patterns>
                 <pattern search-type="repeat import_declaration">
@@ -109,13 +111,14 @@
 
         <keyword
           name="body"
+          sequential="false"
           >
             <replacement-patterns>
                 <pattern search-type="class_or_interface_body">
-                    {
+                    '{
                         <p name="all"/>
                         <!--repeat class_body_declaration-->
-                    } <!--opt literal-->
+                    '} <!--opt literal-->
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -134,15 +137,16 @@
 
         <keyword
           name="method"
+          sequential="false"
           >
             <replacement-patterns>
                 <pattern search-type="method_declaration">
                     <!--repeat modifier--> <!--opt generic_parameter--> <!--type_specifier--> <!--method_declarator--> <!--opt throws-->
-                    {
+                    '{
                         <p name="before_body"/>
                         <!--block-->
                         <p name="after_body"/>
-                    }
+                    '}
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -168,17 +172,15 @@
           name="if"
           >
             <replacement-patterns>
-                <pattern search-type="if_statement">
-                    if (true) {
-                        <p name="before"/>
-                        if ( <!--condition--> ) {
-                            <p name="before_body"/>
-                            <!--statement-->
-                            <p name="after_body"/>
-                        }
-                        <!--opt else_clause-->
-                        <p name="after"/>
-                    }
+                <pattern search-type="repeat statement">
+                    <p name="before"/>
+                    'if '( <!--condition--> ') '{
+                        <p name="before_body"/>
+                        <!--statement-->
+                        <p name="after_body"/>
+                    '}
+                    <!--opt else_clause-->
+                    <p name="after"/>
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -195,6 +197,182 @@
                 <pointcut name="before_body" clone="if::before"/>
                 <pointcut name="after_body" clone="if::before"/>
                 <pointcut name="after" clone="if::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="else"
+          >
+            <replacement-patterns>
+                <pattern search-type="else_clause">
+                    'else '{
+                        <p name="before_body"/>
+                        <!--statement-->
+                        <p name="after_body"/>
+                    '}
+                </pattern>
+                <!-- pointcut "after" already exists in "if" keyword -->
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before_body">
+                    <fragment
+                      type="repeat statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="after_body" clone="else::before_body"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="for"
+          >
+            <replacement-patterns>
+                <pattern search-type="for_statement">
+                    <p name="before"/>
+                    'for '( <!--for_init--> <!--for_expression--> <!--for_update--> ') '{
+                        <p name="before_body"/>
+                        <!--statement-->
+                        <p name="after_body"/>
+                    '}
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="repeat statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="before_body" clone="for::before"/>
+                <pointcut name="after_body" clone="for::before"/>
+                <pointcut name="after" clone="for::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="while"
+          >
+            <replacement-patterns>
+                <pattern search-type="while_statement">
+                    <p name="before"/>
+                    'while '( <!--condition--> ') '{
+                        <p name="before_body"/>
+                        <!--statement-->
+                        <p name="after_body"/>
+                    '}
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="repeat statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="before_body" clone="while::before"/>
+                <pointcut name="after_body" clone="while::before"/>
+                <pointcut name="after" clone="while::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="do_while"
+          >
+            <replacement-patterns>
+                <pattern search-type="do_statement">
+                    <p name="before"/>
+                    'do '{
+                        <p name="before_body"/>
+                        <!--statement-->
+                        <p name="after_body"/>
+                    '}
+                    'while '( <!--condition--> ') ';
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="repeat statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="before_body" clone="do_while::before"/>
+                <pointcut name="after_body" clone="do_while::before"/>
+                <pointcut name="after" clone="do_while::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="switch"
+          >
+            <replacement-patterns>
+                <pattern search-type="switch_statement">
+                    <p name="before"/>
+                    'switch '( <!--expression--> ') '{
+                        <!--repeat switch_alternative-->
+                    '}
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="repeat statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="after" clone="switch::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="case"
+          >
+            <replacement-patterns>
+                <pattern search-type="switch_alternative">
+                    <p name="before"/>
+                    'switch '( <!--expression--> ') '{
+                        <!--repeat switch_alternative-->
+                    '}
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="repeat statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="after" clone="switch::before"/>
             </pointcuts>
         </keyword>
     </pointcuts>

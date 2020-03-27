@@ -26,12 +26,12 @@ static unordered_map<string_view, string_view> OPERATOR_INVERSION_MAPPING {
 
 static unordered_map<string, string> OPERATOR_WRAPPER_MAPPING {
   // TODO: make better approach
-  { "=",  STD_WRAPPER_PREFIX + "equal" },
-  { "~=", STD_WRAPPER_PREFIX + "not_equal" },
-  { "<",  STD_WRAPPER_PREFIX + "lower" },
-  { "<=", STD_WRAPPER_PREFIX + "lower_equal" },
-  { ">",  STD_WRAPPER_PREFIX + "greater" },
-  { ">=", STD_WRAPPER_PREFIX + "greater_equal" },
+  { "=",  PREFIX_STD_WRAPPER + "equal" },
+  { "~=", PREFIX_STD_WRAPPER + "not_equal" },
+  { "<",  PREFIX_STD_WRAPPER + "lower" },
+  { "<=", PREFIX_STD_WRAPPER + "lower_equal" },
+  { ">",  PREFIX_STD_WRAPPER + "greater" },
+  { ">=", PREFIX_STD_WRAPPER + "greater_equal" },
 };
 
 
@@ -278,8 +278,8 @@ TXLFunction* TXLGenerator::prepareContextChecker(Context const* const context,
 
   // create garbage variable as primary target for 'when' conditions
   checker->createVariable(
-        VOID_NODE, VOID_NODE_TYPE,
-        VOID_NODE_VALUE);
+        NODE_VOID, NODE_VOID_TYPE,
+        NODE_VOID_VALUE);
 
   return checker;
 }
@@ -347,7 +347,7 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
   }
 
   // create "where" checks
-  auto& where = checker->addStatementBott("where all", VOID_NODE);
+  auto& where = checker->addStatementBott("where all", NODE_VOID);
   // joined with 'AND' operation
   for (auto const& constraint : context->constraints) {
     auto const poi = annotation->pointsOfInterest[constraint.id].get();
@@ -379,7 +379,7 @@ void TXLGenerator::compileBasicContextNagation(Context const* const context,
 
   func->addStatementBott(
         "where not",
-        VOID_NODE + " [" + contextChecker->name + args + "]");
+        NODE_VOID + " [" + contextChecker->name + args + "]");
 }
 
 // BUG: check for context reference loops
@@ -413,7 +413,7 @@ bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
 
   // joined with 'AND'
   for (auto const& disjunction : context->references) {
-    auto& where = checker->addStatementBott("where", VOID_NODE);
+    auto& where = checker->addStatementBott("where", NODE_VOID);
     // joined with 'OR'
     for (auto const& reference : disjunction) {
       // BUG: global context reference in a compound context
@@ -540,8 +540,8 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
 
   // create garbage variable
   fFunc->createVariable(
-        VOID_NODE, VOID_NODE_TYPE,
-        VOID_NODE_VALUE);
+        NODE_VOID, NODE_VOID_TYPE,
+        NODE_VOID_VALUE);
 
   // prepare to call context checker
   auto const checker = contextCheckers[context->id];
@@ -553,7 +553,7 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
   // actual checks (functions should already been created)
   fFunc->addStatementBott(
         "where",
-        VOID_NODE + " [" + checker->name + args + "]");
+        NODE_VOID + " [" + checker->name + args + "]");
 
   // hook-up together
   addToCallChain(fFunc);
@@ -564,13 +564,13 @@ void TXLGenerator::compileRefinementFunctions(string const& ruleId,
 {
   ;// FIXME: !!! incorrect process understanding !!!
 
-  using Generator = function<void(TXLFunction* const, Rule::Location::PathElement const&, int const)>;
   using namespace std::placeholders;
 
-  unordered_map<string, Generator> GENERATORS {
-    { "all",   bind(&TXLGenerator::compileRefinementFunction_All, this, _1, _2, _3) },
-    { "first", bind(&TXLGenerator::compileRefinementFunction_First, this, _1, _2, _3) },
-    { "level", bind(&TXLGenerator::compileRefinementFunction_Level, this, _1, _2, _3) },
+  unordered_map<string, RefinementFunctionGenerator> GENERATORS {
+    { "first",   bind(&TXLGenerator::compileRefinementFunction_First,          this, _1) },
+    { "level",   bind(&TXLGenerator::compileRefinementFunction_Level,          this, _1) },
+    { "level_p", bind(&TXLGenerator::compileRefinementFunction_LevelPredicate, this, _1) },
+    { "all",     bind(&TXLGenerator::compileRefinementFunction_All,            this, _1) },
   };
 
   // add path functions
@@ -581,78 +581,85 @@ void TXLGenerator::compileRefinementFunctions(string const& ruleId,
     if (generator == GENERATORS.cend())
       SCIS_ERROR("Icorrect modifier near path element in rule <" << ruleId << ">");
 
+    auto const keyword = annotation->grammar.graph.keywords[path.keywordId].get();
+    keyword->sequential;
+
     auto const rFunc = createFunction<RefinementFunction>();
     rFunc->name = ruleId + "_refiner_" + path.keywordId + to_string(__LINE__) + getUniqueId();
 
     if (!currentCallChain.empty())
       rFunc->copyParamsFrom(currentCallChain.back());
 
-    rFunc->processingType = annotation->grammar.graph.keywords[path.keywordId]->type;
+    rFunc->processingType = keyword->type;
 
     // hook-up together
     addToCallChain(rFunc);
 
-    generator->second(rFunc, path, level);
+    generator->second({ .rFunc = rFunc, .path = path, .queueIndex = level, .keyword = keyword });
 
     // update level
     ++level;
   }
 }
 
-void TXLGenerator::compileRefinementFunction_All(
-    TXLFunction* const rFunc,
-    Rule::Location::PathElement const& path,
-    int const level)
+void TXLGenerator::compileRefinementFunction_First(RefinementFunctionGeneratorParams const& params)
 {
-  rFunc->isRule = true;
-  rFunc->skipType = nullopt;// FIXME: refinement skipping
+  params.rFunc->isRule = false;
+  params.rFunc->skipType = nullopt; // FIXME: refinement skipping
+  params.rFunc->sequential = params.keyword->sequential;
+
   // TODO: templates in refinement functions
-  path.pattern;
+  params.path.pattern;
+
+  if (params.keyword->sequential) {
+    params.rFunc->searchType = annotation->grammar.baseSequenceType;
+
+    params.rFunc->createVariable(
+          "__SINGLE_BOX_ARRAY__", params.rFunc->searchType,
+          NODE_CURRENT + " % +empty");
+  }
+  else {
+    params.rFunc->searchType = params.rFunc->processingType;
+  }
 }
 
-void TXLGenerator::compileRefinementFunction_First(
-    TXLFunction* const rFunc,
-    Rule::Location::PathElement const& path,
-    int const level)
+void TXLGenerator::compileRefinementFunction_Level(RefinementFunctionGeneratorParams const& params)
 {
-  rFunc->isRule = false;
-  rFunc->skipType = rFunc->processingType;// FIXME: refinement skipping
-  // TODO: templates in refinement functions
-  path.pattern;
-}
+  params.rFunc->isRule = false;
+  params.rFunc->skipType = nullopt;// FIXME: refinement skipping
+  params.rFunc->processingType = annotation->grammar.baseSequenceType;
 
-void TXLGenerator::compileRefinementFunction_Level(
-    TXLFunction* const rFunc,
-    Rule::Location::PathElement const& path,
-    int const level)
-{
-  rFunc->isRule = false;
-  rFunc->skipType = nullopt;// FIXME: refinement skipping
-  rFunc->processingType = annotation->grammar.baseSequenceType;
-
-  string const safe = "__SKIP__" + to_string(level);
-  rFunc->exportVariableCreate(safe, TXL_TYPE_NUMBER, "0");;
-
-  auto const boxFilter = createFunction<CallChainFunction>();
-  boxFilter->name = rFunc->name + "__boxFilter"; // TODO: add postfix
-  boxFilter->copyParamsFrom(rFunc);
-  addToCallChain(boxFilter);
-
-  boxFilter;
+  string const safe = "__SKIP__" + to_string(params.queueIndex);
+  params.rFunc->exportVariableCreate(safe, TXL_TYPE_NUMBER, "0");
 
   // FIXME: !!! create once !!!
-  auto const decrement_skip = createFunction<TXLFunction>();
   auto const do_nothing = createFunction<TXLFunction>();
-  auto const postFilter = createFunction<TXLFunction>();
+
+  // FIXME: !!! create once for all sequences !!!
+  auto const decrement_skip = createFunction<TXLFunction>();
   auto const boxCounter = createFunction<TXLFunction>();
 
   // TODO: templates in refinement functions
-  path.pattern;
+  params.path.pattern;
 }
 
-void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
-                                                  Rule::Statement const& ruleStmt,
-                                                  Context const* const context)
+void TXLGenerator::compileRefinementFunction_LevelPredicate(RefinementFunctionGeneratorParams const& params)
+{
+  ;
+}
+
+void TXLGenerator::compileRefinementFunction_All(RefinementFunctionGeneratorParams const& params)
+{
+  params.rFunc->isRule = true;
+  params.rFunc->skipType = nullopt;// FIXME: refinement skipping
+  // TODO: templates in refinement functions
+  params.path.pattern;
+}
+
+void TXLGenerator::compileInstrumentationFunction(
+    string const& ruleId,
+    Rule::Statement const& ruleStmt,
+    Context const* const context)
 {
   // add instrumentation function
   auto const iFunc = createFunction<InstrumentationFunction>();
@@ -666,7 +673,6 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
   iFunc->name = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + to_string(__LINE__) + getUniqueId();
 
   auto const lastFunc = lastCallChainElement();
-
   iFunc->copyParamsFrom(lastFunc);
   iFunc->searchType = pattern.searchType;
   iFunc->processingType = lastFunc->processingType;
@@ -677,7 +683,7 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
     // BUG: only first variant used
     type->second->variants[0].toTXLWithNames(pattern, makeNameFromType);
 
-    iFunc->deconstructVariable(CURRENT_NODE, pattern.str());
+    iFunc->deconstructVariable(NODE_CURRENT, pattern.str());
   }
   else
     SCIS_WARNING("Cant deconstruct type [" << workingType << "]");
@@ -685,7 +691,7 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
   // introduce common variables and constants
   iFunc->createVariable(
         "NODE", TXL_TYPE_ID,
-        "_ [typeof " + CURRENT_NODE + "]");
+        "_ [typeof " + NODE_CURRENT + "]");
 
   iFunc->createVariable(
         "POINTCUT", TXL_TYPE_ID,
@@ -728,10 +734,7 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
       if (syntheticVariables.find(arg) == syntheticVariables.cend())
         SCIS_ERROR("Variable <" << arg << "> not found");
 
-    stringstream ss;
-    fragment->toTXL(ss, add.args);
-    auto const preparedFragment = ss.str();
-
+    auto const preparedFragment = prepareFragment(fragment, add.args);
     // ----
 
     string replacement = "";
@@ -781,6 +784,14 @@ void TXLGenerator::compileInstrumentationFunction(string const& ruleId,
 
   // hook-up together
   addToCallChain(iFunc);
+}
+
+string TXLGenerator::prepareFragment(Fragment const* const fragment,
+                                     vector<string> const& args)
+{
+  stringstream ss;
+  fragment->toTXL(ss, args);
+  return ss.str();
 }
 
 void TXLGenerator::createMain()

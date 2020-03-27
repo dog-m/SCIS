@@ -57,6 +57,7 @@ namespace scis {
       struct Keyword {
         string id;
         string type;
+        bool sequential = true;
         unordered_map<string_view, unique_ptr<Pointcut>> pointcuts;
         vector<Pattern> replacement_patterns;
         vector<string> subnodes;

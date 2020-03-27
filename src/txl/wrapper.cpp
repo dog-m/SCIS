@@ -26,13 +26,13 @@ bool Wrapper::NOOP_READER(string const&)
 
 bool Wrapper::LOG_READER(string const& line)
 {
-  cout << line << endl;
+  cerr << line << endl;
   return true;
 }
 
-void Wrapper::runNoInput(initializer_list<string_view> && params,
-                            const ReaderFunction &errReader,
-                            const ReaderFunction &outReader)
+int Wrapper::runNoInput(initializer_list<string_view> && params,
+                        ReaderFunction const& errReader,
+                        ReaderFunction const& outReader)
 {
   static auto const txl_executable = search_path("txl");
 
@@ -80,4 +80,8 @@ void Wrapper::runNoInput(initializer_list<string_view> && params,
   while (getline(ss, line))
     if (!outReader(line))
       break;
+
+  // see https://stackoverflow.com/questions/59156417/getting-exit-code-of-boostprocesschild-under-boostasioio-service
+  c.wait();
+  return c.exit_code();
 }
