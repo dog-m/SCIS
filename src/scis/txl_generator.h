@@ -118,7 +118,8 @@ namespace scis {
                                         Rule::Statement const& ruleStmt,
                                         Context const* const context);
 
-    string prepareFragment(Fragment const* const fragment);
+    string prepareFragment(Fragment const* const fragment,
+                           vector<string> const& args);
 
     void createMain();
 

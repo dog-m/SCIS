@@ -2,7 +2,7 @@
     <grammar
       language="java"
       src="lang/java/grammar.txl"
-      base-executable-sequence-type="repeat statement"
+      base-executable-sequence-type="repeat declaration_or_statement"
       >
         <keyword-DAG>
             <package type="package_declaration">
@@ -152,7 +152,7 @@
             <pointcuts>
                 <pointcut name="before_body">
                     <fragment
-                      type="repeat statement"
+                      type="repeat declaration_or_statement"
                       as="Additions"
                       />
                     <paste-algorithm>
@@ -172,7 +172,7 @@
           name="if"
           >
             <replacement-patterns>
-                <pattern search-type="repeat statement">
+                <pattern search-type="repeat declaration_or_statement">
                     <p name="before"/>
                     'if '( <!--condition--> ') '{
                         <p name="before_body"/>
@@ -186,7 +186,7 @@
             <pointcuts>
                 <pointcut name="before">
                     <fragment
-                      type="repeat statement"
+                      type="repeat declaration_or_statement"
                       as="Additions"
                       />
                     <paste-algorithm>
@@ -216,7 +216,7 @@
             <pointcuts>
                 <pointcut name="before_body">
                     <fragment
-                      type="repeat statement"
+                      type="repeat declaration_or_statement"
                       as="Additions"
                       />
                     <paste-algorithm>
@@ -245,7 +245,7 @@
             <pointcuts>
                 <pointcut name="before">
                     <fragment
-                      type="repeat statement"
+                      type="repeat declaration_or_statement"
                       as="Additions"
                       />
                     <paste-algorithm>
@@ -276,7 +276,7 @@
             <pointcuts>
                 <pointcut name="before">
                     <fragment
-                      type="repeat statement"
+                      type="repeat declaration_or_statement"
                       as="Additions"
                       />
                     <paste-algorithm>
@@ -308,7 +308,7 @@
             <pointcuts>
                 <pointcut name="before">
                     <fragment
-                      type="repeat statement"
+                      type="repeat declaration_or_statement"
                       as="Additions"
                       />
                     <paste-algorithm>
@@ -337,7 +337,7 @@
             <pointcuts>
                 <pointcut name="before">
                     <fragment
-                      type="repeat statement"
+                      type="repeat declaration_or_statement"
                       as="Additions"
                       />
                     <paste-algorithm>
@@ -364,7 +364,7 @@
             <pointcuts>
                 <pointcut name="before">
                     <fragment
-                      type="repeat statement"
+                      type="repeat declaration_or_statement"
                       as="Additions"
                       />
                     <paste-algorithm>
