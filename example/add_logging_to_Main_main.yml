@@ -18,7 +18,7 @@ rules:
       add:
         logging_dependencies
   
-    @class_m -> [first] body # all:
+    @class_m -> [all] body # all:
       add:
         logging_fields
   
@@ -26,7 +26,7 @@ rules:
       add:
         logging_init
   
-    @class_and_method_m -> [first] if # before:
+    @class_and_method_m -> [all] if # before:
       make:
         msg <- $pointcut + " " + $node + " block in " + $file + " class, in " + $method_name + " method";
       add:

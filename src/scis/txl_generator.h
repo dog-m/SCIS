@@ -15,14 +15,7 @@ namespace scis {
   using namespace scis::codegen;
 
   class TXLGenerator final {
-    struct RefinementFunctionGeneratorParams {
-      RefinementFunction* const rFunc;
-      Rule::Location::PathElement const& path;
-      int const queueIndex;
-      GrammarAnnotation::DirectedAcyclicGraph::Keyword const* const keyword;
-    };
-
-    using RefinementFunctionGenerator = function<void(RefinementFunctionGeneratorParams const&)>;
+    using RefinementFunctionGenerator = function<void(string const&, Rule::Location::PathElement const&, int const)>;
 
   public:
     unique_ptr<txl::Grammar> grammar;
@@ -52,6 +45,8 @@ namespace scis {
     unordered_map<string_view, TXLFunction const*> contextCheckers;
 
     unordered_map<string, TXLFunction const*> operator2wrapper;
+
+    int maxRefinementIndex = 0;
 
   protected:
     Fragment const* getFragment(string_view const& id);
@@ -106,13 +101,27 @@ namespace scis {
     void compileRefinementFunctions(string const& ruleId,
                                     Rule::Statement const& ruleStmt);
 
-    void compileRefinementFunction_First(RefinementFunctionGeneratorParams const& params);
+    void compileRefinementFunction_First(string const& name,
+                                         Rule::Location::PathElement const& path,
+                                         int const index);
 
-    void compileRefinementFunction_Level(RefinementFunctionGeneratorParams const& params);
+    void compileRefinementFunction_All(string const& name,
+                                       Rule::Location::PathElement const& path,
+                                       int const index);
 
-    void compileRefinementFunction_LevelPredicate(RefinementFunctionGeneratorParams const& params);
+    void compileRefinementFunction_Level(string const& name,
+                                         Rule::Location::PathElement const& path,
+                                         int const index);
 
-    void compileRefinementFunction_All(RefinementFunctionGeneratorParams const& params);
+    void compileRefinementFunction_LevelPredicate(string const& name,
+                                                  Rule::Location::PathElement const& path,
+                                                  int const index);
+
+    void compileRefinementHelperFunctions();
+
+    string getSkipNodeName(int const index);
+
+    string getSkipDecrementerName(int const index);
 
     void compileInstrumentationFunction(string const& ruleId,
                                         Rule::Statement const& ruleStmt,
@@ -125,7 +134,7 @@ namespace scis {
 
     void compileMain();
 
-    void compileUtilityFunctions();
+    void compileAnnotationUtilityFunctions();
 
     void compileStandardWrappers(string const& baseType);
 

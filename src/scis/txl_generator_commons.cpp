@@ -5,6 +5,9 @@ using namespace scis::codegen;
 
 void TXLFunction::copyParamsFrom(TXLFunction const* const from)
 {
+  if (!from)
+    return;
+
   params.insert(params.end(), from->params.cbegin(), from->params.cend());
 }
 
@@ -102,6 +105,21 @@ TXLFunction::Statement& TXLFunction::exportVariableUpdate(
         newValue);
 }
 
+string TXLFunction::getRepeatModifier()
+{
+  return isRule ? "$" : "*";
+}
+
+string TXLFunction::getParamNames()
+{
+  string paramNamesList {""};
+  for (auto const& param : params)
+    paramNamesList += ' ' + param.id;
+
+  return paramNamesList;
+}
+
+
 void CallChainFunction::connectTo(CallChainFunction* const other)
 {
   this->callTo = other;
@@ -114,13 +132,9 @@ void CollectionFunction::generateStatements()
         "replace $ [" + processingType + "]",
         NODE_CURRENT + " [" + processingType + "]");
 
-  string paramNamesList = "";
-  for (auto const& param : params)
-    paramNamesList += ' ' + param.id;
-
   addStatementBott(
         "by",
-        NODE_CURRENT + " [" + callTo->name + paramNamesList + " " + NODE_CURRENT + ']');
+        NODE_CURRENT + " [" + callTo->name + getParamNames() + " " + NODE_CURRENT + ']');
 }
 
 void FilteringFunction::generateStatements()
@@ -129,46 +143,68 @@ void FilteringFunction::generateStatements()
         "replace $ [" + processingType + "]",
         NODE_CURRENT + " [" + processingType + "]");
 
-  string paramNamesList = "";
-  for (auto const& param : params)
-    paramNamesList += ' ' + param.id;
-
   addStatementBott(
         "by",
-        NODE_CURRENT + " [" + callTo->name + paramNamesList + "]");
+        NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
 }
 
-void RefinementFunction::generateStatements()
+void RefinementFunctionFirst::generateStatements()
 {
-  string const repeatModifier = isRule ? "$" : "*";
-
-  string paramNamesList = "";
-  for (auto const& p : params)
-    paramNamesList += ' ' + p.id;
-
   if (sequential) {
     addStatementTop(
-          "replace " + repeatModifier + " [" + searchType + "]",
-          NODE_CURRENT + " [" + processingType + "] " + NODE_TAIL + " [" + searchType + "]");
+          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          NODE_CURRENT + " [" + processingType + "] " + NODE_SEQ_TAIL + " [" + searchType + "]");
 
-    // NOTE: checks and __NODE__ -> __SINGLE_BOX_ARRAY__
+    createVariable(
+          NODE_SEQ_SINGLE, searchType,
+          NODE_CURRENT + " % +empty");
 
-    addStatementBott(
-          "construct __PROCESSED__ [" + searchType + "]",
-          "__SINGLE_BOX_ARRAY__ [" + callTo->name + paramNamesList + "]");
+    createVariable(
+          NODE_SEQ_PROCESSED, searchType,
+          NODE_SEQ_SINGLE + " [" + callTo->name + getParamNames() + "]");
 
     addStatementBott(
           "by",
-          "__PROCESSED__ [. " + NODE_TAIL + "]");
+          NODE_SEQ_PROCESSED + " [. " + NODE_SEQ_TAIL + "]");
   }
   else {
     addStatementTop(
-          "replace " + repeatModifier + " [" + searchType + "]",
+          "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "]");
 
     addStatementBott(
           "by",
-          NODE_CURRENT + " [" + callTo->name + paramNamesList + "]");
+          NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
+  }
+}
+
+void RefinementFunctionAll::generateStatements()
+{
+  if (sequential) {
+    addStatementTop(
+          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          NODE_CURRENT + " [" + processingType + "] " + NODE_SEQ_TAIL + " [" + searchType + "]");
+
+    createVariable(
+          NODE_SEQ_SINGLE, searchType,
+          NODE_CURRENT + " % +empty");
+
+    createVariable(
+          NODE_SEQ_PROCESSED, searchType,
+          NODE_SEQ_SINGLE + " [" + callTo->name + getParamNames() + "]");
+
+    addStatementBott(
+          "by",
+          NODE_SEQ_PROCESSED + " [. " + NODE_SEQ_TAIL + "]");
+  }
+  else {
+    addStatementTop(
+          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          NODE_CURRENT + " [" + processingType + "]");
+
+    addStatementBott(
+          "by",
+          NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
   }
 }
 
@@ -186,7 +222,7 @@ void InstrumentationFunction::generateStatements()
 string scis::codegen::makeFunctionNameFromContextName(string const& context,
                                                       bool const negative)
 {
-  return (negative ? PREFIX_CONTEXT_FUNCTION_NEGATIVE : PREFIX_CONTEXT_FUNCTION)
+  return (negative ? PREFIX_CONTEXT_FUNCTION_NEG : PREFIX_CONTEXT_FUNCTION)
          + context;
 }
 

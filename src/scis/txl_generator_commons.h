@@ -12,22 +12,30 @@ namespace scis::codegen {
   using namespace std;
 
   inline string const TXL_TYPE_STRING = "stringlit";
-  inline string const TXL_TYPE_ID = "id";
+  inline string const TXL_TYPE_ID     = "id";
   inline string const TXL_TYPE_NUMBER = "number";
 
-  inline string const NODE_CURRENT = "__NODE__";
-  inline string const NODE_TAIL = "__TAIL__";
+  inline string const NODE_ANONYMOUS     = "_";
+  inline string const NODE_CURRENT       = "__NODE__";
+  inline string const NODE_SEQ_TAIL      = "__TAIL__";
+  inline string const NODE_SEQ_SINGLE    = "__SINGLE_BOX_ARRAY__";
+  inline string const NODE_SEQ_PROCESSED = "__PROCESSED__";
 
-  inline string const NODE_VOID = "__VOID__";
-  inline string const NODE_VOID_TYPE = "any";
+  inline string const NODE_VOID       = "__VOID__";
+  inline string const NODE_VOID_TYPE  = "any";
   inline string const NODE_VOID_VALUE = "% void";
 
-  inline string const PREFIX_UNIQUE_ID = "uid";
-  inline string const PREFIX_POI_GETTER = "__POI_get___";
-  inline string const PREFIX_CONTEXT_FUNCTION = "__belongs_to_context___";
-  inline string const PREFIX_CONTEXT_FUNCTION_NEGATIVE = "__not" + PREFIX_CONTEXT_FUNCTION;
-  inline string const PREFIX_VAR_KEYWORD = "kw_";
-  inline string const PREFIX_STD_WRAPPER = "__std__";
+  inline string const PREFIX_UNIQUE_ID            = "uid";
+  inline string const PREFIX_POI_GETTER           = "__POI_get___";
+  inline string const PREFIX_CONTEXT_FUNCTION     = "__belongs_to_context___";
+  inline string const PREFIX_CONTEXT_FUNCTION_NEG = "__not" + PREFIX_CONTEXT_FUNCTION;
+  inline string const PREFIX_VAR_KEYWORD          = "kw_";
+  inline string const PREFIX_STD                  = "__std__";
+  inline string const PREFIX_NODE_SKIP            = "__SKIP__";
+
+  inline string const SUFFIX_HELPER = "__helper";
+
+  inline string const ACTION_NOTHING = PREFIX_STD + "do_nothing";
 
   string getUniqueId();
 
@@ -97,6 +105,10 @@ namespace scis::codegen {
 
     Statement& exportVariableUpdate(string const& name,
                                     string const& newValue);
+
+    string getRepeatModifier();
+
+    string getParamNames();
   }; // TXLFunction
 
   struct CallChainElement {
@@ -124,11 +136,18 @@ namespace scis::codegen {
   struct RefinementFunction : public CallChainFunction {
     string searchType = "???";
     bool sequential = false;
+    int queueIndex = 0;
+  };
 
+  struct RefinementFunctionFirst : public RefinementFunction {
     void generateStatements() override;
   };
 
-  struct RefinementFunctionSequential : public RefinementFunction {
+  struct RefinementFunctionAll : public RefinementFunction {
+    void generateStatements() override;
+  };
+
+  struct RefinementFunctionLevel : public RefinementFunction {
   };
 
   struct InstrumentationFunction : public CallChainFunction {

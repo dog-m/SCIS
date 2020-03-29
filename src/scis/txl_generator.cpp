@@ -26,12 +26,12 @@ static unordered_map<string_view, string_view> OPERATOR_INVERSION_MAPPING {
 
 static unordered_map<string, string> OPERATOR_WRAPPER_MAPPING {
   // TODO: make better approach
-  { "=",  PREFIX_STD_WRAPPER + "equal" },
-  { "~=", PREFIX_STD_WRAPPER + "not_equal" },
-  { "<",  PREFIX_STD_WRAPPER + "lower" },
-  { "<=", PREFIX_STD_WRAPPER + "lower_equal" },
-  { ">",  PREFIX_STD_WRAPPER + "greater" },
-  { ">=", PREFIX_STD_WRAPPER + "greater_equal" },
+  { "=",  PREFIX_STD + "equal" },
+  { "~=", PREFIX_STD + "not_equal" },
+  { "<",  PREFIX_STD + "lower" },
+  { "<=", PREFIX_STD + "lower_equal" },
+  { ">",  PREFIX_STD + "greater" },
+  { ">=", PREFIX_STD + "greater_equal" },
 };
 
 
@@ -559,101 +559,203 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
   addToCallChain(fFunc);
 }
 
-void TXLGenerator::compileRefinementFunctions(string const& ruleId,
-                                              Rule::Statement const& ruleStmt)
+void TXLGenerator::compileRefinementFunctions(
+    string const& ruleId,
+    Rule::Statement const& ruleStmt)
 {
-  ;// FIXME: !!! incorrect process understanding !!!
-
   using namespace std::placeholders;
 
   unordered_map<string, RefinementFunctionGenerator> GENERATORS {
-    { "first",   bind(&TXLGenerator::compileRefinementFunction_First,          this, _1) },
-    { "level",   bind(&TXLGenerator::compileRefinementFunction_Level,          this, _1) },
-    { "level_p", bind(&TXLGenerator::compileRefinementFunction_LevelPredicate, this, _1) },
-    { "all",     bind(&TXLGenerator::compileRefinementFunction_All,            this, _1) },
+    { "first",   bind(&TXLGenerator::compileRefinementFunction_First,          this, _1, _2, _3) },
+    { "all",     bind(&TXLGenerator::compileRefinementFunction_All,            this, _1, _2, _3) },
+    { "level",   bind(&TXLGenerator::compileRefinementFunction_Level,          this, _1, _2, _3) },
+    { "level_p", bind(&TXLGenerator::compileRefinementFunction_LevelPredicate, this, _1, _2, _3) },
   };
 
   // add path functions
-  auto level = 0;
+  auto index = 0;
   for (auto const& path : ruleStmt.location.path) {
     // TODO: modifiers for refiement functions
     auto const generator = GENERATORS.find(path.modifier);
     if (generator == GENERATORS.cend())
       SCIS_ERROR("Icorrect modifier near path element in rule <" << ruleId << ">");
 
-    auto const keyword = annotation->grammar.graph.keywords[path.keywordId].get();
-    keyword->sequential;
+    auto const name = ruleId + "_refiner_" + path.keywordId + to_string(index);
+    generator->second(name, path, index);
 
-    auto const rFunc = createFunction<RefinementFunction>();
-    rFunc->name = ruleId + "_refiner_" + path.keywordId + to_string(__LINE__) + getUniqueId();
+    // update index
+    if (index > maxRefinementIndex)
+      maxRefinementIndex = index;
 
-    if (!currentCallChain.empty())
-      rFunc->copyParamsFrom(currentCallChain.back());
-
-    rFunc->processingType = keyword->type;
-
-    // hook-up together
-    addToCallChain(rFunc);
-
-    generator->second({ .rFunc = rFunc, .path = path, .queueIndex = level, .keyword = keyword });
-
-    // update level
-    ++level;
+    ++index;
   }
 }
 
-void TXLGenerator::compileRefinementFunction_First(RefinementFunctionGeneratorParams const& params)
+void TXLGenerator::compileRefinementFunction_First(
+    string const& name,
+    Rule::Location::PathElement const& path,
+    int const index)
 {
-  params.rFunc->isRule = false;
-  params.rFunc->skipType = nullopt; // FIXME: refinement skipping
-  params.rFunc->sequential = params.keyword->sequential;
+  auto const keyword = annotation->grammar.graph.keywords[path.keywordId].get();
+  auto const rFunc = createFunction<RefinementFunctionFirst>();
+  rFunc->isRule = false;
+  rFunc->name = name;
+  rFunc->copyParamsFrom(lastCallChainElement());
+  rFunc->processingType = keyword->type;
+  rFunc->skipType = nullopt; // FIXME: refinement skipping
+  rFunc->sequential = keyword->sequential;
+  rFunc->queueIndex = index;
 
   // TODO: templates in refinement functions
-  params.path.pattern;
+  path.pattern;
 
-  if (params.keyword->sequential) {
-    params.rFunc->searchType = annotation->grammar.baseSequenceType;
+  rFunc->searchType =
+      keyword->sequential ?
+        annotation->grammar.baseSequenceType :
+        rFunc->processingType;
 
-    params.rFunc->createVariable(
-          "__SINGLE_BOX_ARRAY__", params.rFunc->searchType,
-          NODE_CURRENT + " % +empty");
-  }
-  else {
-    params.rFunc->searchType = params.rFunc->processingType;
-  }
+  // hook-up together
+  addToCallChain(rFunc);
 }
 
-void TXLGenerator::compileRefinementFunction_Level(RefinementFunctionGeneratorParams const& params)
+void TXLGenerator::compileRefinementFunction_All(
+    string const& name,
+    Rule::Location::PathElement const& path,
+    int const index)
 {
-  params.rFunc->isRule = false;
-  params.rFunc->skipType = nullopt;// FIXME: refinement skipping
-  params.rFunc->processingType = annotation->grammar.baseSequenceType;
+  auto const keyword = annotation->grammar.graph.keywords[path.keywordId].get();
+  auto const SKIP = getSkipNodeName(index);
 
-  string const safe = "__SKIP__" + to_string(params.queueIndex);
-  params.rFunc->exportVariableCreate(safe, TXL_TYPE_NUMBER, "0");
+  if (keyword->sequential) {
+    // kick-starter function
+    auto const helper = createFunction<CallChainFunction>();
+    helper->isRule = false;
+    helper->name = name + SUFFIX_HELPER;
+    helper->copyParamsFrom(lastCallChainElement());
 
-  // FIXME: !!! create once !!!
-  auto const do_nothing = createFunction<TXLFunction>();
+    auto const helperSearchType = helper->processingType =
+        keyword->sequential ?
+          annotation->grammar.baseSequenceType :
+          helper->processingType;
 
-  // FIXME: !!! create once for all sequences !!!
-  auto const decrement_skip = createFunction<TXLFunction>();
-  auto const boxCounter = createFunction<TXLFunction>();
+    helper->addStatementTop(
+          "replace * [" + helperSearchType + "]",
+          NODE_CURRENT + " [" + helper->processingType + "]");
+
+    helper->exportVariableCreate(
+          SKIP, TXL_TYPE_NUMBER,
+          "0");
+
+    helper->addStatementBott(
+          "by",
+          NODE_CURRENT + " [" + name + helper->getParamNames() + "]");
+
+    addToCallChain(helper);
+  }
+
+  // actual work
+  auto const rFunc = createFunction<RefinementFunctionAll>();
+  rFunc->isRule = true;
+  rFunc->name = name;
+  rFunc->copyParamsFrom(lastCallChainElement());
+  rFunc->skipType = nullopt; // FIXME: refinement skipping
+  rFunc->processingType = keyword->type;
+  rFunc->sequential = keyword->sequential;
+  rFunc->queueIndex = index;
 
   // TODO: templates in refinement functions
-  params.path.pattern;
+  path.pattern;
+
+  if (keyword->sequential) {
+    rFunc->importVariable(SKIP, TXL_TYPE_NUMBER);
+
+    rFunc->createVariable(
+          "BOXES_TO_SKIP", TXL_TYPE_NUMBER,
+          SKIP);
+
+    rFunc->addStatementBott(
+          "where",
+          SKIP + " [" + getSkipDecrementerName(index) + "] [" + ACTION_NOTHING + "]");
+
+    rFunc->addStatementBott(
+          "where",
+          "BOXES_TO_SKIP [= 0]");
+
+    rFunc->exportVariableUpdate(
+          SKIP,
+          "1");
+  }
+
+  rFunc->searchType =
+      keyword->sequential ?
+        annotation->grammar.baseSequenceType :
+        rFunc->processingType;
+
+  // hook-up together
+  addToCallChain(rFunc);
 }
 
-void TXLGenerator::compileRefinementFunction_LevelPredicate(RefinementFunctionGeneratorParams const& params)
+void TXLGenerator::compileRefinementFunction_Level(
+    string const& name,
+    Rule::Location::PathElement const& path,
+    int const index)
 {
   ;
 }
 
-void TXLGenerator::compileRefinementFunction_All(RefinementFunctionGeneratorParams const& params)
+void TXLGenerator::compileRefinementFunction_LevelPredicate(
+    string const& name,
+    Rule::Location::PathElement const& path,
+    int const index)
 {
-  params.rFunc->isRule = true;
-  params.rFunc->skipType = nullopt;// FIXME: refinement skipping
-  // TODO: templates in refinement functions
-  params.path.pattern;
+  ;
+}
+
+void TXLGenerator::compileRefinementHelperFunctions()
+{
+  // 'nothing' action
+  auto const doNothing = createFunction<TXLFunction>();
+  doNothing->isRule = false;
+  doNothing->name = ACTION_NOTHING;
+
+  doNothing->addStatementTop(
+        "match [any]",
+        "_ [any]");
+
+  // 'skip--' action
+  for (auto index = 0; index <= maxRefinementIndex; index++) {
+    auto const dec = createFunction<TXLFunction>();
+    dec->isRule = false;
+    dec->name = getSkipDecrementerName(index);
+
+    dec->addStatementTop(
+          "match [any]",
+          "_ [any]");
+
+    auto const SKIP = getSkipNodeName(index);
+
+    dec->importVariable(
+          SKIP,
+          TXL_TYPE_NUMBER);
+
+    dec->addStatementBott(
+          "where",
+          SKIP + " [> 0]");
+
+    dec->exportVariableUpdate(
+          SKIP,
+          SKIP + " [- 1]");
+  }
+}
+
+string TXLGenerator::getSkipNodeName(const int index)
+{
+  return PREFIX_NODE_SKIP + to_string(index);
+}
+
+string TXLGenerator::getSkipDecrementerName(int const index)
+{
+  return PREFIX_STD + "decrement_skip" + to_string(index);
 }
 
 void TXLGenerator::compileInstrumentationFunction(
@@ -689,17 +791,16 @@ void TXLGenerator::compileInstrumentationFunction(
     SCIS_WARNING("Cant deconstruct type [" << workingType << "]");
 
   // introduce common variables and constants
-  iFunc->createVariable(
-        "NODE", TXL_TYPE_ID,
-        "_ [typeof " + NODE_CURRENT + "]");
+  unordered_map<string, pair<string, string>> const PREDEFINED_IDENTIFIERS {
+    {"NODE",     {TXL_TYPE_ID,     "_ [typeof " + NODE_CURRENT + "]"}},
+    {"POINTCUT", {TXL_TYPE_ID,     '\'' + ruleStmt.location.pointcut}},
+    {"FILE",     {TXL_TYPE_STRING, "_ [+ \"" + processingFilename + "\"]"}},
+  };
 
-  iFunc->createVariable(
-        "POINTCUT", TXL_TYPE_ID,
-        '\'' + ruleStmt.location.pointcut);
-
-  iFunc->createVariable(
-        "FILE", TXL_TYPE_STRING,
-        "_ [+ \"" + processingFilename + "\"]");
+  for (auto const& [name, typeAndValue] : PREDEFINED_IDENTIFIERS) {
+    auto const& [type, value] = typeAndValue;
+    iFunc->createVariable(name, type, value);
+  }
 
   context;// FIXME: add variables from POI
 
@@ -816,7 +917,7 @@ void TXLGenerator::compileMain()
         "Program\n" + callSeq);
 }
 
-void TXLGenerator::compileUtilityFunctions()
+void TXLGenerator::compileAnnotationUtilityFunctions()
 {
   for (auto const& func : annotation->library) {
     auto const function = createFunction<TXLFunction>();
@@ -908,7 +1009,9 @@ void TXLGenerator::compile()
     }
   }
 
-  compileUtilityFunctions();
+  compileRefinementHelperFunctions();
+
+  compileAnnotationUtilityFunctions();
 
   compileMain();
 }
