@@ -88,7 +88,7 @@ namespace scis {
 
     void compileBasicContext(BasicContext const* const context);
 
-    void compileBasicContextNagation(Context const* const context,
+    void compileBasicContextNegation(Context const* const context,
                                      TXLFunction const* const contextChecker);
 
     bool compileCompoundContext(CompoundContext const* const context);

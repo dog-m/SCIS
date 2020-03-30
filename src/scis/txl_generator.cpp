@@ -240,7 +240,7 @@ void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const*
     auto const& nextType = path[i + 1];
 
     stringstream pattern;
-    // NOTE: only first variant used
+    // BUG: only first variant used
     grammar->types[type]->variants[0].toTXLWithNames(pattern, [&](string const& processingType) {
         return type2name[processingType.data()] =
             processingType == nextType ?
@@ -286,12 +286,13 @@ TXLFunction* TXLGenerator::prepareContextChecker(Context const* const context,
   return checker;
 }
 
-void TXLGenerator::registerContextChecker(Context const* const context,
-                                          TXLFunction const* const checker)
+void TXLGenerator::registerContextChecker(
+    Context const* const context,
+    TXLFunction const* const checker)
 {
   // register for later use
-  // FIXME: check for context duplication
-  contextCheckers.insert_or_assign(context->id, checker);
+  if (auto const& [_, insertion] = contextCheckers.insert_or_assign(context->id, checker); !insertion)
+    SCIS_ERROR("Context with name <" << context->id << "> already exists");
 }
 
 TXLFunction const* TXLGenerator::findContextCheckerByContext(string const& name)
@@ -358,17 +359,17 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
 
     // append expressions (pre-fix notation)
     where.text += " [" + operation + " " + property + " \"" + constraint.value.text + "\"]";
-    // TODO: string templates
+    // FIXME: string templates in context constraints
   }
 
   // make it available for others (ie contexts and filtering functions)
   registerContextChecker(context, checker);
 
   // create negation form
-  compileBasicContextNagation(context, checker);
+  compileBasicContextNegation(context, checker);
 }
 
-void TXLGenerator::compileBasicContextNagation(Context const* const context,
+void TXLGenerator::compileBasicContextNegation(Context const* const context,
                                                TXLFunction const* const contextChecker)
 {
   auto const func = prepareContextChecker(context, false);
@@ -436,7 +437,7 @@ bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
   registerContextChecker(context, checker);
 
   // create negation form
-  compileBasicContextNagation(context, checker);
+  compileBasicContextNegation(context, checker);
 
   // everything done ok
   return true;
@@ -455,33 +456,19 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
                                               Context const* const context)
 {
   unordered_set<string_view> keywordsUsedInContext;
-
-  if (auto const compoundCtx = dynamic_cast<CompoundContext const*>(context))
-    // collect keywords
-    for (auto const& disjunction : compoundCtx->references)
-      for (auto const& element : disjunction) {
-        // FIXME: compound -> basic context resolution
-        auto const ctxReference = ruleset->contexts[element.id].get();
-        if (!ctxReference)
-          SCIS_ERROR("Undefined reference to a context with id <" << element.id << ">");
-
-        auto const basicCtx = dynamic_cast<BasicContext*>(ctxReference);
-
-        // BUG: only first POI used
-        auto const& constraint = basicCtx->constraints.front();
-        auto const& poi = annotation->pointsOfInterest[constraint.id].get();
-
-        keywordsUsedInContext.insert(poi->keyword);
-      }
-  else if (auto const basicCtx = dynamic_cast<BasicContext const*>(context)) {
-    // BUG: only first POI used
-    auto const& constraint = basicCtx->constraints.front();
-    auto const& poi = annotation->pointsOfInterest[constraint.id].get();
-
-    keywordsUsedInContext.insert(poi->keyword);
+  // collect keywords
+  if (auto const checker = findContextCheckerByContext(context->id)) {
+    for (auto const& parameter : checker->params)
+      // look for keyword name
+      for (auto const& [_, keyword] : annotation->grammar.graph.keywords)
+        // BUG: keywords with same type
+        if (keyword->type == parameter.type) {
+          keywordsUsedInContext.insert(keyword->id);
+          break;
+        }
   }
   else
-    SCIS_ERROR("Unknown context type");
+    SCIS_ERROR("Undefined reference to a context with id <" << context->id << ">");
 
   // sort keywords
   vector<string_view> sortedKeywords;
@@ -492,10 +479,16 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
   for (auto const& k : sortedKeywords)
     cout << k << endl;
 
+  // FIXME: check for single starting point
+
   // create and add collection functions to a sequence
   for (auto const& keyword : sortedKeywords) {
     auto const cFunc = createFunction<CollectionFunction>();
-    cFunc->isRule = true; // BUG: is collector always a rule?
+    cFunc->isRule = true;
+    cFunc->name = ruleId + "_collector_" + context->id + "_" + cFunc->processingKeyword + to_string(__LINE__) + getUniqueId();
+    cFunc->processingKeyword = keyword;
+    cFunc->processingType = annotation->grammar.graph.keywords[keyword]->type;
+    cFunc->skipType = cFunc->processingType; // BUG: potential skipping bug
 
     if (auto const lastCollector = dynamic_cast<CollectionFunction*>(lastCallChainElement())) {
       // add params of last collection function
@@ -507,11 +500,6 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
       // strong chaining
       //cFunc->skipType = lastCollector->processingType; // BUG: potential skipping bug
     }
-
-    cFunc->name = ruleId + "_collector_" + context->id + "_" + cFunc->processingKeyword + to_string(__LINE__) + getUniqueId();
-    cFunc->processingKeyword = keyword;
-    cFunc->processingType = annotation->grammar.graph.keywords[keyword]->type;
-    cFunc->skipType = cFunc->processingType; // BUG: potential skipping bug
 
     // hook-up together with everything else
     addToCallChain(cFunc);
@@ -567,7 +555,7 @@ void TXLGenerator::compileRefinementFunctions(
 {
   using namespace std::placeholders;
 
-  unordered_map<string, RefinementFunctionGenerator> GENERATORS {
+  unordered_map<string, RefinementFunctionGenerator> const modifier2generator {
     { "first",   bind(&TXLGenerator::compileRefinementFunction_First,          this, _1, _2, _3) },
     { "all",     bind(&TXLGenerator::compileRefinementFunction_All,            this, _1, _2, _3) },
     { "level",   bind(&TXLGenerator::compileRefinementFunction_Level,          this, _1, _2, _3) },
@@ -577,9 +565,8 @@ void TXLGenerator::compileRefinementFunctions(
   // add path functions
   auto index = 0;
   for (auto const& path : ruleStmt.location.path) {
-    // TODO: modifiers for refiement functions
-    auto const generator = GENERATORS.find(path.modifier);
-    if (generator == GENERATORS.cend())
+    auto const generator = modifier2generator.find(path.modifier);
+    if (generator == modifier2generator.cend())
       SCIS_ERROR("Icorrect modifier near path element in rule <" << ruleId << ">");
 
     auto const name = ruleId + "_refiner_" + path.keywordId + "_" + path.modifier + to_string(index);
@@ -608,7 +595,7 @@ void TXLGenerator::compileRefinementFunction_First(
   rFunc->sequential = keyword->sequential;
   rFunc->queueIndex = index;
 
-  // TODO: templates in refinement functions
+  // FIXME: templates in refinement functions
   path.pattern;
 
   rFunc->searchType =
@@ -665,7 +652,7 @@ void TXLGenerator::compileRefinementFunction_All(
   rFunc->skipCount = SKIP;
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
 
-  // TODO: templates in refinement functions
+  // FIXME: templates in refinement functions
   path.pattern;
 
   rFunc->searchType =
@@ -721,7 +708,7 @@ void TXLGenerator::compileRefinementFunction_Level(
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
   rFunc->skipCountCounter = getSkipCounterName(rFunc->name);
 
-  // TODO: templates in refinement functions
+  // FIXME: templates in refinement functions
   path.pattern;
 
   rFunc->searchType =
@@ -1020,7 +1007,6 @@ void TXLGenerator::genTXLImports(ostream& str)
   str << "include \"" << annotation->grammar.txlSourceFilename << '\"' << endl;
 }
 
-// NOTE: assumption: conjunctions are correct and contain references only to basic contexts
 void TXLGenerator::compile()
 {
   loadRequestedFragments();
