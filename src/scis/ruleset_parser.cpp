@@ -75,12 +75,25 @@ void RulesetParser::parseCompoundContext(string const& id,
   auto ctx = make_unique<CompoundContext>();
   ctx->id = id;
 
-  auto const chain = expectedPath(compound_context, { "cnf_entry", "cnf_expression_lists", "repeat_cnf_expression_chain_and" });
-  FOREACH_XML_ELEMENT(chain, element) {
-    auto& disjunction = ctx->references.emplace_back(/* empty */);
-    auto const chain_element = expectedPath(element, { "cnf_expression_chain_or" });
-    parseContextDisjunction(disjunction, chain_element);
+  auto const something = expectedPath(compound_context, { "cnf_entry", "cnf_expression_lists" });
+  if (auto const chain = something->FirstChildElement("repeat_cnf_expression_chain_and")) {
+    // chain of 'AND' elements
+    FOREACH_XML_ELEMENT(chain, element) {
+      auto& disjunction = ctx->references.emplace_back(/* empty */);
+      auto const chain_element = expectedPath(element, { "cnf_expression_chain_or" });
+      parseContextDisjunction(disjunction, chain_element);
+    }
   }
+  else
+    if (auto const disjunctionChain = something->FirstChildElement("repeat_cnf_expression_element_chain")) {
+      // single disjunction
+      auto& disjunction = ctx->references.emplace_back(/* empty */);
+
+      FOREACH_XML_ELEMENT(disjunctionChain, element)
+        parseContextDisjunction(disjunction, element);
+    }
+  else
+    SCIS_ERROR("Unrecognized context reference chain");
 
   // TODO: check if every context (id) exists in compound context
 
