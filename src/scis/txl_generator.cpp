@@ -24,14 +24,15 @@ static unordered_map<string_view, string_view> OPERATOR_INVERSION_MAPPING {
   { ">=", "<" },
 };
 
-static unordered_map<string, string> OPERATOR_WRAPPER_MAPPING {
+static unordered_map<string, pair<string, string>> OPERATOR_WRAPPER_MAPPING {
   // TODO: make better approach
-  { "=",  PREFIX_STD + "equal" },
-  { "~=", PREFIX_STD + "not_equal" },
-  { "<",  PREFIX_STD + "lower" },
-  { "<=", PREFIX_STD + "lower_equal" },
-  { ">",  PREFIX_STD + "greater" },
-  { ">=", PREFIX_STD + "greater_equal" },
+  { "=",        { "=",    PREFIX_STD + "equal"         }},
+  { "~=",       { "~=",   PREFIX_STD + "not_equal"     }},
+  { "<",        { "<",    PREFIX_STD + "lower"         }},
+  { "<=",       { "<=",   PREFIX_STD + "lower_equal"   }},
+  { ">",        { ">",    PREFIX_STD + "greater"       }},
+  { ">=",       { ">=",   PREFIX_STD + "greater_equal" }},
+  { "contains", { "grep", PREFIX_STD + "contains"      }},
 };
 
 
@@ -66,7 +67,8 @@ TXLFunction* TXLGenerator::lastCallChainElement()
 void TXLGenerator::wrapStandardBinnaryOperator(
     string const& op,
     string const& type,
-    string const& name)
+    string const& name,
+    string const& internalFunction)
 {
   // create simple function and fill basic info
   auto const wrapper = createFunction<TXLFunction>();
@@ -85,7 +87,7 @@ void TXLGenerator::wrapStandardBinnaryOperator(
   // call original operator
   wrapper->addStatementBott(
         "where",
-        "A [" + op + " B]");
+        "A [" + internalFunction + " B]");
 
   // make it accessible for others
   operator2wrapper.insert_or_assign(op + type, wrapper);
@@ -580,7 +582,7 @@ void TXLGenerator::compileRefinementFunctions(
     if (generator == GENERATORS.cend())
       SCIS_ERROR("Icorrect modifier near path element in rule <" << ruleId << ">");
 
-    auto const name = ruleId + "_refiner_" + path.keywordId + to_string(index);
+    auto const name = ruleId + "_refiner_" + path.keywordId + "_" + path.modifier + to_string(index);
     generator->second(name, path, index);
 
     // update index
@@ -597,7 +599,7 @@ void TXLGenerator::compileRefinementFunction_First(
     int const index)
 {
   auto const keyword = annotation->grammar.graph.keywords[path.keywordId].get();
-  auto const rFunc = createFunction<RefinementFunctionFirst>();
+  auto const rFunc = createFunction<RefinementFunction_First>();
   rFunc->isRule = false;
   rFunc->name = name;
   rFunc->copyParamsFrom(lastCallChainElement());
@@ -628,18 +630,14 @@ void TXLGenerator::compileRefinementFunction_All(
 
   if (keyword->sequential) {
     // kick-starter function
-    auto const helper = createFunction<CallChainFunction>();
+    auto const helper = createFunction<CallChainFunction>(); // TODO: move to a new class
     helper->isRule = false;
     helper->name = name + SUFFIX_HELPER;
     helper->copyParamsFrom(lastCallChainElement());
-
-    auto const helperSearchType = helper->processingType =
-        keyword->sequential ?
-          annotation->grammar.baseSequenceType :
-          helper->processingType;
+    helper->processingType = lastCallChainElement()->processingType;//annotation->grammar.baseSequenceType;
 
     helper->addStatementTop(
-          "replace * [" + helperSearchType + "]",
+          "replace * [" + helper->processingType + "]",
           NODE_CURRENT + " [" + helper->processingType + "]");
 
     helper->exportVariableCreate(
@@ -654,37 +652,21 @@ void TXLGenerator::compileRefinementFunction_All(
   }
 
   // actual work
-  auto const rFunc = createFunction<RefinementFunctionAll>();
+  auto const rFunc = createFunction<RefinementFunction_All>();
   rFunc->isRule = true;
   rFunc->name = name;
   rFunc->copyParamsFrom(lastCallChainElement());
   rFunc->skipType = nullopt; // FIXME: refinement skipping
   rFunc->processingType = keyword->type;
+
+  // type-dependent data
   rFunc->sequential = keyword->sequential;
   rFunc->queueIndex = index;
+  rFunc->skipCount = SKIP;
+  rFunc->skipCountDecrementer = getSkipDecrementerName(index);
 
   // TODO: templates in refinement functions
   path.pattern;
-
-  if (keyword->sequential) {
-    rFunc->importVariable(SKIP, TXL_TYPE_NUMBER);
-
-    rFunc->createVariable(
-          "BOXES_TO_SKIP", TXL_TYPE_NUMBER,
-          SKIP);
-
-    rFunc->addStatementBott(
-          "where",
-          SKIP + " [" + getSkipDecrementerName(index) + "] [" + ACTION_NOTHING + "]");
-
-    rFunc->addStatementBott(
-          "where",
-          "BOXES_TO_SKIP [= 0]");
-
-    rFunc->exportVariableUpdate(
-          SKIP,
-          "1");
-  }
 
   rFunc->searchType =
       keyword->sequential ?
@@ -700,7 +682,75 @@ void TXLGenerator::compileRefinementFunction_Level(
     Rule::Location::PathElement const& path,
     int const index)
 {
-  ;
+  auto const keyword = annotation->grammar.graph.keywords[path.keywordId].get();
+  auto const SKIP = getSkipNodeName(index);
+
+  // kick-starter function
+  auto const helper = createFunction<CallChainFunction>(); // TODO: move to a new class
+  helper->isRule = false;
+  helper->name = name + SUFFIX_HELPER;
+  helper->copyParamsFrom(lastCallChainElement());
+  helper->processingType = lastCallChainElement()->processingType;
+
+  helper->addStatementTop(
+        "replace * [" + helper->processingType + "]",
+        NODE_CURRENT + " [" + helper->processingType + "]");
+
+  helper->exportVariableCreate(
+        SKIP, TXL_TYPE_NUMBER,
+        "0");
+
+  helper->addStatementBott(
+        "by",
+        NODE_CURRENT + " [" + name + helper->getParamNames() + "]");
+
+  addToCallChain(helper);
+
+  // actual work
+  auto const rFunc = createFunction<RefinementFunction_Level>();
+  rFunc->isRule = true;
+  rFunc->name = name;
+  rFunc->copyParamsFrom(helper);
+  rFunc->skipType = nullopt; // FIXME: refinement skipping
+  rFunc->processingType = keyword->type;
+
+  // type-dependent data
+  rFunc->sequential = keyword->sequential;
+  rFunc->queueIndex = index;
+  rFunc->skipCount = SKIP;
+  rFunc->skipCountDecrementer = getSkipDecrementerName(index);
+  rFunc->skipCountCounter = getSkipCounterName(rFunc->name);
+
+  // TODO: templates in refinement functions
+  path.pattern;
+
+  rFunc->searchType =
+      keyword->sequential ?
+        annotation->grammar.baseSequenceType :
+        rFunc->processingType;
+
+  // counter
+  auto const counter = createFunction<TXLFunction>(); // TODO: move to a new class
+  counter->name = getSkipCounterName(rFunc->name);
+  counter->isRule = true;
+
+  counter->addStatementTop(
+        "replace $ [" + rFunc->processingType + "]",
+        NODE_CURRENT + "[" + rFunc->processingType + "]");
+
+  counter->importVariable(
+        SKIP, TXL_TYPE_NUMBER);
+
+  counter->exportVariableUpdate(
+        SKIP,
+        SKIP + " [+ 1]");
+
+  counter->addStatementBott(
+        "by",
+        NODE_CURRENT);
+
+  // hook-up together
+  addToCallChain(rFunc);
 }
 
 void TXLGenerator::compileRefinementFunction_LevelPredicate(
@@ -708,7 +758,7 @@ void TXLGenerator::compileRefinementFunction_LevelPredicate(
     Rule::Location::PathElement const& path,
     int const index)
 {
-  ;
+  SCIS_ERROR("WIP " << __FUNCTION__);
 }
 
 void TXLGenerator::compileRefinementHelperFunctions()
@@ -724,25 +774,26 @@ void TXLGenerator::compileRefinementHelperFunctions()
 
   // 'skip--' action
   for (auto index = 0; index <= maxRefinementIndex; index++) {
-    auto const dec = createFunction<TXLFunction>();
-    dec->isRule = false;
-    dec->name = getSkipDecrementerName(index);
+    auto const SKIP = getSkipNodeName(index);
 
-    dec->addStatementTop(
+    // function will subtract one (1) from 'SKIP' global variable
+    auto const decrementer = createFunction<TXLFunction>();
+    decrementer->isRule = false;
+    decrementer->name = getSkipDecrementerName(index);
+
+    decrementer->addStatementTop(
           "match [any]",
           "_ [any]");
 
-    auto const SKIP = getSkipNodeName(index);
-
-    dec->importVariable(
+    decrementer->importVariable(
           SKIP,
           TXL_TYPE_NUMBER);
 
-    dec->addStatementBott(
+    decrementer->addStatementBott(
           "where",
           SKIP + " [> 0]");
 
-    dec->exportVariableUpdate(
+    decrementer->exportVariableUpdate(
           SKIP,
           SKIP + " [- 1]");
   }
@@ -756,6 +807,11 @@ string TXLGenerator::getSkipNodeName(const int index)
 string TXLGenerator::getSkipDecrementerName(int const index)
 {
   return PREFIX_STD + "decrement_skip" + to_string(index);
+}
+
+string TXLGenerator::getSkipCounterName(const string& refiner)
+{
+  return refiner + "_red_box_counter";
 }
 
 void TXLGenerator::compileInstrumentationFunction(
@@ -953,8 +1009,10 @@ void TXLGenerator::compileAnnotationUtilityFunctions()
 
 void TXLGenerator::compileStandardWrappers(string const& baseType)
 {
-  for (auto const& [op, name] : OPERATOR_WRAPPER_MAPPING)
-    wrapStandardBinnaryOperator(op, baseType, name);
+  for (auto const& [op, names] : OPERATOR_WRAPPER_MAPPING) {
+    auto const& [internalFunction, wrapperName] = names;
+    wrapStandardBinnaryOperator(op, baseType, wrapperName, internalFunction);
+  }
 }
 
 void TXLGenerator::genTXLImports(ostream& str)

@@ -10,8 +10,8 @@ namespace scis {
   using namespace std;
 
   /// pass data around only
-  struct FunctionCall {
-    struct Result {
+  struct FunctionCall final {
+    struct Result final {
       //string replaceText;
       string byText;
     };

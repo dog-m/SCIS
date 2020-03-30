@@ -9,7 +9,7 @@ namespace scis {
   using namespace std;
   using namespace tinyxml2;
 
-  class AnnotationParser {
+  class AnnotationParser final {
     unique_ptr<GrammarAnnotation> annotation;
 
     void parseGrammar(XMLElement const* const root);

@@ -12,9 +12,7 @@ namespace txl {
 
   using namespace std;
 
-  struct Grammar {
-
-    // sub-types
+  struct Grammar final {
 
     using NamingFunction = function<string(string const&)>;
 

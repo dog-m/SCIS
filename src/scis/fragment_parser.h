@@ -9,7 +9,7 @@ namespace scis {
   using namespace std;
   using namespace tinyxml2;
 
-  class FragmentParser {
+  class FragmentParser final {
     unique_ptr<scis::Fragment> fragment;
 
     void parseDependencies(XMLElement const* const dependencies);

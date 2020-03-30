@@ -51,12 +51,12 @@ namespace scis::codegen {
                                          bool const negative);
 
   struct TXLFunction {
-    struct Parameter {
+    struct Parameter final {
       string id;
       string type;
     };
 
-    struct Statement {
+    struct Statement final {
       string action;
       string text;
     };
@@ -123,13 +123,13 @@ namespace scis::codegen {
   };
 
   /// Used by filtering function
-  struct CollectionFunction : public CallChainFunction {
+  struct CollectionFunction final : public CallChainFunction {
     string processingKeyword;
 
     void generateStatements() override;
   };
 
-  struct FilteringFunction : public CallChainFunction {
+  struct FilteringFunction final : public CallChainFunction {
     void generateStatements() override;
   };
 
@@ -139,18 +139,26 @@ namespace scis::codegen {
     int queueIndex = 0;
   };
 
-  struct RefinementFunctionFirst : public RefinementFunction {
+  struct RefinementFunction_First final : public RefinementFunction {
     void generateStatements() override;
   };
 
-  struct RefinementFunctionAll : public RefinementFunction {
+  struct RefinementFunction_All final : public RefinementFunction {
+    string skipCount;
+    string skipCountDecrementer;
+
     void generateStatements() override;
   };
 
-  struct RefinementFunctionLevel : public RefinementFunction {
+  struct RefinementFunction_Level final : public RefinementFunction {
+    string skipCount;
+    string skipCountCounter;
+    string skipCountDecrementer;
+
+    void generateStatements() override;
   };
 
-  struct InstrumentationFunction : public CallChainFunction {
+  struct InstrumentationFunction final : public CallChainFunction {
     string searchType;
     string replacement;
 

@@ -11,10 +11,11 @@ namespace scis {
 
   using namespace std;
 
-  struct GrammarAnnotation {
+  struct GrammarAnnotation final {
 
-    struct Pointcut {
-      struct Step {
+    struct Pointcut final {
+
+      struct Step final {
         string function;
         unordered_map<string, string> args; // TODO: get better idea
       };
@@ -25,25 +26,25 @@ namespace scis {
       vector<Step> aglorithm;
     }; // Pointcut
 
-    struct Pattern {
+    struct Pattern final {
       struct Block {
         virtual ~Block() = default;
         virtual void dump(ostream &str) = 0;
       };
 
-      struct TextBlock : public Block {
+      struct TextBlock final : public Block {
         string text;
 
         void dump(ostream &str) override;
       };
 
-      struct PointcutLocation : public Block {
+      struct PointcutLocation final : public Block {
         string name;
 
         void dump(ostream &str) override;
       };
 
-      struct TypeReference : public Block {
+      struct TypeReference final : public Block {
         string typeId;
 
         void dump(ostream &str) override;
@@ -53,8 +54,8 @@ namespace scis {
       vector<unique_ptr<Block>> blocks;
     }; // Pattern
 
-    struct DirectedAcyclicGraph {
-      struct Keyword {
+    struct DirectedAcyclicGraph final {
+      struct Keyword final {
         string id;
         string type;
         bool sequential = true;
@@ -67,7 +68,7 @@ namespace scis {
       unordered_map<string_view, unique_ptr<Keyword>> keywords;
     }; // DAG
 
-    struct GrammarDescription {
+    struct GrammarDescription final {
       string language;
       string txlSourceFilename;
       DirectedAcyclicGraph graph;
@@ -80,8 +81,8 @@ namespace scis {
       AFTER_ALL,
     };
 
-    struct Function {
-      struct Parameter {
+    struct Function final {
+      struct Parameter final {
         string id;
         string type;
       };
@@ -93,7 +94,7 @@ namespace scis {
       string source;
     }; // Function
 
-    struct PointOfInterest {
+    struct PointOfInterest final {
       string id;
       string keyword;
       vector<string> valueTypePath;

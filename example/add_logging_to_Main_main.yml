@@ -18,15 +18,15 @@ rules:
       add:
         logging_dependencies
   
-    @class_m -> [all] body # all:
+    @class_m -> [level] body # all:
       add:
         logging_fields
   
-    @method_m -> [first] method # before_body:
+    @class_and_method_m -> [first] method # before_body:
       add:
         logging_init
   
-    @class_and_method_m -> [all] if # before:
+    @class_m -> [all] method -> [first] if # before:
       make:
         msg <- $pointcut + " " + $node + " block in " + $file + " class, in " + $method_name + " method";
       add:

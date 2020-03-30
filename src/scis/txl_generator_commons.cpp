@@ -132,6 +132,8 @@ void CollectionFunction::generateStatements()
         "replace $ [" + processingType + "]",
         NODE_CURRENT + " [" + processingType + "]");
 
+  /// pre-generated instructions there
+
   addStatementBott(
         "by",
         NODE_CURRENT + " [" + callTo->name + getParamNames() + " " + NODE_CURRENT + ']');
@@ -143,17 +145,21 @@ void FilteringFunction::generateStatements()
         "replace $ [" + processingType + "]",
         NODE_CURRENT + " [" + processingType + "]");
 
+  /// pre-generated instructions there
+
   addStatementBott(
         "by",
         NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
 }
 
-void RefinementFunctionFirst::generateStatements()
+void RefinementFunction_First::generateStatements()
 {
   if (sequential) {
     addStatementTop(
           "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "] " + NODE_SEQ_TAIL + " [" + searchType + "]");
+
+    /// pre-generated instructions there
 
     createVariable(
           NODE_SEQ_SINGLE, searchType,
@@ -172,18 +178,39 @@ void RefinementFunctionFirst::generateStatements()
           "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "]");
 
+    /// pre-generated instructions there
+
     addStatementBott(
           "by",
           NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
   }
 }
 
-void RefinementFunctionAll::generateStatements()
+void RefinementFunction_All::generateStatements()
 {
   if (sequential) {
     addStatementTop(
           "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "] " + NODE_SEQ_TAIL + " [" + searchType + "]");
+
+    importVariable(
+          skipCount, TXL_TYPE_NUMBER);
+
+    createVariable(
+          "BOXES_TO_SKIP", TXL_TYPE_NUMBER,
+          skipCount);
+
+    addStatementBott(
+          "where",
+          skipCount + " [" + skipCountDecrementer + "] [" + ACTION_NOTHING + "]");
+
+    addStatementBott(
+          "where",
+          "BOXES_TO_SKIP [= 0]");
+
+    exportVariableUpdate(
+          skipCount,
+          "1");
 
     createVariable(
           NODE_SEQ_SINGLE, searchType,
@@ -202,17 +229,81 @@ void RefinementFunctionAll::generateStatements()
           "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "]");
 
+    // WARNING: missed something?
+
     addStatementBott(
           "by",
           NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
   }
 }
+
+void RefinementFunction_Level::generateStatements()
+{
+  // independent instructions ('pre-generated')
+  importVariable(
+        skipCount, TXL_TYPE_NUMBER);
+
+  createVariable(
+        "BOXES_TO_SKIP", TXL_TYPE_NUMBER,
+        skipCount);
+
+  addStatementBott(
+        "where",
+        skipCount + " [" + skipCountDecrementer + "] [" + ACTION_NOTHING + "]");
+
+  addStatementBott(
+        "where",
+        "BOXES_TO_SKIP [= 0]");
+
+  // type-dependent instructions
+  if (sequential) {
+    addStatementTop(
+          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          NODE_CURRENT + " [" + processingType + "] " + NODE_SEQ_TAIL + " [" + searchType + "]");
+
+    /// pre-generated instructions there
+
+    createVariable(
+          NODE_SEQ_SINGLE, searchType,
+          NODE_CURRENT + " % +empty");
+
+    createVariable(
+          NODE_SEQ_PROCESSED, searchType,
+          NODE_SEQ_SINGLE + " [" + callTo->name + getParamNames() + "]");
+
+    createVariable(
+          NODE_ANONYMOUS, searchType,
+          NODE_SEQ_PROCESSED + " [" + skipCountCounter + "]");
+
+    addStatementBott(
+          "by",
+          NODE_SEQ_PROCESSED + " [. " + NODE_SEQ_TAIL + "]");
+  }
+  else {
+    addStatementTop(
+          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          NODE_CURRENT + " [" + processingType + "]");
+
+    /// pre-generated instructions there
+
+    createVariable(
+          NODE_ANONYMOUS, searchType,
+          NODE_CURRENT + " [" + skipCountCounter + "] [" + skipCountDecrementer + "]");
+
+    addStatementBott(
+          "by",
+          NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
+  }
+}
+
 
 void InstrumentationFunction::generateStatements()
 {
   addStatementTop(
         "replace [" + searchType + "]",
         NODE_CURRENT + " [" + processingType + "]");
+
+  /// pre-generated instructions there
 
   addStatementBott(
         "by",

@@ -11,8 +11,8 @@ namespace scis {
 
   using namespace std;
 
-  struct Fragment {
-    struct Dependency {
+  struct Fragment final {
+    struct Dependency final {
       bool required = true;
       string target;
     };
@@ -25,7 +25,7 @@ namespace scis {
                          unordered_map<string_view, string_view> const& param2arg) const = 0;
     };
 
-    struct TextBlock : public SourceBlock {
+    struct TextBlock final : public SourceBlock {
       string text;
 
       void dump(ostream &str) const override;
@@ -34,7 +34,7 @@ namespace scis {
                  unordered_map<string_view, string_view> const& param2arg) const override;
     };
 
-    struct ParamReference : public SourceBlock {
+    struct ParamReference final : public SourceBlock {
       string id;
 
       void dump(ostream &str) const override;

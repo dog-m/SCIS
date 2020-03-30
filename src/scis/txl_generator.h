@@ -59,7 +59,8 @@ namespace scis {
 
     void wrapStandardBinnaryOperator(string const& op,
                                      string const& type,
-                                     string const& name);
+                                     string const& name,
+                                     string const& internalFunction);
 
     string getWrapperForOperator(string const& op,
                                  string const& type);
@@ -119,9 +120,11 @@ namespace scis {
 
     void compileRefinementHelperFunctions();
 
-    string getSkipNodeName(int const index);
+    static string getSkipNodeName(int const index);
 
-    string getSkipDecrementerName(int const index);
+    static string getSkipDecrementerName(int const index);
+
+    static string getSkipCounterName(string const& refiner);
 
     void compileInstrumentationFunction(string const& ruleId,
                                         Rule::Statement const& ruleStmt,

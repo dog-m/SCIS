@@ -13,7 +13,7 @@ namespace txl {
 
   using namespace tinyxml2;
 
-  class GrammarParser {
+  class GrammarParser final {
     unique_ptr<txl::Grammar> grammar;
 
     inline void parseDefinition(XMLElement const* const definition);

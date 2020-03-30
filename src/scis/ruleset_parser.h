@@ -8,7 +8,7 @@ namespace scis {
 
   using namespace tinyxml2;
 
-  class RulesetParser {
+  class RulesetParser final {
     unique_ptr<Ruleset> ruleset;
 
     /// core = [stringlit] node in grammar

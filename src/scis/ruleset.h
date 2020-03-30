@@ -12,11 +12,11 @@ namespace scis {
 
   using namespace std;
 
-  struct FragmentRequest {
+  struct FragmentRequest final {
     string path;
   };
 
-  struct Pattern {
+  struct Pattern final {
     bool somethingBefore = false;
     string text;
     bool somethingAfter = false;
@@ -29,7 +29,7 @@ namespace scis {
     virtual void dump(ostream &str) = 0; // TODO: remove
   };
 
-  struct BasicContext : public Context {
+  struct BasicContext final : public Context {
     struct Constraint {
       string id = "";
       string op;
@@ -43,7 +43,7 @@ namespace scis {
 
   inline unique_ptr<BasicContext> const GLOBAL_CONTEXT {};
 
-  struct CompoundContext : public Context {
+  struct CompoundContext final : public Context {
     struct Reference {
       bool isNegative = false;
       string id;
@@ -56,9 +56,9 @@ namespace scis {
     void dump(ostream &str) override; // TODO: remove
   }; // CompoundContext
 
-  struct Rule {
-    struct Location {
-      struct PathElement {
+  struct Rule final {
+    struct Location final {
+      struct PathElement final {
         string modifier;
         string keywordId;
         optional<Pattern> pattern = nullopt;
@@ -71,7 +71,7 @@ namespace scis {
 
     struct Action {};
 
-    struct MakeAction : public Action {
+    struct MakeAction final : public Action {
       struct Component {
         virtual ~Component() = default;
         virtual void dump(ostream &str) = 0; // TODO: remove
@@ -79,7 +79,7 @@ namespace scis {
         virtual void toTXL(ostream &str) = 0;
       };
 
-      struct StringComponent : public Component {
+      struct StringComponent final : public Component {
         string text;
 
         void dump(ostream &str) override; // TODO: remove
@@ -87,7 +87,7 @@ namespace scis {
         void toTXL(ostream &str) override;
       };
 
-      struct ConstantComponent : public Component {
+      struct ConstantComponent final : public Component {
         string id;
 
         void dump(ostream &str) override; // TODO: remove
@@ -99,12 +99,12 @@ namespace scis {
       vector<unique_ptr<Component>> components;
     }; // MakeAction
 
-    struct AddAction : public Action {
+    struct AddAction final : public Action {
       string fragmentId;
       vector<string> args;
     };
 
-    struct Statement {
+    struct Statement final {
       Location location;
 
       vector<MakeAction> actionMake;
@@ -117,7 +117,7 @@ namespace scis {
     vector<Statement> statements;
   }; // Rule
 
-  struct Ruleset {
+  struct Ruleset final {
     vector<FragmentRequest> fragments;
     unordered_map<string_view, unique_ptr<Context>> contexts;
     unordered_map<string_view, unique_ptr<Rule>> rules;
