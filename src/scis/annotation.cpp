@@ -5,7 +5,8 @@ using namespace scis;
 
 void GrammarAnnotation::dump(ostream& str)
 {
-  str << "Grammar:" << endl
+  str << "pipeline: " << pipeline << endl  // TODO: unused pipeline string in annotation
+      << "Grammar:" << endl
       << "  lang = " << grammar.language << endl
       << "  src = " << grammar.txlSourceFilename << endl
       << "DAG:" << endl;

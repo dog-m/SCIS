@@ -74,23 +74,34 @@ static auto loadAndParseAnnotation(string_view && filename)
 
 int main(/*int argc, char** argv*/)
 {
+  // FIXME: ===== debug purposes only =====
+
+  string const lang = "python";
+
+  auto const grammar = "./example/lang/" +lang+ "/grammar.txl";
+  auto const annotation = "./example/lang/" +lang+ "/annotation.xml";
+  auto const ruleset = "./example/add_logging_to_Main_main.yml";
+  auto const fragDir = "./example/fragments/" +lang+ "/";
+
+  // FIXME: ===== debug purposes only =====
+
   scis::TXLGenerator generator;
   SCIS_INFO("Loading grammar");
-  generator.grammar = loadAndParseGrammar("./example/lang/java/grammar.txl");
+  generator.grammar = loadAndParseGrammar(grammar);
   /*for (auto const& [_, type] : generator.grammar->types)
     type->toTXLDefinition(cout);
   generator.grammar->toDOT(cout);*/
 
   SCIS_INFO("Loading annotation");
-  generator.annotation = loadAndParseAnnotation("./example/lang/java/annotation.xml");
+  generator.annotation = loadAndParseAnnotation(annotation);
   //generator.annotation->dump(cout);
 
   SCIS_INFO("Loading ruleset");
-  generator.ruleset = loadAndParseRuleset("./example/add_logging_to_Main_main.yml");
+  generator.ruleset = loadAndParseRuleset(ruleset);
   //generator.ruleset->dump(cout);
 
   generator.processingFilename = "*dir/test.java*";
-  generator.fragmentsDir = "./example/fragments/java/";
+  generator.fragmentsDir = fragDir;
 
   SCIS_INFO("Building...");
   generator.compile();

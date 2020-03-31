@@ -1,0 +1,7 @@
+<fragment language="python" name="logging_dependencies">
+  <dependencies/>
+
+  <code white-list="imports">
+    import logging
+  </code>
+</fragment>

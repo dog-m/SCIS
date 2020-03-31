@@ -9,6 +9,12 @@ using namespace tinyxml2;
 
 constexpr string_view CLONNING_PATH_SEPARATOR = "::";
 
+void AnnotationParser::parseBaseParameters(XMLElement const* const root)
+{
+  if(auto const pipeline = root->FindAttribute("pipeline"))
+    annotation->pipeline = pipeline->Value();
+}
+
 void AnnotationParser::parseGrammar(XMLElement const* const root)
 {
   // base params
@@ -172,10 +178,10 @@ void AnnotationParser::parsePointcutsForKeyword(XMLElement const* const root)
 
     if (auto const clone = point->FindAttribute("clone")) {
       // copy from another pointcut
-      string_view const path = clone->Value();
+      string const path = clone->Value();
 
       auto const sep = path.find(CLONNING_PATH_SEPARATOR);
-      if (sep == string_view::npos)
+      if (sep == string::npos)
         throw "Invalid path to source pointcut for " + pointcut->name;
 
       auto const srcKeyword = path.substr(0, sep);
@@ -217,13 +223,16 @@ unique_ptr<GrammarAnnotation> AnnotationParser::parse(XMLDocument const& doc)
   annotation.reset(new GrammarAnnotation);
 
   try {
-    parseGrammar(expectedPath(&doc, { "annotation", "grammar" }));
+    auto const root = expectedPath(&doc, { "annotation" });
+    parseBaseParameters(root);
 
-    parseLibrary(expectedPath(&doc, { "annotation", "lib" }));
+    parseGrammar(expectedPath(root, { "grammar" }));
 
-    parsePointsOfInterest(expectedPath(&doc, { "annotation", "points-of-interest" }));
+    parseLibrary(expectedPath(root, { "lib" }));
 
-    parsePointcuts(expectedPath(&doc, { "annotation", "pointcuts" }));
+    parsePointsOfInterest(expectedPath(root, { "points-of-interest" }));
+
+    parsePointcuts(expectedPath(root, { "pointcuts" }));
 
     // skip everything else
   } catch (string const msg) {

@@ -202,6 +202,7 @@
 
         <keyword
           name="else"
+          sequential="false"
           >
             <replacement-patterns>
                 <pattern search-type="else_clause">

@@ -1,0 +1,216 @@
+<!-- default pipeline: txl %SRC% %TRANSFORM% %PARAMS% -->
+<annotation
+  pipeline="txl %SRC% %WORKDIR%/lang/python/pyindent.txl | txl stdin %TRANSFORM% %PARAMS%"
+  >
+    <grammar
+      language="python"
+      src="lang/python/grammar.txl"
+      base-executable-sequence-type="repeat statement_or_newline"
+      >
+        <keyword-DAG>
+            <imports type="repeat statement_or_newline"/>
+            <class type="classdef">
+                <body type="suite">
+                    <method type="funcdef">
+                        <if type="if_statement">
+                            <elif type="elif_clause"/>
+                            <else type="else_clause"/>
+                        </if>
+                        <for type="for_statement"/>
+                        <while type="while_statement"/>
+                        ...
+                    </method>
+                </body>
+            </class>
+        </keyword-DAG>
+    </grammar>
+
+    <lib/>
+
+    <points-of-interest>
+        <point
+          id="class_name"
+          keyword="class"
+          value-of="classdef_head:opt id"
+          />
+
+        <point
+          id="method_name"
+          keyword="method"
+          value-of="id"
+          />
+    </points-of-interest>
+
+    <pointcuts>
+        <keyword
+          name="imports"
+          sequential="false"
+          >
+            <replacement-patterns>
+                <pattern search-type="repeat statement_or_newline">
+                    <p name="all"/>
+                    __NODE__
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="all">
+                    <fragment
+                      type="???"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="method"
+          sequential="false"
+          >
+            <replacement-patterns>
+                <pattern search-type="method_declaration">
+                    'def <!--id--> <!--parameters--> ':
+                        <p name="before_body"/>
+                        <!--suite-->
+                        <p name="after_body"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before_body">
+                    <fragment
+                      type="???"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="if"
+          >
+            <replacement-patterns>
+                <pattern search-type="repeat statement_or_newline">
+                    <p name="before"/>
+                    'if <!--condition--> ': 
+                        <p name="before_body"/>
+                        <!--suite-->
+                        <p name="after_body"/>
+                    <!--repeat elif_clause-->
+                    <!--opt else_clause-->
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="???"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="before_body" clone="if::before"/>
+                <pointcut name="after_body" clone="if::before"/>
+                <pointcut name="after" clone="if::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="else"
+          sequential="false"
+          >
+            <replacement-patterns>
+                <pattern search-type="else_clause">
+                    'else ':
+                        <p name="before_body"/>
+                        <!--suite-->
+                        <p name="after_body"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before_body">
+                    <fragment
+                      type="???"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="after_body" clone="else::before_body"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="for"
+          >
+            <replacement-patterns>
+                <pattern search-type="for_statement">
+                    <p name="before"/>
+                    'for <!--exprlist--> 'in <!--testlist--> ': 
+                        <p name="before_body"/>
+                        <!--suite-->
+                        <p name="after_body"/>
+                    <!--opt else_clause-->
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="???"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="before_body" clone="for::before"/>
+                <pointcut name="after_body" clone="for::before"/>
+                <pointcut name="after" clone="for::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="while"
+          >
+            <replacement-patterns>
+                <pattern search-type="while_statement">
+                    <p name="before"/>
+                    'while <!--condition--> ': 
+                        <p name="before_body"/>
+                        <!--suite-->
+                        <p name="after_body"/>
+                    <!--opt else_clause-->
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="???"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="before_body" clone="while::before"/>
+                <pointcut name="after_body" clone="while::before"/>
+                <pointcut name="after" clone="while::before"/>
+            </pointcuts>
+        </keyword>
+    </pointcuts>
+</annotation>

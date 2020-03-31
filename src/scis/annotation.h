@@ -59,13 +59,13 @@ namespace scis {
         string id;
         string type;
         bool sequential = true;
-        unordered_map<string_view, unique_ptr<Pointcut>> pointcuts;
+        unordered_map<string, unique_ptr<Pointcut>> pointcuts;
         vector<Pattern> replacement_patterns;
         vector<string> subnodes;
       };
 
       vector<Keyword const*> topKeywords;
-      unordered_map<string_view, unique_ptr<Keyword>> keywords;
+      unordered_map<string, unique_ptr<Keyword>> keywords;
     }; // DAG
 
     struct GrammarDescription final {
@@ -102,7 +102,8 @@ namespace scis {
 
     GrammarDescription grammar;
     vector<unique_ptr<Function>> library;
-    unordered_map<string_view, unique_ptr<PointOfInterest>> pointsOfInterest;
+    unordered_map<string, unique_ptr<PointOfInterest>> pointsOfInterest;
+    string pipeline = "txl %SRC% %TRANSFORM% %PARAMS%";
 
     void dump(ostream &str);
   }; // GrammarAnnotation

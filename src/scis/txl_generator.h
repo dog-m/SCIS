@@ -29,9 +29,9 @@ namespace scis {
     string fragmentsDir;
 
   protected:
-    unordered_map<string_view, unique_ptr<Fragment>> fragments;
+    unordered_map<string, unique_ptr<Fragment>> fragments;
 
-    unordered_map<string_view, int> maxDistanceToRoot;
+    unordered_map<string, int> maxDistanceToRoot;
 
     vector<CallChainFunction*> currentCallChain;
 
@@ -42,14 +42,14 @@ namespace scis {
 
     unordered_map<GrammarAnnotation::PointOfInterest const*, TXLFunction const*> poi2getter;
 
-    unordered_map<string_view, TXLFunction const*> contextCheckers;
+    unordered_map<string, TXLFunction const*> contextCheckers;
 
     unordered_map<string, TXLFunction const*> operator2wrapper;
 
     int maxRefinementIndex = 0;
 
   protected:
-    Fragment const* getFragment(string_view const& id);
+    Fragment const* getFragment(string const& id);
 
     void addToCallChain(CallChainFunction *const func);
 
@@ -72,7 +72,7 @@ namespace scis {
     template <typename Kind>
     Kind* createFunction();
 
-    void sortKeywords(vector<string_view> &keywords) const;
+    void sortKeywords(vector<string>& keywords) const;
 
     void compileContextCheckers();
 
@@ -88,7 +88,7 @@ namespace scis {
 
     void compileBasicContext(BasicContext const* const context);
 
-    void compileBasicContextNegation(Context const* const context,
+    void compileContextNegation(Context const* const context,
                                      TXLFunction const* const contextChecker);
 
     bool compileCompoundContext(CompoundContext const* const context);

@@ -32,11 +32,11 @@ static unordered_map<string, pair<string, string>> OPERATOR_WRAPPER_MAPPING {
   { "<=",       { "<=",   PREFIX_STD + "lower_equal"   }},
   { ">",        { ">",    PREFIX_STD + "greater"       }},
   { ">=",       { ">=",   PREFIX_STD + "greater_equal" }},
-  { "contains", { "grep", PREFIX_STD + "contains"      }},
+  { "has",      { "grep", PREFIX_STD + "contains"      }},
 };
 
 
-Fragment const* TXLGenerator::getFragment(string_view const& id)
+Fragment const* TXLGenerator::getFragment(string const& id)
 {
   auto const frag = fragments.find(id);
   if (frag != fragments.cend())
@@ -105,7 +105,7 @@ void TXLGenerator::evaluateKeywordsDistances()
 {
   maxDistanceToRoot.clear();
 
-  deque<pair<string_view, int>> queue;
+  deque<pair<string, int>> queue;
   for (auto const key : annotation->grammar.graph.topKeywords) {
     queue.push_back(make_pair(key->id, 0));
 
@@ -127,7 +127,7 @@ void TXLGenerator::evaluateKeywordsDistances()
       oldDistance = newDistance;
 
       for (auto const& node : annotation->grammar.graph.keywords[candidate]->subnodes)
-        queue.push_back(make_pair<string_view, int>(node, newDistance + 1));
+        queue.push_back(make_pair(node, newDistance + 1));
     }
   }
 
@@ -152,10 +152,10 @@ void TXLGenerator::loadRequestedFragments()
   }
 }
 
-void TXLGenerator::sortKeywords(vector<string_view>& keywords) const
+void TXLGenerator::sortKeywords(vector<string>& keywords) const
 {
   std::sort(keywords.begin(), keywords.end(),
-            [&](string_view const& a, string_view const& b) {
+            [&](string const& a, string const& b) {
       return maxDistanceToRoot.at(a) < maxDistanceToRoot.at(b);
     });
 }
@@ -210,7 +210,7 @@ void TXLGenerator::compileContextCheckers()
 
   // dumb way to check for loops
   if (iter >= CONTEXT_DEPENDENCY_WAITING_LIMMIT)
-    SCIS_ERROR("Cycles detected in contexts");
+    SCIS_ERROR("Dependency loops detected in contexts");
 }
 
 void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi)
@@ -312,7 +312,7 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
   // creating new context checking function (incl. VOID variable)
   auto const checker = prepareContextChecker(context, true);
 
-  unordered_set<string_view> keywordsUsed;
+  unordered_set<string> keywordsUsed;
   unordered_set<GrammarAnnotation::PointOfInterest const*> POIsUsed;
   for (size_t cNum = 0; cNum < context->constraints.size(); cNum++) {
     auto const& constraint = context->constraints[cNum];
@@ -324,7 +324,7 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
   }
 
   // keep parameters in order
-  vector<string_view> sortedKeywords;
+  vector<string> sortedKeywords;
   sortedKeywords.insert(sortedKeywords.begin(), keywordsUsed.begin(), keywordsUsed.end());
   sortKeywords(sortedKeywords);
 
@@ -349,8 +349,10 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
     poi2var.insert_or_assign(poi, varName);
   }
 
-  // create "where" checks
-  auto& where = checker->addStatementBott("where all", NODE_VOID);
+  // create "where" expression
+  auto& where = checker->addStatementBott(
+        "where all",
+        NODE_VOID /* constraint checks will be added here */);
   // joined with 'AND' operation
   for (auto const& constraint : context->constraints) {
     auto const poi = annotation->pointsOfInterest[constraint.id].get();
@@ -365,12 +367,13 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
   // make it available for others (ie contexts and filtering functions)
   registerContextChecker(context, checker);
 
-  // create negation form
-  compileBasicContextNegation(context, checker);
+  // create negative form
+  compileContextNegation(context, checker);
 }
 
-void TXLGenerator::compileBasicContextNegation(Context const* const context,
-                                               TXLFunction const* const contextChecker)
+void TXLGenerator::compileContextNegation(
+    Context const* const context,
+    TXLFunction const* const contextChecker)
 {
   auto const func = prepareContextChecker(context, false);
   // signature should be the same with the original context checker
@@ -385,7 +388,6 @@ void TXLGenerator::compileBasicContextNegation(Context const* const context,
         NODE_VOID + " [" + contextChecker->name + args + "]");
 }
 
-// BUG: check for context reference loops
 bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
 {
   unordered_set<string> requiredTypes;
@@ -436,8 +438,8 @@ bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
   // make it available for others
   registerContextChecker(context, checker);
 
-  // create negation form
-  compileBasicContextNegation(context, checker);
+  // create negative form
+  compileContextNegation(context, checker);
 
   // everything done ok
   return true;
@@ -455,7 +457,7 @@ Kind* TXLGenerator::createFunction()
 void TXLGenerator::compileCollectionFunctions(string const& ruleId,
                                               Context const* const context)
 {
-  unordered_set<string_view> keywordsUsedInContext;
+  unordered_set<string> keywordsUsedInContext;
   // collect keywords
   if (auto const checker = findContextCheckerByContext(context->id)) {
     for (auto const& parameter : checker->params)
@@ -471,7 +473,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
     SCIS_ERROR("Undefined reference to a context with id <" << context->id << ">");
 
   // sort keywords
-  vector<string_view> sortedKeywords;
+  vector<string> sortedKeywords;
   sortedKeywords.insert(sortedKeywords.begin(), keywordsUsedInContext.begin(), keywordsUsedInContext.end());
   sortKeywords(sortedKeywords);
 
@@ -806,21 +808,44 @@ void TXLGenerator::compileInstrumentationFunction(
     Rule::Statement const& ruleStmt,
     Context const* const context)
 {
-  // add instrumentation function
-  auto const iFunc = createFunction<InstrumentationFunction>();
+  auto const functionName = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + getUniqueId();
+  auto const lastFunc = lastCallChainElement();
   auto const keyword = annotation->grammar.graph.keywords[ruleStmt.location.path.back().keywordId].get(); // BUG: empty path?
-  auto const& algo = keyword->pointcuts[ruleStmt.location.pointcut]->aglorithm;
-  auto const& pattern = keyword->replacement_patterns[0]; // BUG: only first pattern variant used
   auto const& workingType = keyword->type;
 
+  auto const pcut = keyword->pointcuts[ruleStmt.location.pointcut].get();
+  if (!pcut) {
+    SCIS_WARNING("Keyword <" << keyword->id << "> have no pointcut with name <" << ruleStmt.location.pointcut << ">");
+
+    // add fake function
+    auto const iFunc = createFunction<CallChainFunction>();
+    iFunc->isRule = false;
+    iFunc->name = functionName;
+    iFunc->copyParamsFrom(lastFunc);
+
+    // just like 'std:do_nothing'
+    iFunc->addStatementTop(
+          "match [any]",
+          "_ [any]");
+
+    addToCallChain(iFunc);
+
+    return;
+  }
+
+  auto const& pattern = keyword->replacement_patterns[0]; // BUG: only first pattern variant used
+
+  // add instrumentation function
+  auto const iFunc = createFunction<InstrumentationFunction>();
   // setup basic info
   iFunc->isRule = false;
-  iFunc->name = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + to_string(__LINE__) + getUniqueId();
-
-  auto const lastFunc = lastCallChainElement();
+  iFunc->name = functionName;
   iFunc->copyParamsFrom(lastFunc);
   iFunc->searchType = pattern.searchType;
   iFunc->processingType = lastFunc->processingType;
+
+  // extract algorithm
+  auto const& algo = pcut->aglorithm;
 
   // deconstruct current node if possible
   if (auto const type = grammar->types.find(workingType); type != grammar->types.cend()) {

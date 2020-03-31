@@ -25,7 +25,7 @@ namespace scis::codegen {
   inline string const NODE_VOID_TYPE  = "any";
   inline string const NODE_VOID_VALUE = "% void";
 
-  inline string const PREFIX_UNIQUE_ID            = "uid";
+  inline string const PREFIX_UNIQUE_ID            = "_uid";
   inline string const PREFIX_POI_GETTER           = "__POI_get___";
   inline string const PREFIX_CONTEXT_FUNCTION     = "__belongs_to_context___";
   inline string const PREFIX_CONTEXT_FUNCTION_NEG = "__not" + PREFIX_CONTEXT_FUNCTION;

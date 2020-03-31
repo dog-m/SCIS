@@ -1,0 +1,12 @@
+<fragment language="python" name="logging_init">
+  <dependencies>
+    <required name="logging_imports"/>
+    <required name="logging_fields"/>
+  </dependencies>
+
+  <code black-list="imports, if, for">
+    logging.config.fileConfig('logging.conf')
+    self.logger = logging.getLogger('simpleExample')
+    self.logger.setLevel(logging.DEBUG)
+  </code>
+</fragment>

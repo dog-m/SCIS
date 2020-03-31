@@ -12,6 +12,8 @@ namespace scis {
   class AnnotationParser final {
     unique_ptr<GrammarAnnotation> annotation;
 
+    void parseBaseParameters(XMLElement const* const root);
+
     void parseGrammar(XMLElement const* const root);
 
     inline void parseKeywordSubtypes(XMLElement const* const root);

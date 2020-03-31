@@ -1,0 +1,7 @@
+<fragment language="python" name="logging_fields">
+  <dependencies>
+  </dependencies>
+
+  <code black-list="imports, if, for">
+  </code>
+</fragment>
