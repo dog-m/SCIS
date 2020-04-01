@@ -10,7 +10,7 @@
         <keyword-DAG>
             <imports type="repeat statement_or_newline"/>
             <class type="classdef">
-                <body type="suite">
+                <body type="statement_or_newline">
                     <method type="funcdef">
                         <if type="if_statement">
                             <elif type="elif_clause"/>
@@ -59,7 +59,15 @@
                       as="Additions"
                       />
                     <paste-algorithm>
+                        <create-variable
+                          name="NewLine"
+                          type="newline"
+                          value="_"
+                          />
                         <insert-fragment
+                          />
+                        <insert-text
+                          text="NewLine"
                           />
                     </paste-algorithm>
                 </pointcut>
@@ -71,7 +79,7 @@
           sequential="false"
           >
             <replacement-patterns>
-                <pattern search-type="method_declaration">
+                <pattern search-type="funcdef">
                     'def <!--id--> <!--parameters--> ':
                         <p name="before_body"/>
                         <!--suite-->

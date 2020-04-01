@@ -50,6 +50,14 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
     }
   },
 
+  { "create-variable", [](FunctionCall const& call) -> FunctionCall::Result
+    {
+      call.iFunc->createVariable(call.args.at("name"), call.args.at("type"), call.args.at("value"));
+
+      return {};
+    }
+  }
+
 };
 
 bool scis::callAlgorithmCommand(FunctionCall const& params,
