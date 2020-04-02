@@ -65,9 +65,7 @@
                           value="_"
                           />
                         <insert-fragment
-                          />
-                        <insert-text
-                          text="NewLine"
+                          each-line-postfix="NewLine"
                           />
                     </paste-algorithm>
                 </pointcut>
@@ -78,12 +76,14 @@
           name="method"
           sequential="false"
           >
+            <!--Sources of [suite] block should be added manualy-->
             <replacement-patterns>
                 <pattern search-type="funcdef">
-                    'def <!--id--> <!--parameters--> ':
+                    'def <!--id--> <!--parameters--> ': 'INDENT <!--newline-->
                         <p name="before_body"/>
-                        <!--suite-->
+                        <!--repeat statement_or_newline-->
                         <p name="after_body"/>
+                    'DEDENT
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -93,7 +93,20 @@
                       as="Additions"
                       />
                     <paste-algorithm>
+                        <create-variable
+                          type="newline"
+                          value="_"
+                          />
+                        <deconstruct-variable
+                          type="suite"
+                          variant="0"
+                          />
+                        <deconstruct-variable
+                          type="block"
+                          variant="0"
+                          />
                         <insert-fragment
+                          each-line-postfix="Newline"
                           />
                     </paste-algorithm>
                 </pointcut>
@@ -106,10 +119,11 @@
             <replacement-patterns>
                 <pattern search-type="repeat statement_or_newline">
                     <p name="before"/>
-                    'if <!--condition--> ': 
+                    'if <!--condition--> ': 'INDENT <!--newline-->
                         <p name="before_body"/>
-                        <!--suite-->
+                        <!--repeat statement_or_newline-->
                         <p name="after_body"/>
+                    'DEDENT
                     <!--repeat elif_clause-->
                     <!--opt else_clause-->
                     <p name="after"/>
@@ -122,7 +136,20 @@
                       as="Additions"
                       />
                     <paste-algorithm>
+                        <create-variable
+                          type="newline"
+                          value="_"
+                          />
+                        <deconstruct-variable
+                          type="suite"
+                          variant="0"
+                          />
+                        <deconstruct-variable
+                          type="block"
+                          variant="0"
+                          />
                         <insert-fragment
+                          each-line-postfix="Newline"
                           />
                     </paste-algorithm>
                 </pointcut>

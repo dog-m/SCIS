@@ -10,7 +10,20 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
 
   { "insert-fragment", [](FunctionCall const& call) -> FunctionCall::Result
     {
-      return { .byText = call.preparedFragment };
+      auto const left = call.args.find("each-line-prefix");
+      auto const prefixWithSpace = left != call.args.cend() ? left->second + ' ' : "";
+
+      auto const right = call.args.find("each-line-postfix");
+      auto const postfixWithSpace = right != call.args.cend() ? ' ' + right->second : "";
+
+      string replacement = "";
+
+      stringstream ss(call.preparedFragment);
+      string line;
+      while (getline(ss, line))
+        replacement += prefixWithSpace + line + postfixWithSpace + '\n';
+
+      return { .byText = replacement };
     }
   },
 
@@ -52,7 +65,13 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
 
   { "create-variable", [](FunctionCall const& call) -> FunctionCall::Result
     {
-      call.iFunc->createVariable(call.args.at("name"), call.args.at("type"), call.args.at("value"));
+      auto const type = call.args.at("type");
+      auto const value = call.args.at("value");
+
+      auto const proposedName = call.args.find("name");
+      auto const name = proposedName != call.args.cend() ? proposedName->second : codegen::makeNameFromType(type);
+
+      call.iFunc->createVariable(name, type, value);
 
       return {};
     }

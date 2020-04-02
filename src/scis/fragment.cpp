@@ -89,14 +89,14 @@ void Fragment::toTXL(ostream& str, vector<string> const& args) const
   if (args.size() != params.size())
     SCIS_ERROR("Wrong number of arguments in use of a fragment <" << name << ">");
 
-  // build mapping "parameter <-> argument"
   unordered_map<string_view, string_view> param2arg;
+  // build mapping "parameter <-> argument"
   for (auto arg = args.cbegin(), param = params.cbegin(); arg != args.cend(); arg++, param++)
     param2arg.insert(make_pair(*param, *arg));
 
   // render
   for (auto const& block : source) {
     block->toTXL(str, param2arg);
-    str << endl;
+    //str << endl;
   }
 }

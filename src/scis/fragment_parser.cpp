@@ -35,20 +35,32 @@ void FragmentParser::parseCode(XMLElement const* const code)
   FOREACH_XML_NODE(code, block) {
     // just text?
     if (auto text = block->ToText()) {
-      auto txt = make_unique<Fragment::TextBlock>();
+      string line;
+      stringstream ss(text->Value());
 
-      txt->text = text->Value();
+      while (!ss.eof()) {
+        // trim left
+        while (!ss.eof() && isspace(ss.peek()))
+          ss.ignore();
 
-      fragment->source.emplace_back(std::move(txt));
+        // read line-by-line and create blocks of text
+        if (getline(ss, line)) {
+          // trim right
+          while (!line.empty() && isblank(line.back()))
+            line.pop_back();
+
+          auto txt = make_unique<Fragment::TextBlock>();
+          txt->text = line + (ss.eof() ? "" : "\n");
+          fragment->source.emplace_back(std::move(txt));
+        }
+      }
     }
 
     auto node = block->ToElement();
     // parameter reference
     if (node && node->Name() == "p"sv) {
       auto ref = make_unique<Fragment::ParamReference>();
-
       ref->id = expectedAttribute(node, "id")->Value();
-
       fragment->source.emplace_back(std::move(ref));
     }
   }
@@ -82,10 +94,9 @@ unique_ptr<Fragment> FragmentParser::parse(XMLDocument const&doc)
 
 unique_ptr<Fragment> FragmentParser::parse(const string_view& filename)
 {
-  XMLDocument doc(true, COLLAPSE_WHITESPACE);
+  XMLDocument doc(true, PRESERVE_WHITESPACE);
   if (auto result = doc.LoadFile(filename.data()); result != XML_SUCCESS) {
     SCIS_ERROR("Failed to load \'" << filename << "\'. Reason: " << doc.ErrorIDToName(result));
-    terminate();
   }
   else
     SCIS_DEBUG("XML loaded normaly");

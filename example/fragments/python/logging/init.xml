@@ -5,8 +5,8 @@
   </dependencies>
 
   <code black-list="imports, if, for">
-    logging.config.fileConfig('logging.conf')
-    self.logger = logging.getLogger('simpleExample')
+    logging.basicConfig()
+    self.logger = logging.getLogger("simpleExample")
     self.logger.setLevel(logging.DEBUG)
   </code>
 </fragment>

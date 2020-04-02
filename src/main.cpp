@@ -100,7 +100,7 @@ int main(/*int argc, char** argv*/)
   generator.ruleset = loadAndParseRuleset(ruleset);
   //generator.ruleset->dump(cout);
 
-  generator.processingFilename = "*dir/test.java*";
+  generator.processingFilename = "*dir/test." +lang+ "*";
   generator.fragmentsDir = fragDir;
 
   SCIS_INFO("Building...");

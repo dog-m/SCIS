@@ -99,10 +99,15 @@ keys
     % as        with
 end keys 
 
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
 % Compound operators
 compounds 
     == += -= *= /= '%= &= |=  ^= <<= >>= **= //= ** >> 
+    <= >=
 end compounds 
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 % Python comments are # to end-of-line
 comments 
