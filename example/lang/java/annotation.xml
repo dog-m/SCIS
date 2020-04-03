@@ -233,7 +233,7 @@
           name="for"
           >
             <replacement-patterns>
-                <pattern search-type="for_statement">
+                <pattern search-type="repeat declaration_or_statement">
                     <p name="before"/>
                     'for '( <!--for_init--> <!--for_expression--> <!--for_update--> ') '{
                         <p name="before_body"/>
@@ -264,7 +264,7 @@
           name="while"
           >
             <replacement-patterns>
-                <pattern search-type="while_statement">
+                <pattern search-type="repeat declaration_or_statement">
                     <p name="before"/>
                     'while '( <!--condition--> ') '{
                         <p name="before_body"/>
@@ -295,7 +295,7 @@
           name="do_while"
           >
             <replacement-patterns>
-                <pattern search-type="do_statement">
+                <pattern search-type="repeat declaration_or_statement">
                     <p name="before"/>
                     'do '{
                         <p name="before_body"/>
@@ -327,7 +327,7 @@
           name="switch"
           >
             <replacement-patterns>
-                <pattern search-type="switch_statement">
+                <pattern search-type="repeat declaration_or_statement">
                     <p name="before"/>
                     'switch '( <!--expression--> ') '{
                         <!--repeat switch_alternative-->
@@ -354,16 +354,15 @@
           name="case"
           >
             <replacement-patterns>
-                <pattern search-type="switch_alternative">
-                    <p name="before"/>
-                    'switch '( <!--expression--> ') '{
-                        <!--repeat switch_alternative-->
-                    '}
-                    <p name="after"/>
+                <pattern search-type="repeat declaration_or_statement">
+                    <!--switch_label-->
+                        <p name="before_body"/>
+                        <!--repeat declaration_or_statement-->
+                        <p name="after_body"/>
                 </pattern>
             </replacement-patterns>
             <pointcuts>
-                <pointcut name="before">
+                <pointcut name="before_body">
                     <fragment
                       type="repeat declaration_or_statement"
                       as="Additions"
@@ -373,7 +372,22 @@
                           />
                     </paste-algorithm>
                 </pointcut>
-                <pointcut name="after" clone="switch::before"/>
+                <pointcut name="after_body">
+                    <fragment
+                      type="repeat declaration_or_statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <fragment-to-variable
+                          name="Additions"
+                          type="repeat declaration_or_statement"
+                          />
+                        <insert-call
+                          function="."
+                          params="Additions"
+                          />
+                    </paste-algorithm>
+                </pointcut>
             </pointcuts>
         </keyword>
     </pointcuts>

@@ -110,6 +110,35 @@
                           />
                     </paste-algorithm>
                 </pointcut>
+                <pointcut name="after_body">
+                    <fragment
+                      type="???"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <create-variable
+                          type="newline"
+                          value="_"
+                          />
+                        <fragment-to-variable
+                          name="Additions"
+                          type="repeat import_declaration"
+                          each-line-postfix="Newline"
+                          />
+                        <deconstruct-variable
+                          type="suite"
+                          variant="0"
+                          />
+                        <deconstruct-variable
+                          type="block"
+                          variant="0"
+                          />
+                        <insert-call
+                          function="."
+                          params="Additions"
+                          />
+                    </paste-algorithm>
+                </pointcut>
             </pointcuts>
         </keyword>
 
@@ -140,22 +169,14 @@
                           type="newline"
                           value="_"
                           />
-                        <deconstruct-variable
-                          type="suite"
-                          variant="0"
-                          />
-                        <deconstruct-variable
-                          type="block"
-                          variant="0"
-                          />
                         <insert-fragment
                           each-line-postfix="Newline"
                           />
                     </paste-algorithm>
                 </pointcut>
-                <pointcut name="before_body" clone="if::before"/>
-                <pointcut name="after_body" clone="if::before"/>
-                <pointcut name="after" clone="if::before"/>
+                <pointcut name="before_body" clone="method::before_body"/>
+                <pointcut name="after_body"  clone="method::after_body"/>
+                <pointcut name="after"       clone="if::before"/>
             </pointcuts>
         </keyword>
 
@@ -165,24 +186,16 @@
           >
             <replacement-patterns>
                 <pattern search-type="else_clause">
-                    'else ':
+                    'else ': 'INDENT <!--newline-->
                         <p name="before_body"/>
-                        <!--suite-->
+                        <!--repeat statement_or_newline-->
                         <p name="after_body"/>
+                    'DEDENT
                 </pattern>
             </replacement-patterns>
             <pointcuts>
-                <pointcut name="before_body">
-                    <fragment
-                      type="???"
-                      as="Additions"
-                      />
-                    <paste-algorithm>
-                        <insert-fragment
-                          />
-                    </paste-algorithm>
-                </pointcut>
-                <pointcut name="after_body" clone="else::before_body"/>
+                <pointcut name="before_body" clone="if::before_body"/>
+                <pointcut name="after_body"  clone="if::after_body"/>
             </pointcuts>
         </keyword>
 
@@ -192,28 +205,20 @@
             <replacement-patterns>
                 <pattern search-type="for_statement">
                     <p name="before"/>
-                    'for <!--exprlist--> 'in <!--testlist--> ': 
+                    'for <!--exprlist--> 'in <!--testlist--> ': 'INDENT <!--newline-->
                         <p name="before_body"/>
-                        <!--suite-->
+                        <!--repeat statement_or_newline-->
                         <p name="after_body"/>
+                    'DEDENT
                     <!--opt else_clause-->
                     <p name="after"/>
                 </pattern>
             </replacement-patterns>
             <pointcuts>
-                <pointcut name="before">
-                    <fragment
-                      type="???"
-                      as="Additions"
-                      />
-                    <paste-algorithm>
-                        <insert-fragment
-                          />
-                    </paste-algorithm>
-                </pointcut>
-                <pointcut name="before_body" clone="for::before"/>
-                <pointcut name="after_body" clone="for::before"/>
-                <pointcut name="after" clone="for::before"/>
+                <pointcut name="before"      clone="if::before"/>
+                <pointcut name="before_body" clone="if::before_body"/>
+                <pointcut name="after_body"  clone="if::after_body"/>
+                <pointcut name="after"       clone="if::after"/>
             </pointcuts>
         </keyword>
 
@@ -223,28 +228,20 @@
             <replacement-patterns>
                 <pattern search-type="while_statement">
                     <p name="before"/>
-                    'while <!--condition--> ': 
+                    'while <!--condition--> ': 'INDENT <!--newline-->
                         <p name="before_body"/>
-                        <!--suite-->
+                        <!--repeat statement_or_newline-->
                         <p name="after_body"/>
+                    'DEDENT
                     <!--opt else_clause-->
                     <p name="after"/>
                 </pattern>
             </replacement-patterns>
             <pointcuts>
-                <pointcut name="before">
-                    <fragment
-                      type="???"
-                      as="Additions"
-                      />
-                    <paste-algorithm>
-                        <insert-fragment
-                          />
-                    </paste-algorithm>
-                </pointcut>
-                <pointcut name="before_body" clone="while::before"/>
-                <pointcut name="after_body" clone="while::before"/>
-                <pointcut name="after" clone="while::before"/>
+                <pointcut name="before"      clone="if::before"/>
+                <pointcut name="before_body" clone="if::before_body"/>
+                <pointcut name="after_body"  clone="if::after_body"/>
+                <pointcut name="after"       clone="if::after"/>
             </pointcuts>
         </keyword>
     </pointcuts>
