@@ -931,6 +931,7 @@ void TXLGenerator::compileInstrumentationFunction(
 
             // execute algorithm
             for (auto const& step : algo)
+              // TODO: check command return value (bool)
               callAlgorithmCommand({
                                      .function = step.function,
                                      .args = step.args,

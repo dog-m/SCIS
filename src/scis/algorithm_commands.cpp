@@ -16,33 +16,48 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
       auto const right = call.args.find("each-line-postfix");
       auto const postfixWithSpace = right != call.args.cend() ? ' ' + right->second : "";
 
-      string replacement = "";
+      string processedFragment = "";
 
       stringstream ss(call.preparedFragment);
       string line;
       while (getline(ss, line))
-        replacement += prefixWithSpace + line + postfixWithSpace + '\n';
+        processedFragment += prefixWithSpace + line + postfixWithSpace + '\n';
 
-      return { .byText = replacement };
+      return { .byText = processedFragment };
     }
   },
 
   { "insert-call", [](FunctionCall const& call) -> FunctionCall::Result
     {
-      return { .byText = "[" + call.args.at("function") + " " + call.args.at("params") + "]" };
+      auto const& func = call.args.at("function");
+      auto const& params = call.args.at("params");
+
+      return { .byText = "[" + func + " " + params + "]" };
     }
   },
 
   { "insert-text", [](FunctionCall const& call) -> FunctionCall::Result
     {
-      string text = call.args.at("text") + " ";
-      return { .byText = text };
+      return { .byText = call.args.at("text") };
     }
   },
 
   { "fragment-to-variable", [](FunctionCall const& call) -> FunctionCall::Result
     {
-      call.iFunc->createVariable(call.args.at("name"), call.args.at("type"), call.preparedFragment);
+      auto const left = call.args.find("each-line-prefix");
+      auto const prefixWithSpace = left != call.args.cend() ? left->second + ' ' : "";
+
+      auto const right = call.args.find("each-line-postfix");
+      auto const postfixWithSpace = right != call.args.cend() ? ' ' + right->second : "";
+
+      string processedFragment = "";
+
+      stringstream ss(call.preparedFragment);
+      string line;
+      while (getline(ss, line))
+        processedFragment += prefixWithSpace + line + postfixWithSpace + '\n';
+
+      call.iFunc->createVariable(call.args.at("name"), call.args.at("type"), processedFragment);
 
       return {};
     }
@@ -52,7 +67,8 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
     {
       auto const& type = call.args.at("type");
       // BUG: check boundaries
-      uint8_t const variant = atoi(call.args.at("variant").data());
+      auto const index = atoi(call.args.at("variant").data());
+      auto const variant = index < 0 ? 0 : index;
 
       stringstream pattern;
       call.grammar->types.at(type)->variants[variant].toTXLWithNames(pattern, codegen::makeNameFromType);
@@ -65,8 +81,8 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
 
   { "create-variable", [](FunctionCall const& call) -> FunctionCall::Result
     {
-      auto const type = call.args.at("type");
-      auto const value = call.args.at("value");
+      auto const& type = call.args.at("type");
+      auto const& value = call.args.at("value");
 
       auto const proposedName = call.args.find("name");
       auto const name = proposedName != call.args.cend() ? proposedName->second : codegen::makeNameFromType(type);
