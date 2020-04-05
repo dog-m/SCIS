@@ -44,6 +44,9 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
 
   { "fragment-to-variable", [](FunctionCall const& call) -> FunctionCall::Result
     {
+      auto const& varName = call.args.at("name");
+      auto const& varType = call.args.at("type");
+
       auto const left = call.args.find("each-line-prefix");
       auto const prefixWithSpace = left != call.args.cend() ? left->second + ' ' : "";
 
@@ -57,7 +60,7 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
       while (getline(ss, line))
         processedFragment += prefixWithSpace + line + postfixWithSpace + '\n';
 
-      call.iFunc->createVariable(call.args.at("name"), call.args.at("type"), processedFragment);
+      call.iFunc->createVariable(varName, varType, processedFragment);
 
       return {};
     }

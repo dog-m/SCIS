@@ -76,7 +76,7 @@ int main(/*int argc, char** argv*/)
 {
   // FIXME: ===== debug purposes only =====
 
-  string const lang = "python";
+  string const lang = "java";
 
   auto const grammar = "./example/lang/" +lang+ "/grammar.txl";
   auto const annotation = "./example/lang/" +lang+ "/annotation.xml";

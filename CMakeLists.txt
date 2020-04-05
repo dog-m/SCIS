@@ -28,9 +28,15 @@ if(Boost_FOUND)
 
     include_directories(3rdparty src/include)
 
+    # == third-party dependencies
+    include_directories(3rdparty 3rdparty/argparse/include)
+    # ==
+
     file(GLOB SOURCES
+      # == third-party dependencies
       3rdparty/tinyxml2/tinyxml2.cpp
       3rdparty/tinyxml2/tinyxml2.h
+      # ==
 
       src/txl/grammar.h
       src/txl/grammar.cpp
@@ -66,6 +72,9 @@ if(Boost_FOUND)
 
       src/scis/txl_generator.h
       src/scis/txl_generator.cpp
+
+      src/scis/cli.h
+      src/scis/cli.cpp
 
       src/include/arguments.h
       src/include/common.h
