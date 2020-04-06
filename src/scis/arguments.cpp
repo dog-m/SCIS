@@ -1,9 +1,10 @@
-#include "cli.h"
+#include "arguments.h"
 #include "logging.h"
+
 #include <argparse.hpp>
 
 using namespace std;
-using namespace scis;
+using namespace scis::args;
 
 constexpr string_view PARAM_SOURCE          = "--src";
 constexpr string_view PARAM_SOURCE_SHORTCUT = "-s";
@@ -25,80 +26,82 @@ constexpr string_view PARAM_FRAGMENTS_SHORTCUT = "-f";
 
 constexpr string_view PARAM_DISABLED_RULES = "--disable";
 constexpr string_view PARAM_NO_CACHE       = "--no-cache";
-constexpr string_view PARAM_TXL_ARGS       = "txl";
+constexpr string_view PARAM_TXL_ARGS       = "txl_params";
 
 
-void CLI::parseArguments(int const argc,
-                         char** const argv)
+void scis::args::updateArguments(int const argc,
+                                 char** const argv)
 {
-  argparse::ArgumentParser parser("Source Code Instrumentation System");
+  argparse::ArgumentParser parser("scis");
 
   // describe all possible options
   parser
       .add_argument(PARAM_SOURCE, PARAM_SOURCE_SHORTCUT)
-      .help("Program source text file to be processed")
+      .help("program source text file to be processed\t")
       .required();
 
   parser
       .add_argument(PARAM_DESTINATION, PARAM_DESTINATION_SHORTCUT)
-      .help("Processed program text will be saved as")
+      .help("processed program text will be saved as\t")
       .required();
 
   parser
       .add_argument(PARAM_RULESET, PARAM_RULESET_SHORTCUT)
-      .help("ruleset")
+      .help("ruleset\t")
       .required();
 
   parser
       .add_argument(PARAM_GRAMMAR, PARAM_GRAMMAR_SHORTCUT)
-      .help("grammar")
+      .help("grammar\t")
       .required();
 
   parser
       .add_argument(PARAM_ANNOTATION, PARAM_ANNOTATION_SHORTCUT)
-      .help("annotation")
+      .help("annotation\t")
       .required();
 
   parser
       .add_argument(PARAM_FRAGMENTS, PARAM_FRAGMENTS_SHORTCUT)
-      .help("fragments dir")
+      .help("fragments dir\t")
       .required();
 
   parser
       .add_argument(PARAM_DISABLED_RULES)
       .help("-")
-      .default_value("");
+      .default_value(string());
 
   parser
       .add_argument(PARAM_NO_CACHE)
       .help("-")
-      .default_value(false);
+      .default_value(false)
+      .implicit_value(true);
 
   parser
       .add_argument(PARAM_TXL_ARGS)
-      .remaining();
+      .remaining()
+      .default_value(vector<string>());
 
   // perform parsing
   try {
     parser.parse_args(argc, argv);
   }
   catch (runtime_error const& err) {
-    SCIS_ERROR(err.what());
+    SCIS_ERROR(err.what() << endl << parser);
   }
 
   // extract parsed data from parser
-  srcFile = parser.get<string>(PARAM_SOURCE);
-  dstFile = parser.get<string>(PARAM_DESTINATION);
-  ruleset = parser.get<string>(PARAM_RULESET);
-  grammar = parser.get<string>(PARAM_GRAMMAR);
-  annotation = parser.get<string>(PARAM_ANNOTATION);
-  fragmentsDir = parser.get<string>(PARAM_FRAGMENTS);
+  ARG_SRC_FILENAME = parser.get<string>(PARAM_SOURCE);
+  ARG_DST_FILENAME = parser.get<string>(PARAM_DESTINATION);
+  ARG_RULESET = parser.get<string>(PARAM_RULESET);
+  ARG_GRAMMAR = parser.get<string>(PARAM_GRAMMAR);
+  ARG_ANNOTATION = parser.get<string>(PARAM_ANNOTATION);
+  ARG_FRAGMENTS_DIR = parser.get<string>(PARAM_FRAGMENTS);
 
-  disabledRules = parser.get<string>(PARAM_DISABLED_RULES);
+  ARG_DISABLED_RULES = parser.get<string>(PARAM_DISABLED_RULES);
 
-  cacheEnabled = !parser.get<bool>(PARAM_NO_CACHE);
+  ARG_USE_CACHE = !parser.get<bool>(PARAM_NO_CACHE);
 
-  txlParams = "";
+  ARG_TXL_PARAMETERS = "";
   for (auto const& param : parser.get<vector<string>>(PARAM_TXL_ARGS))
-    txlParams += ' ' + param;
+    ARG_TXL_PARAMETERS += ' ' + param;
 }

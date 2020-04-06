@@ -7,6 +7,7 @@
 #include "scis/ruleset_parser.h"
 #include "scis/annotation_parser.h"
 #include "scis/txl_generator.h"
+#include "scis/arguments.h"
 
 using namespace std;
 using namespace tinyxml2;
@@ -72,36 +73,27 @@ static auto loadAndParseAnnotation(string_view && filename)
 
 /* =================================================================================== */
 
-int main(/*int argc, char** argv*/)
+int main(int argc, char** argv)
 {
-  // FIXME: ===== debug purposes only =====
-
-  string const lang = "java";
-
-  auto const grammar = "./example/lang/" +lang+ "/grammar.txl";
-  auto const annotation = "./example/lang/" +lang+ "/annotation.xml";
-  auto const ruleset = "./example/add_logging_to_Main_main.yml";
-  auto const fragDir = "./example/fragments/" +lang+ "/";
-
-  // FIXME: ===== debug purposes only =====
+  scis::args::updateArguments(argc, argv);
 
   scis::TXLGenerator generator;
   SCIS_INFO("Loading grammar");
-  generator.grammar = loadAndParseGrammar(grammar);
+  generator.grammar = loadAndParseGrammar(scis::args::ARG_GRAMMAR);
   /*for (auto const& [_, type] : generator.grammar->types)
     type->toTXLDefinition(cout);
   generator.grammar->toDOT(cout);*/
 
   SCIS_INFO("Loading annotation");
-  generator.annotation = loadAndParseAnnotation(annotation);
+  generator.annotation = loadAndParseAnnotation(scis::args::ARG_ANNOTATION);
   //generator.annotation->dump(cout);
 
   SCIS_INFO("Loading ruleset");
-  generator.ruleset = loadAndParseRuleset(ruleset);
+  generator.ruleset = loadAndParseRuleset(scis::args::ARG_RULESET);
   //generator.ruleset->dump(cout);
 
-  generator.processingFilename = "*dir/test." +lang+ "*";
-  generator.fragmentsDir = fragDir;
+  generator.processingFilename = scis::args::ARG_SRC_FILENAME;
+  generator.fragmentsDir = scis::args::ARG_FRAGMENTS_DIR;
 
   SCIS_INFO("Building...");
   generator.compile();
@@ -109,6 +101,8 @@ int main(/*int argc, char** argv*/)
   ofstream outputFile("./example/example-generated.txl");
   SCIS_INFO("Generating code...");
   generator.generateCode(outputFile);
+
+  scis::args::ARG_DST_FILENAME;
 
   SCIS_INFO("All done");
   return 0;

@@ -13,6 +13,7 @@ using namespace scis;
 
 constexpr auto DAG_DISTANCES_SEARCH_LIMMIT = 2500;
 
+// worst case: compound contexts listed in reversed order -> time = n^2/2 -> n(t) = sqrt(2t) -> n(5200) = 101
 constexpr auto CONTEXT_DEPENDENCY_WAITING_LIMMIT = 5200;
 
 static unordered_map<string_view, string_view> OPERATOR_INVERSION_MAPPING {
