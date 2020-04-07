@@ -37,6 +37,41 @@ static unordered_map<string, pair<string, string>> OPERATOR_WRAPPER_MAPPING {
 };
 
 
+// TODO: move to more suitable location
+#include <iomanip>
+
+// TODO: move to more suitable location
+inline string quote(string const& str)
+{
+  stringstream ss;
+  ss << std::quoted(str);
+  return ss.str();
+}
+
+// TODO: move to more suitable location
+inline string unquote(string const& str)
+{
+  string result;
+  stringstream ss(str);
+  ss >> std::quoted(result);
+  return result;
+}
+
+// TODO: move to more suitable location
+inline string replace_all(string const& str, string const& a, string const& b)
+{
+  string result = str;
+
+  size_t pos = 0;
+  while((pos = result.find(a, pos)) != string::npos) {
+    result.replace(pos, a.size(), b);
+    pos += b.length();
+  }
+
+  return result;
+}
+
+
 Fragment const* TXLGenerator::getFragment(string const& id)
 {
   auto const frag = fragments.find(id);
@@ -863,7 +898,7 @@ void TXLGenerator::compileInstrumentationFunction(
   unordered_map<string, pair<string, string>> const PREDEFINED_IDENTIFIERS {
     {"NODE",     {TXL_TYPE_ID,     "_ [typeof " + NODE_CURRENT + "]"}},
     {"POINTCUT", {TXL_TYPE_ID,     '\'' + ruleStmt.location.pointcut}},
-    {"FILE",     {TXL_TYPE_STRING, "_ [+ \"" + processingFilename + "\"]"}},
+    {"FILE",     {TXL_TYPE_STRING, "_ [+ " + quote(processingFilename) + "]"}},
   };
 
   for (auto const& [name, typeAndValue] : PREDEFINED_IDENTIFIERS) {

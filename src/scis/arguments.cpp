@@ -3,6 +3,10 @@
 
 #include <argparse.hpp>
 
+//#include <filesystem> // TODO: use std::filesystem
+#define BOOST_FILESYSTEM_NO_DEPRECATED
+#include <boost/filesystem.hpp>
+
 using namespace std;
 using namespace scis::args;
 
@@ -27,6 +31,12 @@ constexpr string_view PARAM_FRAGMENTS_SHORTCUT = "-f";
 constexpr string_view PARAM_DISABLED_RULES = "--disable";
 constexpr string_view PARAM_NO_CACHE       = "--no-cache";
 constexpr string_view PARAM_TXL_ARGS       = "txl_params";
+
+
+static string getFilenameParameter(argparse::ArgumentParser& parser, string_view const& name)
+{
+  return boost::filesystem::absolute(parser.get<string>(name)).make_preferred().string();
+}
 
 
 void scis::args::updateArguments(int const argc,
@@ -89,13 +99,17 @@ void scis::args::updateArguments(int const argc,
     SCIS_ERROR(err.what() << endl << parser);
   }
 
+  ARG_WORKING_DIR = boost::filesystem::current_path().string();
+  SCIS_DEBUG("Workdir: " << ARG_WORKING_DIR);
+
   // extract parsed data from parser
-  ARG_SRC_FILENAME = parser.get<string>(PARAM_SOURCE);
-  ARG_DST_FILENAME = parser.get<string>(PARAM_DESTINATION);
-  ARG_RULESET = parser.get<string>(PARAM_RULESET);
-  ARG_GRAMMAR = parser.get<string>(PARAM_GRAMMAR);
-  ARG_ANNOTATION = parser.get<string>(PARAM_ANNOTATION);
-  ARG_FRAGMENTS_DIR = parser.get<string>(PARAM_FRAGMENTS);
+  ARG_SRC_FILENAME  = getFilenameParameter(parser, PARAM_SOURCE);
+  ARG_DST_FILENAME  = getFilenameParameter(parser, PARAM_DESTINATION);
+  ARG_RULESET       = getFilenameParameter(parser, PARAM_RULESET);
+  ARG_GRAMMAR       = getFilenameParameter(parser, PARAM_GRAMMAR);
+  ARG_ANNOTATION    = getFilenameParameter(parser, PARAM_ANNOTATION);
+  ARG_FRAGMENTS_DIR = getFilenameParameter(parser, PARAM_FRAGMENTS);
+  SCIS_DEBUG(ARG_SRC_FILENAME);
 
   ARG_DISABLED_RULES = parser.get<string>(PARAM_DISABLED_RULES);
 

@@ -2,11 +2,12 @@
 #define ARGUMENTS_H
 
 #include <string>
-//#include <filesystem> // TODO: use std::filesystem
 
 namespace scis::args {
 
   using namespace std;
+
+  inline string ARG_WORKING_DIR    = "";
 
   inline string ARG_SRC_FILENAME   = "";
   inline string ARG_DST_FILENAME   = "";

@@ -103,6 +103,7 @@ namespace scis {
     GrammarDescription grammar;
     vector<unique_ptr<Function>> library;
     unordered_map<string, unique_ptr<PointOfInterest>> pointsOfInterest;
+
     string pipeline = "txl %SRC% %TRANSFORM% %PARAMS%";
 
     void dump(ostream &str);
