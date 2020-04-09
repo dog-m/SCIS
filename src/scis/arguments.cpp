@@ -100,7 +100,7 @@ void scis::args::updateArguments(int const argc,
   }
 
   ARG_WORKING_DIR = boost::filesystem::current_path().string();
-  SCIS_DEBUG("Workdir: " << ARG_WORKING_DIR);
+  SCIS_DEBUG("WORKDIR: " << ARG_WORKING_DIR);
 
   // extract parsed data from parser
   ARG_SRC_FILENAME  = getFilenameParameter(parser, PARAM_SOURCE);
@@ -109,7 +109,6 @@ void scis::args::updateArguments(int const argc,
   ARG_GRAMMAR       = getFilenameParameter(parser, PARAM_GRAMMAR);
   ARG_ANNOTATION    = getFilenameParameter(parser, PARAM_ANNOTATION);
   ARG_FRAGMENTS_DIR = getFilenameParameter(parser, PARAM_FRAGMENTS);
-  SCIS_DEBUG(ARG_SRC_FILENAME);
 
   ARG_DISABLED_RULES = parser.get<string>(PARAM_DISABLED_RULES);
 

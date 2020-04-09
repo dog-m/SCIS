@@ -19,6 +19,17 @@ using namespace std;
 using namespace boost::process;
 using namespace txl;
 
+inline static void read_line_by_line(
+    string const& str,
+    ReaderFunction const& reader)
+{
+  string line;
+  stringstream ss(str);
+  while (getline(ss, line))
+    if (!reader(line))
+      break;
+}
+
 bool Wrapper::NOOP_READER(string const&)
 {
   return false;
@@ -36,26 +47,8 @@ int Wrapper::runNoInput(initializer_list<string_view> && params,
 {
   static auto const txl_executable = search_path("txl");
 
-//  boost::asio::io_service ios;
-//  ipstream outStream, errStream;
-//  child c(txl_executable, args(params), std_in.close(), std_out > outStream, std_err > errStream);
-
-//  string line;
-//  do {
-//    while (/*c.running() &&*/ errStream && !errStream.eof() && getline(errStream, line) /*&& !line.empty()*/)
-//      if (!errReader(line))
-//        break;
-
-//    while (/*c.running() &&*/ outStream && !outStream.eof() && getline(outStream, line) /*&& !line.empty()*/)
-//      if (!outReader(line))
-//        break;
-//  } while (c.running() && false);
-
-//  c.wait();
+  std::future<string> data_err, data_out;
   boost::asio::io_service ios;
-
-  future<string> data_err, data_out;
-
   child c(txl_executable, args(params),
           std_in.close(),
           std_out > data_out,
@@ -65,23 +58,33 @@ int Wrapper::runNoInput(initializer_list<string_view> && params,
   // blocked until finished
   ios.run();
 
-  string line;
-  stringstream ss;
-
-  // read errors (std_err)
-  ss.str(data_err.get());
-  while (getline(ss, line))
-    if (!errReader(line))
-      break;
-
-  // read text (std_out)
-  ss.clear();
-  ss.str(data_out.get());
-  while (getline(ss, line))
-    if (!outReader(line))
-      break;
+  // read errors (std_err) and text (std_out)
+  read_line_by_line(data_err.get(), errReader);
+  read_line_by_line(data_out.get(), outReader);
 
   // see https://stackoverflow.com/questions/59156417/getting-exit-code-of-boostprocesschild-under-boostasioio-service
   c.wait();
   return c.exit_code();
+}
+
+int Wrapper::runShellCommand(string const& command,
+                             ReaderFunction const& errReader,
+                             ReaderFunction const& outReader)
+{
+  boost::asio::io_service ios;
+  std::future<string> data_err, data_out;
+  auto ret = boost::process::system(command,
+                                    std_in.close(),
+                                    std_out > data_out,
+                                    std_err > data_err,
+                                    ios);
+
+  // block until finished
+  ios.run();
+
+  // read errors (std_err) and text (std_out)
+  read_line_by_line(data_err.get(), errReader);
+  read_line_by_line(data_out.get(), outReader);
+
+  return ret;
 }

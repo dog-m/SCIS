@@ -91,7 +91,7 @@ namespace scis {
     void compileContextNegation(Context const* const context,
                                      TXLFunction const* const contextChecker);
 
-    bool compileCompoundContext(CompoundContext const* const context);
+    void compileCompoundContext(CompoundContext const* const context);
 
     void compileCollectionFunctions(string const& ruleId,
                                     Context const* const context);

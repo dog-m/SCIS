@@ -486,12 +486,12 @@ end rule
 
 % =================================================================
 
-function do_cnf
-  replace * [cnf_entry]
+rule do_cnf
+  replace $ [cnf_entry]
     P [cnf_entry]
   by
     P [cnf_buildCNF]
       [cnf_convertToChains]
       [cnf_simplify]
       %[cnf_convertToTree]
-end function
+end rule

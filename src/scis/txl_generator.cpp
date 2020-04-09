@@ -13,9 +13,6 @@ using namespace scis;
 
 constexpr auto DAG_DISTANCES_SEARCH_LIMMIT = 2500;
 
-// worst case: compound contexts listed in reversed order -> time = n^2/2 -> n(t) = sqrt(2t) -> n(5200) = 101
-constexpr auto CONTEXT_DEPENDENCY_WAITING_LIMMIT = 5200;
-
 static unordered_map<string_view, string_view> OPERATOR_INVERSION_MAPPING {
   { "=", "~=" },
   { "~=", "=" },
@@ -199,7 +196,7 @@ void TXLGenerator::sortKeywords(vector<string>& keywords) const
 void TXLGenerator::compileContextCheckers()
 {
   vector<BasicContext const*> basicContexts;
-  vector<CompoundContext const*> compoundContexts;
+  deque<CompoundContext const*> compoundContexts;
 
   unordered_set<GrammarAnnotation::PointOfInterest const*> allPOIs;
 
@@ -230,23 +227,52 @@ void TXLGenerator::compileContextCheckers()
   for (auto const ctx : basicContexts)
     compileBasicContext(ctx);
 
-  deque<CompoundContext const*> deferredContextCheckers;
-  // put all remaining contexts into queue
-  deferredContextCheckers.insert(deferredContextCheckers.begin(), compoundContexts.begin(), compoundContexts.end());
+  unordered_map<CompoundContext const*, size_t> waitingForContexts;
+  unordered_map<string, vector<CompoundContext const*>> usedBy;
+  // manage dependencies based on counters
+  for (auto const ctx : compoundContexts) {
+    unordered_set<string> dependencies;
+    // walking through dependencies
+    for (auto const& disjunction : ctx->references)
+      for (auto const& ref : disjunction)
+        // is it a compound context? (basic contexts already processed)
+        if (!findContextCheckerByContext(ref.id))
+          dependencies.insert(ref.id);
 
-  // process all
-  auto iter = 0;
-  while (!deferredContextCheckers.empty() && iter++ < CONTEXT_DEPENDENCY_WAITING_LIMMIT) {
-    auto const context = std::move(deferredContextCheckers.front());
-    deferredContextCheckers.pop_front();
+    // set-up counter
+    waitingForContexts[ctx] = dependencies.size();
 
-    if (!compileCompoundContext(context))
-      deferredContextCheckers.push_back(context);
+    // mark context by dependent on something
+    for (auto const& name : dependencies)
+      usedBy[name].push_back(ctx);
   }
 
-  // dumb way to check for loops
+  // worst case: compound contexts listed in reversed order -> time = n^2 /2 +1
+  auto const CONTEXT_DEPENDENCY_WAITING_LIMMIT =
+      compoundContexts.size() * compoundContexts.size() /2 +1 +1; // post increment
+
+  size_t iter = 0;
+  // process all
+  for (iter = 0; !compoundContexts.empty() && iter < CONTEXT_DEPENDENCY_WAITING_LIMMIT; iter++) {
+    auto const context = std::move(compoundContexts.front());
+    compoundContexts.pop_front();
+
+    if (waitingForContexts[context] > 0)
+      // keep waiting
+      compoundContexts.push_back(context);
+    else {
+      compileCompoundContext(context);
+
+      // update waiting "timers"
+      auto const& dependents = usedBy[context->id];
+      for (auto const ctx : dependents)
+        waitingForContexts[ctx]--;
+    }
+  }
+
+  // dumb way to check for loops in dependency graph
   if (iter >= CONTEXT_DEPENDENCY_WAITING_LIMMIT)
-    SCIS_ERROR("Dependency loops detected in contexts");
+    SCIS_ERROR("Dependency loops were detected in contexts definitions");
 }
 
 void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi)
@@ -424,7 +450,7 @@ void TXLGenerator::compileContextNegation(
         NODE_VOID + " [" + contextChecker->name + args + "]");
 }
 
-bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
+void TXLGenerator::compileCompoundContext(CompoundContext const* const context)
 {
   unordered_set<string> requiredTypes;
   // check for dependencies
@@ -434,7 +460,7 @@ bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
       auto const contextChecker = findContextCheckerByContext(reference.id);
       if (!contextChecker)
         // failed to create a thing
-        return false;
+        SCIS_ERROR("Cant find checker for <" << reference.id << "> when constructing checker <" << context->id << ">");
 
       // collect types required for context checks
       for (auto const& parameter : contextChecker->params)
@@ -476,9 +502,6 @@ bool TXLGenerator::compileCompoundContext(CompoundContext const* const context)
 
   // create negative form
   compileContextNegation(context, checker);
-
-  // everything done ok
-  return true;
 }
 
 template<typename Kind>

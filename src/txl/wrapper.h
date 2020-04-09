@@ -19,6 +19,10 @@ namespace txl {
     static int runNoInput(initializer_list<string_view> && params,
                           ReaderFunction const& errReader,
                           ReaderFunction const& outReader = NOOP_READER);
+
+    static int runShellCommand(string const& command,
+                               ReaderFunction const& errReader,
+                               ReaderFunction const& outReader = NOOP_READER);
   private:
     Wrapper() = delete;
   };
