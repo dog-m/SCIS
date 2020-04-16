@@ -1,0 +1,398 @@
+<annotation>
+    <grammar
+      language="delphi"
+      src="lang/delphi/grammar.txl"
+      base-executable-sequence-type="repeat declaration_or_statement"
+      >
+        <keyword-DAG>
+            <program type="package_declaration">
+            </program>
+            <package type="package_declaration">
+                <imports type="repeat import_declaration"/>
+                <class type="class_declaration">
+                    <body type="class_or_interface_body">
+                        <method type="method_declaration">
+                            <if type="if_statement">
+                                <else type="else_clause"/>
+                            </if>
+                            <switch type="switch_statement">
+                                <case type="switch_alternative"/>
+                            </switch>
+                            <for type="for_statement"/>
+                            <while type="while_statement"/>
+                            <do_while type="do_statement"/>
+                            ...
+                        </method>
+                    </body>
+                </class>
+            </package>
+            <unit type="package_declaration">
+            </unit>
+        </keyword-DAG>
+    </grammar>
+
+    <lib>
+        <rule
+          name="simplify"
+          apply="after-all"
+          >
+            <source>
+                replace [block]
+                  '{'{ Statements [repeat declaration_or_statement] '}'}
+                by
+                  '{ Statements '}
+            </source>
+        </rule>
+
+        <function
+          name="addToImportsIfNotExists"
+          apply="call"
+          params="Addition:import_declaration"
+          >
+            <source>
+                replace [repeat import_declaration]
+                  Imports [repeat import_declaration]
+
+                deconstruct not * [import_declaration] Imports
+                  Addition
+
+                by
+                  Imports [^ Addition]
+            </source>
+        </function>
+    </lib>
+
+    <points-of-interest>
+        <point
+          id="package_name"
+          keyword="package"
+          value-of="package_header:package_name"
+          />
+
+        <point
+          id="class_name"
+          keyword="class"
+          value-of="class_header:class_name"
+          />
+
+        <point
+          id="method_name"
+          keyword="method"
+          value-of="method_declarator:method_name"
+          />
+    </points-of-interest>
+
+    <pointcuts>
+        <keyword
+          name="imports"
+          sequential="false"
+          >
+            <replacement-patterns>
+                <pattern search-type="repeat import_declaration">
+                    __NODE__
+                    <p name="all"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="all">
+                    <fragment
+                      type="repeat import_declaration"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <fragment-to-variable
+                          name="Additions"
+                          type="repeat import_declaration"
+                          />
+                        <insert-call
+                          function="addToImportsIfNotExists"
+                          params="each Additions"
+                          />
+                    </paste-algorithm>
+                </pointcut>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="body"
+          sequential="false"
+          >
+            <replacement-patterns>
+                <pattern search-type="class_or_interface_body">
+                    '{
+                        <p name="all"/>
+                        <!--repeat class_body_declaration-->
+                    '} <!--opt literal-->
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="all">
+                    <fragment
+                      type="repeat class_body_declaration"
+                      as="NewFields"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="method"
+          sequential="false"
+          >
+            <replacement-patterns>
+                <pattern search-type="method_declaration">
+                    <!--repeat modifier--> <!--opt generic_parameter--> <!--type_specifier--> <!--method_declarator--> <!--opt throws-->
+                    '{
+                        <p name="before_body"/>
+                        <!--block-->
+                        <p name="after_body"/>
+                    '}
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before_body">
+                    <fragment
+                      type="repeat declaration_or_statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <deconstruct-variable
+                          type="method_body"
+                          variant="0"
+                          />
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+            </pointcuts>
+        </keyword>
+
+        <!-- match-type already here in keyword when we described it in keyword-DAG -->
+        <keyword
+          name="if"
+          >
+            <replacement-patterns>
+                <pattern search-type="repeat declaration_or_statement">
+                    <p name="before"/>
+                    'if '( <!--condition--> ') '{
+                        <p name="before_body"/>
+                        <!--statement-->
+                        <p name="after_body"/>
+                    '}
+                    <!--opt else_clause-->
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="repeat declaration_or_statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="before_body" clone="if::before"/>
+                <pointcut name="after_body" clone="if::before"/>
+                <pointcut name="after" clone="if::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="else"
+          sequential="false"
+          >
+            <replacement-patterns>
+                <pattern search-type="else_clause">
+                    'else '{
+                        <p name="before_body"/>
+                        <!--statement-->
+                        <p name="after_body"/>
+                    '}
+                </pattern>
+                <!-- pointcut "after" already exists in "if" keyword -->
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before_body">
+                    <fragment
+                      type="repeat declaration_or_statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="after_body" clone="else::before_body"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="for"
+          >
+            <replacement-patterns>
+                <pattern search-type="repeat declaration_or_statement">
+                    <p name="before"/>
+                    'for '( <!--for_init--> <!--for_expression--> <!--for_update--> ') '{
+                        <p name="before_body"/>
+                        <!--statement-->
+                        <p name="after_body"/>
+                    '}
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="repeat declaration_or_statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="before_body" clone="for::before"/>
+                <pointcut name="after_body" clone="for::before"/>
+                <pointcut name="after" clone="for::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="while"
+          >
+            <replacement-patterns>
+                <pattern search-type="repeat declaration_or_statement">
+                    <p name="before"/>
+                    'while '( <!--condition--> ') '{
+                        <p name="before_body"/>
+                        <!--statement-->
+                        <p name="after_body"/>
+                    '}
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="repeat declaration_or_statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="before_body" clone="while::before"/>
+                <pointcut name="after_body" clone="while::before"/>
+                <pointcut name="after" clone="while::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="do_while"
+          >
+            <replacement-patterns>
+                <pattern search-type="repeat declaration_or_statement">
+                    <p name="before"/>
+                    'do '{
+                        <p name="before_body"/>
+                        <!--statement-->
+                        <p name="after_body"/>
+                    '}
+                    'while '( <!--condition--> ') ';
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="repeat declaration_or_statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="before_body" clone="do_while::before"/>
+                <pointcut name="after_body" clone="do_while::before"/>
+                <pointcut name="after" clone="do_while::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="switch"
+          >
+            <replacement-patterns>
+                <pattern search-type="repeat declaration_or_statement">
+                    <p name="before"/>
+                    'switch '( <!--expression--> ') '{
+                        <!--repeat switch_alternative-->
+                    '}
+                    <p name="after"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before">
+                    <fragment
+                      type="repeat declaration_or_statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="after" clone="switch::before"/>
+            </pointcuts>
+        </keyword>
+
+        <keyword
+          name="case"
+          >
+            <replacement-patterns>
+                <pattern search-type="repeat declaration_or_statement">
+                    <!--switch_label-->
+                        <p name="before_body"/>
+                        <!--repeat declaration_or_statement-->
+                        <p name="after_body"/>
+                </pattern>
+            </replacement-patterns>
+            <pointcuts>
+                <pointcut name="before_body">
+                    <fragment
+                      type="repeat declaration_or_statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+                <pointcut name="after_body">
+                    <fragment
+                      type="repeat declaration_or_statement"
+                      as="Additions"
+                      />
+                    <paste-algorithm>
+                        <fragment-to-variable
+                          name="Additions"
+                          type="repeat declaration_or_statement"
+                          />
+                        <insert-call
+                          function="."
+                          params="Additions"
+                          />
+                    </paste-algorithm>
+                </pointcut>
+            </pointcuts>
+        </keyword>
+    </pointcuts>
+</annotation>

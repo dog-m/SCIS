@@ -1,0 +1,10 @@
+<fragment language="delphi" name="logging_message">
+  <dependencies>
+    <required name="logging_imports"/>
+    <required name="logging_fields"/>
+  </dependencies>
+
+  <code black-list="imports" params="message">
+    System.WriteLn(<p id="message"/>);
+  </code>
+</fragment>

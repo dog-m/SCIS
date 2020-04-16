@@ -1,0 +1,7 @@
+<fragment language="delphi" name="logging_fields">
+  <dependencies>
+    <required name="logging_imports"/>
+  </dependencies>
+
+  <code black-list="imports, if, for"/>
+</fragment>

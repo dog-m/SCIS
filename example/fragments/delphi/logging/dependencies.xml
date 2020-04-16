@@ -1,0 +1,8 @@
+<fragment language="delphi" name="logging_dependencies">
+  <dependencies/>
+
+  <code white-list="imports">
+    uses
+      System;
+  </code>
+</fragment>

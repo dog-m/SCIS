@@ -5,8 +5,8 @@ import java.util.logging.ConsoleHandler;
 
 public class Main {
   
-  public int a = 10;
-  public int b = 20;
+  public static int a = 10;
+  public static int b = 20;
 
   public static void something_else(String[] args) {
     if (a >= b)
