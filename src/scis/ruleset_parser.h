@@ -13,7 +13,7 @@ namespace scis {
 
     /// core = [stringlit] node in grammar
     static void parseStringTemplate(Pattern &pattern,
-                                    XMLElement const* const core);
+                                    XMLElement const* const stringlit);
 
     void parseUsedFragments(XMLElement const* const fragments);
 

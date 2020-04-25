@@ -2,12 +2,14 @@
     <grammar
       language="delphi"
       src="lang/delphi/grammar.txl"
-      base-executable-sequence-type="repeat declaration_or_statement"
+      base-executable-sequence-type="repeat statement_semi"
       >
         <keyword-DAG>
-            <program type="package_declaration">
+            <program type="program_decl">
             </program>
-            <package type="package_declaration">
+            <package type="package_decl">
+            </package>
+            <unit type="unit_decl">
                 <imports type="repeat import_declaration"/>
                 <class type="class_declaration">
                     <body type="class_or_interface_body">
@@ -25,8 +27,6 @@
                         </method>
                     </body>
                 </class>
-            </package>
-            <unit type="package_declaration">
             </unit>
         </keyword-DAG>
     </grammar>

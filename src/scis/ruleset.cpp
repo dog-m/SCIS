@@ -10,10 +10,12 @@ void BasicContext::dump(ostream &str)
   auto count = constraints.size();
   for (auto const& c : constraints) {
     str << c.id << ' '
-        << c.op << ' '
-        << (c.value.somethingBefore ? "..." : "")
-        << '\'' << c.value.text << '\''
-        << (c.value.somethingAfter ? "..." : "");
+        << c.op << ' ';
+
+    for (auto const& part : c.value)
+      str << (part.somethingBefore ? "*" : "")
+          << '\'' << part.text << '\''
+          << (part.somethingAfter ? "*" : "");
 
     if (count --> 1)
       str << ", ";
@@ -89,11 +91,10 @@ void Ruleset::dump(ostream &str)
 
         str << '[' << p.modifier << "] " << p.keywordId;
         if (p.pattern.has_value())
-          str << " ("
-               << (p.pattern->somethingBefore ? "..." : "")
-               << p.pattern->text
-               << (p.pattern->somethingAfter ? "..." : "")
-               << ')';
+          for (auto const& part : p.pattern.value())
+            str << (part.somethingBefore ? "*" : "")
+                << '\'' << part.text << '\''
+                << (part.somethingAfter ? "*" : "");
       }
       str << " #" << s.location.pointcut << endl;
 

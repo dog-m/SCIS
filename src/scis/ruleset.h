@@ -16,11 +16,13 @@ namespace scis {
     string path;
   };
 
-  struct Pattern final {
+  struct PatternFragment final {
     bool somethingBefore = false;
     string text;
     bool somethingAfter = false;
   };
+  // string like "*text*"
+  using Pattern = vector<PatternFragment>;
 
   struct Context {
     string id;

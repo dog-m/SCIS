@@ -13,24 +13,24 @@ using namespace scis;
 
 constexpr auto DAG_DISTANCES_SEARCH_LIMMIT = 2500;
 
-static unordered_map<string_view, string_view> OPERATOR_INVERSION_MAPPING {
-  { "=", "~=" },
-  { "~=", "=" },
-  { "<", ">=" },
-  { "<=", ">" },
-  { ">", "<=" },
-  { ">=", "<" },
-};
+static string const CTX_OP_EQUAL          = "=";
+static string const CTX_OP_NOT_EQUAL      = "~=";
+static string const CTX_OP_LESS           = "<";
+static string const CTX_OP_LESS_EQUAL     = "<=";
+static string const CTX_OP_GREATER        = ">";
+static string const CTX_OP_GREATER_EQUAL  = ">=";
+static string const CTX_OP_HAS            = "has";
+static string const CTX_OP_MATCH          = "matches";
 
-static unordered_map<string, pair<string, string>> OPERATOR_WRAPPER_MAPPING {
+static unordered_map<string, pair<string, string>> CTX_OPERATOR_WRAPPER_MAPPING {
   // TODO: make better approach
-  { "=",        { "=",    PREFIX_STD + "equal"         }},
-  { "~=",       { "~=",   PREFIX_STD + "not_equal"     }},
-  { "<",        { "<",    PREFIX_STD + "lower"         }},
-  { "<=",       { "<=",   PREFIX_STD + "lower_equal"   }},
-  { ">",        { ">",    PREFIX_STD + "greater"       }},
-  { ">=",       { ">=",   PREFIX_STD + "greater_equal" }},
-  { "has",      { "grep", PREFIX_STD + "contains"      }},
+  { CTX_OP_EQUAL        , { "="   , PREFIX_STD + "equal"         }},
+  { CTX_OP_NOT_EQUAL    , { "~="  , PREFIX_STD + "not_equal"     }},
+  { CTX_OP_LESS         , { "<"   , PREFIX_STD + "lower"         }},
+  { CTX_OP_LESS_EQUAL   , { "<="  , PREFIX_STD + "lower_equal"   }},
+  { CTX_OP_GREATER      , { ">"   , PREFIX_STD + "greater"       }},
+  { CTX_OP_GREATER_EQUAL, { ">="  , PREFIX_STD + "greater_equal" }},
+  { CTX_OP_HAS          , { "grep", PREFIX_STD + "contains"      }},
 };
 
 
@@ -422,8 +422,14 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
     auto const operation = getWrapperForOperator(constraint.op, TXL_TYPE_STRING);
 
     // append expressions (pre-fix notation)
-    where.text += " [" + operation + " " + property + " \"" + constraint.value.text + "\"]";
-    // FIXME: string templates in context constraints
+    if (operation == CTX_OP_MATCH) {
+      // FIXME: string templates in context constraints
+      where.text;
+      SCIS_ERROR("CTX_OP_MATCH");
+    }
+    // just regular operator
+    else
+      where.text += " [" + operation + " " + property + " \"" + constraint.value.front().text + "\"]";
   }
 
   // make it available for others (ie contexts and filtering functions)
@@ -1081,7 +1087,7 @@ void TXLGenerator::compileAnnotationUtilityFunctions()
 
 void TXLGenerator::compileStandardWrappers(string const& baseType)
 {
-  for (auto const& [op, names] : OPERATOR_WRAPPER_MAPPING) {
+  for (auto const& [op, names] : CTX_OPERATOR_WRAPPER_MAPPING) {
     auto const& [internalFunction, wrapperName] = names;
     wrapStandardBinnaryOperator(op, baseType, wrapperName, internalFunction);
   }

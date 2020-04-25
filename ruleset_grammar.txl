@@ -12,6 +12,8 @@ keys
     'use         'fragment
     'context
     'rules
+    
+    'has         'matches
 end keys
 
 compounds 
@@ -70,11 +72,11 @@ define basic_context_constraint
 end define
 
 define string_template
-    [opt '...] [stringlit] [opt '...]
+    [stringlit]
 end define
 
 define context_op
-    '= | '< | '<= | '> | '>= | '~=
+    '= | '< | '<= | '> | '>= | '~= | 'has | 'matches
 end define
 
 define context_property

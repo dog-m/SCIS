@@ -7,13 +7,40 @@ using namespace tinyxml2;
 
 #include "../xml_parser_utils.h"
 
-void RulesetParser::parseStringTemplate(Pattern &pattern,
-                                        XMLElement const* const core)
+void RulesetParser::parseStringTemplate(
+    Pattern &pattern,
+    XMLElement const* const stringlit)
 {
-  pattern.somethingBefore = core->PreviousSiblingElement("opt_literal");
-  pattern.text = core->GetText();
-  unescapeString(pattern.text);
-  pattern.somethingAfter = core->NextSiblingElement("opt_literal");
+  string_view const text = stringlit->GetText();
+  /*PatternFragment *part = nullptr;
+  for (auto const c : text) {
+    if (c == '*') {
+      if (part)
+        part->somethingAfter = true;
+
+      part = &pattern.emplace_back();
+      part->somethingBefore = true;
+    }
+    else {
+      if (!part) {
+        part = &pattern.emplace_back();
+        part->somethingBefore = false;
+      }
+
+      part->text.push_back(c);
+    }
+  }*/
+
+  processList('*', text.data(),
+              [&](string const& str) {
+    auto& part = pattern.emplace_back(/* empty */);
+    part.text = str;
+    unescapeString(part.text);
+
+    // there is something before?
+    if (auto const count = pattern.size(); count > 1)
+      pattern[count - 2].somethingAfter = part.somethingBefore = true;
+  });
 }
 
 void RulesetParser::parseUsedFragments(XMLElement const* const fragments)
