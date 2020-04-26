@@ -34,6 +34,7 @@ static unordered_map<string, pair<string, string>> CTX_OPERATOR_WRAPPER_MAPPING 
 };
 
 
+
 // TODO: move to more suitable location
 #include <iomanip>
 
@@ -66,6 +67,74 @@ inline string replace_all(string const& str, string const& a, string const& b)
   }
 
   return result;
+}
+
+
+
+static void unrollPattern(
+    TXLFunction *const func,
+    string const& varName,
+    Pattern const& pattern)
+{
+  // FIXME: string templates in context constraints
+  func->createVariable(
+        "S1", TXL_TYPE_STRING,
+        varName);
+
+  uint16_t index = 1;
+  for (auto const& part : pattern) {
+    string const indexedName      = "S" + to_string(index);
+    string const indexedNameNext  = "S" + to_string(index + 1);
+    string const indexedLength    = indexedName + "_LEN";
+    string const indexedPosition  = "P" + to_string(index);
+    // update index
+    ++index;
+
+    func->createVariable(
+          indexedLength, TXL_TYPE_NUMBER,
+          "_ [# " + indexedName + "]");
+
+    auto& pos = func->createVariable(
+          indexedPosition, TXL_TYPE_NUMBER,
+          "_ [index S1 " + part.text + "] ");
+
+    auto& where = func->addStatementBott(
+          "where",
+          indexedPosition + " ");
+
+    // middle part?
+    if (part.somethingBefore && part.somethingAfter) {
+      where.action += " %% middle"; // TODO: remove debug output
+      where.text += "[> 0]";
+    }
+    // start?
+    else if (part.somethingAfter) {
+      where.action += " %% starts with"; // TODO: remove debug output
+      where.text += "[= 1]";
+    }
+    // end?
+    else if (part.somethingBefore) {
+      where.action += " %% ends with"; // TODO: remove debug output
+      pos.text += "[- 1] [+ " + to_string(part.text.length()) + "]";
+      where.text += "[= " + indexedLength + "]";
+
+      // is it possible to have something after the end?
+      break;
+    }
+    // full match
+    else {
+      where.text = indexedName + " [= \"" + part.text + "\"]";
+      where.action += " %% full"; // TODO: remove debug output
+
+      // nothing else can be done here
+      break;
+    }
+
+    // cut off checked text
+    func->createVariable(
+          indexedNameNext, TXL_TYPE_STRING,
+          indexedName + " [: " + indexedPosition + " " + indexedLength + "]");
+  }
 }
 
 
@@ -411,25 +480,22 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
     poi2var.insert_or_assign(poi, varName);
   }
 
-  // create "where" expression
-  auto& where = checker->addStatementBott(
-        "where all",
-        NODE_VOID /* constraint checks will be added here */);
   // joined with 'AND' operation
   for (auto const& constraint : context->constraints) {
     auto const poi = annotation->pointsOfInterest[constraint.id].get();
     auto const& property = poi2var[poi];
-    auto const operation = getWrapperForOperator(constraint.op, TXL_TYPE_STRING);
 
     // append expressions (pre-fix notation)
-    if (operation == CTX_OP_MATCH) {
-      // FIXME: string templates in context constraints
-      where.text;
-      SCIS_ERROR("CTX_OP_MATCH");
-    }
+    if (constraint.op == CTX_OP_MATCH)
+      unrollPattern(checker, property, constraint.value);
     // just regular operator
-    else
-      where.text += " [" + operation + " " + property + " \"" + constraint.value.front().text + "\"]";
+    else {
+      auto const operation = getWrapperForOperator(constraint.op, TXL_TYPE_STRING);
+      // create "where" expression
+      checker->addStatementBott(
+            "where",
+            NODE_VOID + " [" + operation + " " + property + " \"" + constraint.value.front().text + "\"]");
+    }
   }
 
   // make it available for others (ie contexts and filtering functions)
@@ -663,7 +729,7 @@ void TXLGenerator::compileRefinementFunction_First(
   rFunc->queueIndex = index;
 
   // FIXME: templates in refinement functions
-  path.pattern;
+  path.pattern; unrollPattern;
 
   rFunc->searchType =
       keyword->sequential ?
@@ -720,7 +786,7 @@ void TXLGenerator::compileRefinementFunction_All(
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
 
   // FIXME: templates in refinement functions
-  path.pattern;
+  path.pattern; unrollPattern;
 
   rFunc->searchType =
       keyword->sequential ?
@@ -776,7 +842,7 @@ void TXLGenerator::compileRefinementFunction_Level(
   rFunc->skipCountCounter = getSkipCounterName(rFunc->name);
 
   // FIXME: templates in refinement functions
-  path.pattern;
+  path.pattern; unrollPattern;
 
   rFunc->searchType =
       keyword->sequential ?
