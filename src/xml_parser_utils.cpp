@@ -62,3 +62,33 @@ void unescapeString(string& str)
 {
   str.erase(std::remove(str.begin(), str.end(), '\"' ), str.end());
 }
+
+#include <iomanip>
+
+string quote(string const& str)
+{
+  stringstream ss;
+  ss << std::quoted(str);
+  return ss.str();
+}
+
+string unquote(string const& str)
+{
+  string result;
+  stringstream ss(str);
+  ss >> std::quoted(result);
+  return result;
+}
+
+string replace_all(string const& str, string const& a, string const& b)
+{
+  string result = str;
+
+  size_t pos = 0;
+  while((pos = result.find(a, pos)) != string::npos) {
+    result.replace(pos, a.size(), b);
+    pos += b.length();
+  }
+
+  return result;
+}

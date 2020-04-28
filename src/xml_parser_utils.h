@@ -31,4 +31,12 @@ void processList(char const delimitter,
 
 void unescapeString(std::string &str);
 
+std::string quote(std::string const& str);
+
+std::string unquote(std::string const& str);
+
+std::string replace_all(std::string const& str,
+                        std::string const& a,
+                        std::string const& b);
+
 #endif // XML_PARSER_UTILS_H

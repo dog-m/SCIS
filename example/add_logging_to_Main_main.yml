@@ -7,7 +7,7 @@ context class_m:
   { poi:class_name = "Main" }
 
 context method_m:
-  { poi:method_name = "main" }
+  { poi:method_name matches "mai*" }
 
 context class_and_method_m:
   class_m & method_m

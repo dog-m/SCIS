@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include "algorithm_commands.h"
+#include "../xml_parser_utils.h"
 
 using namespace std;
 using namespace scis;
@@ -34,59 +35,29 @@ static unordered_map<string, pair<string, string>> CTX_OPERATOR_WRAPPER_MAPPING 
 };
 
 
-
-// TODO: move to more suitable location
-#include <iomanip>
-
-// TODO: move to more suitable location
-inline string quote(string const& str)
-{
-  stringstream ss;
-  ss << std::quoted(str);
-  return ss.str();
-}
-
-// TODO: move to more suitable location
-inline string unquote(string const& str)
-{
-  string result;
-  stringstream ss(str);
-  ss >> std::quoted(result);
-  return result;
-}
-
-// TODO: move to more suitable location
-inline string replace_all(string const& str, string const& a, string const& b)
-{
-  string result = str;
-
-  size_t pos = 0;
-  while((pos = result.find(a, pos)) != string::npos) {
-    result.replace(pos, a.size(), b);
-    pos += b.length();
-  }
-
-  return result;
-}
-
-
-
 static void unrollPattern(
     TXLFunction *const func,
     string const& varName,
     Pattern const& pattern)
 {
-  // FIXME: string templates in context constraints
+  // in case of nultiplie use of pattern-matching in one basic context checker
+  string const postfix = getUniqueId();
+
   func->createVariable(
-        "S1", TXL_TYPE_STRING,
+        "S1" + postfix, TXL_TYPE_STRING,
         varName);
 
   uint16_t index = 1;
   for (auto const& part : pattern) {
-    string const indexedName      = "S" + to_string(index);
-    string const indexedNameNext  = "S" + to_string(index + 1);
+    // variables names (use only these!)
+    string const indexedName      = "S" + to_string(index)      + postfix;
+    string const indexedNameNext  = "S" + to_string(index + 1)  + postfix;
     string const indexedLength    = indexedName + "_LEN";
-    string const indexedPosition  = "P" + to_string(index);
+    string const indexedPosition  = indexedName + "_POS";
+
+    // text to look for
+    string const quotedText = quote(part.text);
+
     // update index
     ++index;
 
@@ -96,7 +67,7 @@ static void unrollPattern(
 
     auto& pos = func->createVariable(
           indexedPosition, TXL_TYPE_NUMBER,
-          "_ [index S1 " + part.text + "] ");
+          "_ [index " + indexedName + " " + quotedText + "] ");
 
     auto& where = func->addStatementBott(
           "where",
@@ -123,7 +94,7 @@ static void unrollPattern(
     }
     // full match
     else {
-      where.text = indexedName + " [= \"" + part.text + "\"]";
+      where.text = indexedName + " [= " + quotedText + "]";
       where.action += " %% full"; // TODO: remove debug output
 
       // nothing else can be done here
@@ -491,10 +462,11 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
     // just regular operator
     else {
       auto const operation = getWrapperForOperator(constraint.op, TXL_TYPE_STRING);
+      auto const quotedText = quote(constraint.value.front().text);
       // create "where" expression
       checker->addStatementBott(
             "where",
-            NODE_VOID + " [" + operation + " " + property + " \"" + constraint.value.front().text + "\"]");
+            NODE_VOID + " [" + operation + " " + property + " " + quotedText + "]");
     }
   }
 

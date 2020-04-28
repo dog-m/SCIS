@@ -11,8 +11,8 @@ void RulesetParser::parseStringTemplate(
     Pattern &pattern,
     XMLElement const* const stringlit)
 {
-  string_view const text = stringlit->GetText();
-  /*PatternFragment *part = nullptr;
+  string const text = unquote(stringlit->GetText());
+  PatternFragment *part = nullptr;
   for (auto const c : text) {
     if (c == '*') {
       if (part)
@@ -29,18 +29,11 @@ void RulesetParser::parseStringTemplate(
 
       part->text.push_back(c);
     }
-  }*/
+  }
 
-  processList('*', text.data(),
-              [&](string const& str) {
-    auto& part = pattern.emplace_back(/* empty */);
-    part.text = str;
-    unescapeString(part.text);
-
-    // there is something before?
-    if (auto const count = pattern.size(); count > 1)
-      pattern[count - 2].somethingAfter = part.somethingBefore = true;
-  });
+  // remove unnecessary empty string on the end
+  if (!pattern.empty() && pattern.back().text.empty())
+    pattern.pop_back();
 }
 
 void RulesetParser::parseUsedFragments(XMLElement const* const fragments)
