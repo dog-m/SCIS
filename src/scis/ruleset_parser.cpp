@@ -12,6 +12,10 @@ void RulesetParser::parseStringTemplate(
     XMLElement const* const stringlit)
 {
   string const text = unquote(stringlit->GetText());
+
+  if (text.empty() || text == "*")
+    SCIS_ERROR("Empty pattern");
+
   PatternFragment *part = nullptr;
   for (auto const c : text) {
     if (c == '*') {

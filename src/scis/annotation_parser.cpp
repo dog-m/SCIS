@@ -26,7 +26,7 @@ void AnnotationParser::parseGrammar(XMLElement const* const root)
 
   FOREACH_XML_ELEMENT(expectedPath(root, { "keyword-DAG" }), subtype)
     if (subtype->Attribute("type")) {
-      parseKeyword(subtype);
+      parseDAGKeyword(subtype);
 
       // fill tops
       auto const newKeyword = subtype->Name();
@@ -35,14 +35,14 @@ void AnnotationParser::parseGrammar(XMLElement const* const root)
     }
 }
 
-inline void AnnotationParser::parseKeywordSubtypes(const XMLElement* const root)
+inline void AnnotationParser::parseDAGKeywordSubtypes(const XMLElement* const root)
 {
   FOREACH_XML_ELEMENT(root, subtype)
     if (subtype->Attribute("type"))
-      parseKeyword(subtype);
+      parseDAGKeyword(subtype);
 }
 
-void AnnotationParser::parseKeyword(XMLElement const* const keyword)
+void AnnotationParser::parseDAGKeyword(XMLElement const* const keyword)
 {
   auto word = make_unique<GrammarAnnotation::DirectedAcyclicGraph::Keyword>();
 
@@ -54,7 +54,7 @@ void AnnotationParser::parseKeyword(XMLElement const* const keyword)
 
   annotation->grammar.graph.keywords.insert_or_assign(word->id, std::move(word));
 
-  parseKeywordSubtypes(keyword);
+  parseDAGKeywordSubtypes(keyword);
 }
 
 void AnnotationParser::parseLibrary(XMLElement const* const root)
@@ -98,7 +98,7 @@ void AnnotationParser::parsePointsOfInterest(XMLElement const* const root)
   FOREACH_XML_ELEMENT(root, element) {
     auto poi = make_unique<GrammarAnnotation::PointOfInterest>();
 
-    poi->id = "poi:"s + expectedAttribute(element, "id")->Value();
+    poi->id = POI_GROUP_PREFIX + expectedAttribute(element, "id")->Value();
 
     poi->keyword = expectedAttribute(element, "keyword")->Value();
 
@@ -113,17 +113,23 @@ void AnnotationParser::parsePointsOfInterest(XMLElement const* const root)
 void AnnotationParser::parsePointcuts(XMLElement const* const root)
 {
   FOREACH_XML_ELEMENT(root, keyword)
-    parsePointcutsForKeyword(keyword);
+    parseKeywordWithPointcuts(keyword);
 }
 
-void AnnotationParser::parsePointcutsForKeyword(XMLElement const* const root)
+void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
 {
   auto const name = expectedAttribute(root, "name")->Value();
   auto const keyword = annotation->grammar.graph.keywords.at(name).get();
 
+  // base information
   // TODO: sequences
   if (auto const seq = root->FindAttribute("sequential"))
     keyword->sequential = seq->BoolValue();
+  else
+    keyword->sequential = true;
+
+  if (auto const fPOI = root->FindAttribute("filter-poi"))
+    keyword->filterPOI = fPOI->Value();
 
   // parsing patterns for a keyword
   auto const patterns = expectedPath(root, { "replacement-patterns" });

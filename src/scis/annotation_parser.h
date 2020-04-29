@@ -16,9 +16,9 @@ namespace scis {
 
     void parseGrammar(XMLElement const* const root);
 
-    inline void parseKeywordSubtypes(XMLElement const* const root);
+    inline void parseDAGKeywordSubtypes(XMLElement const* const root);
 
-    void parseKeyword(XMLElement const* const keyword);
+    void parseDAGKeyword(XMLElement const* const keyword);
 
     void parseLibrary(XMLElement const* const root);
 
@@ -26,7 +26,7 @@ namespace scis {
 
     void parsePointcuts(XMLElement const* const root);
 
-    void parsePointcutsForKeyword(XMLElement const* const root);
+    void parseKeywordWithPointcuts(XMLElement const* const root);
 
   public:
     unique_ptr<GrammarAnnotation> parse(XMLDocument const& doc);

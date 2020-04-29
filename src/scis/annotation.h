@@ -11,6 +11,8 @@ namespace scis {
 
   using namespace std;
 
+  inline string const POI_GROUP_PREFIX = "poi:";
+
   struct GrammarAnnotation final {
 
     struct Pointcut final {
@@ -59,6 +61,7 @@ namespace scis {
         string id;
         string type;
         bool sequential = true;
+        optional<string> filterPOI = nullopt;
         unordered_map<string, unique_ptr<Pointcut>> pointcuts;
         vector<Pattern> replacement_patterns;
         vector<string> subnodes;

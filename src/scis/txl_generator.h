@@ -74,9 +74,11 @@ namespace scis {
 
     void sortKeywords(vector<string>& keywords) const;
 
-    void compileContextCheckers();
+    void compilePOIGetters();
 
     void compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi);
+
+    void compileContextCheckers();
 
     TXLFunction* prepareContextChecker(Context const* const context,
                                        bool const positive);
@@ -86,6 +88,12 @@ namespace scis {
 
     TXLFunction const* findContextCheckerByContext(string const& name);
 
+    void unrollPatternFor(RefinementFunction* const rFunc,
+                          string const& keywordId,
+                          Pattern const& pattern,
+                          string const& variableName);
+
+  protected:
     void compileBasicContext(BasicContext const* const context);
 
     void compileContextNegation(Context const* const context,
@@ -103,19 +111,19 @@ namespace scis {
                                     Rule::Statement const& ruleStmt);
 
     void compileRefinementFunction_First(string const& name,
-                                         Rule::Location::PathElement const& path,
+                                         Rule::Location::PathElement const& element,
                                          int const index);
 
     void compileRefinementFunction_All(string const& name,
-                                       Rule::Location::PathElement const& path,
+                                       Rule::Location::PathElement const& element,
                                        int const index);
 
     void compileRefinementFunction_Level(string const& name,
-                                         Rule::Location::PathElement const& path,
+                                         Rule::Location::PathElement const& element,
                                          int const index);
 
     void compileRefinementFunction_LevelPredicate(string const& name,
-                                                  Rule::Location::PathElement const& path,
+                                                  Rule::Location::PathElement const& element,
                                                   int const index);
 
     void compileRefinementHelperFunctions();

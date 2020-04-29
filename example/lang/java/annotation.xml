@@ -76,6 +76,12 @@
           keyword="method"
           value-of="method_declarator:method_name"
           />
+
+        <point
+          id="if_condition"
+          keyword="if"
+          value-of="condition"
+          />
     </points-of-interest>
 
     <pointcuts>
@@ -138,6 +144,7 @@
         <keyword
           name="method"
           sequential="false"
+          filter-poi="method_name"
           >
             <replacement-patterns>
                 <pattern search-type="method_declaration">
@@ -170,6 +177,7 @@
         <!-- match-type already here in keyword when we described it in keyword-DAG -->
         <keyword
           name="if"
+          filter-poi="if_condition"
           >
             <replacement-patterns>
                 <pattern search-type="repeat declaration_or_statement">

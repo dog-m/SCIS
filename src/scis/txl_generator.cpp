@@ -233,86 +233,11 @@ void TXLGenerator::sortKeywords(vector<string>& keywords) const
     });
 }
 
-void TXLGenerator::compileContextCheckers()
+void TXLGenerator::compilePOIGetters()
 {
-  vector<BasicContext const*> basicContexts;
-  deque<CompoundContext const*> compoundContexts;
-
-  unordered_set<GrammarAnnotation::PointOfInterest const*> allPOIs;
-
-  // collect all points of interest and classify + group contexts
-  for (auto const& [_, context] : ruleset->contexts) {
-    auto const ctx = context.get();
-
-    if (auto const basicCtx = dynamic_cast<BasicContext const*>(ctx)) {
-      basicContexts.push_back(basicCtx);
-
-      // collecting points-of-interest
-      for (auto const& constraint : basicCtx->constraints) {
-        auto const poi = annotation->pointsOfInterest[constraint.id].get();
-        allPOIs.insert(poi);
-      }
-    }
-    else if (auto const compoundCtx = dynamic_cast<CompoundContext const*>(ctx))
-      compoundContexts.push_back(compoundCtx);
-    else
-      SCIS_ERROR("Unrecognized context type");
-  }
-
   // create getters
-  for (auto const poi : allPOIs)
-    compileGetterForPOI(poi);
-
-  // create checking functions for basic contexts
-  for (auto const ctx : basicContexts)
-    compileBasicContext(ctx);
-
-  unordered_map<CompoundContext const*, size_t> waitingForContexts;
-  unordered_map<string, vector<CompoundContext const*>> usedBy;
-  // manage dependencies based on counters
-  for (auto const ctx : compoundContexts) {
-    unordered_set<string> dependencies;
-    // walking through dependencies
-    for (auto const& disjunction : ctx->references)
-      for (auto const& ref : disjunction)
-        // is it a compound context? (basic contexts already processed)
-        if (!findContextCheckerByContext(ref.id))
-          dependencies.insert(ref.id);
-
-    // set-up counter
-    waitingForContexts[ctx] = dependencies.size();
-
-    // mark context by dependent on something
-    for (auto const& name : dependencies)
-      usedBy[name].push_back(ctx);
-  }
-
-  // worst case: compound contexts listed in reversed order -> time = n^2 /2 +1
-  auto const CONTEXT_DEPENDENCY_WAITING_LIMMIT =
-      compoundContexts.size() * compoundContexts.size() /2 +1 +1; // post increment
-
-  size_t iter = 0;
-  // process all
-  for (iter = 0; !compoundContexts.empty() && iter < CONTEXT_DEPENDENCY_WAITING_LIMMIT; iter++) {
-    auto const context = std::move(compoundContexts.front());
-    compoundContexts.pop_front();
-
-    if (waitingForContexts[context] > 0)
-      // keep waiting
-      compoundContexts.push_back(context);
-    else {
-      compileCompoundContext(context);
-
-      // update waiting "timers"
-      auto const& dependents = usedBy[context->id];
-      for (auto const ctx : dependents)
-        waitingForContexts[ctx]--;
-    }
-  }
-
-  // dumb way to check for loops in dependency graph
-  if (iter >= CONTEXT_DEPENDENCY_WAITING_LIMMIT)
-    SCIS_ERROR("Dependency loops were detected in contexts definitions");
+  for (auto const& [_, poi] : annotation->pointsOfInterest)
+    compileGetterForPOI(poi.get());
 }
 
 void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const* const poi)
@@ -368,6 +293,83 @@ void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const*
   poi2getter[poi] = getter;
 }
 
+void TXLGenerator::compileContextCheckers()
+{
+  vector<BasicContext const*> basicContexts;
+  deque<CompoundContext const*> compoundContexts;
+
+  // collect all points of interest and classify + group contexts
+  for (auto const& [_, context] : ruleset->contexts) {
+    auto const ctx = context.get();
+
+    if (auto const basicCtx = dynamic_cast<BasicContext const*>(ctx)) {
+      basicContexts.push_back(basicCtx);
+
+      // collecting points-of-interest
+      for (auto const& constraint : basicCtx->constraints) {
+        auto const poi = annotation->pointsOfInterest[constraint.id].get();
+        if (!poi)
+          SCIS_ERROR("Unknown point-of-interest usage detected in context <" << ctx->id << ">");
+      }
+    }
+    else if (auto const compoundCtx = dynamic_cast<CompoundContext const*>(ctx))
+      compoundContexts.push_back(compoundCtx);
+    else
+      SCIS_ERROR("Unrecognized context type");
+  }
+
+  // create checking functions for basic contexts
+  for (auto const ctx : basicContexts)
+    compileBasicContext(ctx);
+
+  unordered_map<CompoundContext const*, size_t> waitingForContexts;
+  unordered_map<string, vector<CompoundContext const*>> usedBy;
+  // manage dependencies based on counters
+  for (auto const ctx : compoundContexts) {
+    unordered_set<string> dependencies;
+    // walking through dependencies
+    for (auto const& disjunction : ctx->references)
+      for (auto const& ref : disjunction)
+        // is it a compound context? (basic contexts already processed)
+        if (!findContextCheckerByContext(ref.id))
+          dependencies.insert(ref.id);
+
+    // set-up counter
+    waitingForContexts[ctx] = dependencies.size();
+
+    // mark context by dependent on something
+    for (auto const& name : dependencies)
+      usedBy[name].push_back(ctx);
+  }
+
+  // worst case: compound contexts listed in reversed order -> time = n^2 /2 +1
+  auto const CONTEXT_DEPENDENCY_WAITING_LIMMIT =
+      compoundContexts.size() * compoundContexts.size() /2 +1 +1; // post increment
+
+  size_t iter = 0;
+  // process all
+  for (iter = 0; !compoundContexts.empty() && iter < CONTEXT_DEPENDENCY_WAITING_LIMMIT; iter++) {
+    auto const context = std::move(compoundContexts.front());
+    compoundContexts.pop_front();
+
+    if (waitingForContexts[context] > 0)
+      // keep waiting
+      compoundContexts.push_back(context);
+    else {
+      compileCompoundContext(context);
+
+      // update waiting "timers"
+      auto const& dependents = usedBy[context->id];
+      for (auto const ctx : dependents)
+        waitingForContexts[ctx]--;
+    }
+  }
+
+  // dumb way to check for loops in dependency graph
+  if (iter >= CONTEXT_DEPENDENCY_WAITING_LIMMIT)
+    SCIS_ERROR("Dependency loops were detected in contexts definitions");
+}
+
 TXLFunction* TXLGenerator::prepareContextChecker(Context const* const context,
                                                  bool const positive)
 {
@@ -405,10 +407,31 @@ TXLFunction const* TXLGenerator::findContextCheckerByContext(string const& name)
     return nullptr;
 }
 
+void TXLGenerator::unrollPatternFor(
+    RefinementFunction *const rFunc,
+    string const& keywordId,
+    Pattern const& pattern,
+    string const& variableName)
+{
+  auto const keyword = annotation->grammar.graph.keywords[keywordId].get();
+
+  if (keyword->filterPOI.has_value()) {
+    auto const poi = annotation->pointsOfInterest[POI_GROUP_PREFIX + keyword->filterPOI.value()].get();
+    auto const getter = poi2getter[poi];
+
+    auto const valueHolder = "value_holder_" + getUniqueId();
+    rFunc->createVariable(
+          valueHolder, TXL_TYPE_STRING,
+          "_ [" + getter->name + " " + variableName + "]");
+
+    unrollPattern(rFunc, valueHolder, pattern);
+  }
+  else
+    SCIS_WARNING("Text pattern presented but keyword does not support pattern-matching");
+}
+
 void TXLGenerator::compileBasicContext(BasicContext const* const context)
 {
-  // check for dependencies -> there are no dependencies
-
   SCIS_DEBUG("Processing basic context <" << context->id << ">");
 
   // creating new context checking function (incl. VOID variable)
@@ -497,6 +520,7 @@ void TXLGenerator::compileContextNegation(
 void TXLGenerator::compileCompoundContext(CompoundContext const* const context)
 {
   unordered_set<string> requiredTypes;
+  // TODO: dependencies for compound contexts already checked
   // check for dependencies
   for (auto const& disjunction : context->references)
     for (auto const& reference : disjunction) {
@@ -687,10 +711,10 @@ void TXLGenerator::compileRefinementFunctions(
 
 void TXLGenerator::compileRefinementFunction_First(
     string const& name,
-    Rule::Location::PathElement const& path,
+    Rule::Location::PathElement const& element,
     int const index)
 {
-  auto const keyword = annotation->grammar.graph.keywords[path.keywordId].get();
+  auto const keyword = annotation->grammar.graph.keywords[element.keywordId].get();
   auto const rFunc = createFunction<RefinementFunction_First>();
   rFunc->isRule = false;
   rFunc->name = name;
@@ -700,8 +724,9 @@ void TXLGenerator::compileRefinementFunction_First(
   rFunc->sequential = keyword->sequential;
   rFunc->queueIndex = index;
 
-  // FIXME: templates in refinement functions
-  path.pattern; unrollPattern;
+  // pattern matching if needed
+  if (element.pattern.has_value())
+    unrollPatternFor(rFunc, element.keywordId, element.pattern.value(), NODE_CURRENT);
 
   rFunc->searchType =
       keyword->sequential ?
@@ -714,10 +739,10 @@ void TXLGenerator::compileRefinementFunction_First(
 
 void TXLGenerator::compileRefinementFunction_All(
     string const& name,
-    Rule::Location::PathElement const& path,
+    Rule::Location::PathElement const& element,
     int const index)
 {
-  auto const keyword = annotation->grammar.graph.keywords[path.keywordId].get();
+  auto const keyword = annotation->grammar.graph.keywords[element.keywordId].get();
   auto const SKIP = getSkipNodeName(index);
 
   if (keyword->sequential) {
@@ -757,8 +782,9 @@ void TXLGenerator::compileRefinementFunction_All(
   rFunc->skipCount = SKIP;
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
 
-  // FIXME: templates in refinement functions
-  path.pattern; unrollPattern;
+  // pattern matching if needed
+  if (element.pattern.has_value())
+    unrollPatternFor(rFunc, element.keywordId, element.pattern.value(), NODE_CURRENT);
 
   rFunc->searchType =
       keyword->sequential ?
@@ -771,10 +797,10 @@ void TXLGenerator::compileRefinementFunction_All(
 
 void TXLGenerator::compileRefinementFunction_Level(
     string const& name,
-    Rule::Location::PathElement const& path,
+    Rule::Location::PathElement const& element,
     int const index)
 {
-  auto const keyword = annotation->grammar.graph.keywords[path.keywordId].get();
+  auto const keyword = annotation->grammar.graph.keywords[element.keywordId].get();
   auto const SKIP = getSkipNodeName(index);
 
   // kick-starter function
@@ -813,8 +839,10 @@ void TXLGenerator::compileRefinementFunction_Level(
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
   rFunc->skipCountCounter = getSkipCounterName(rFunc->name);
 
-  // FIXME: templates in refinement functions
-  path.pattern; unrollPattern;
+  // pattern matching if needed
+  if (element.pattern.has_value())
+    // FIXME: potential text template checking bug (with NODE_CURRENT)
+    unrollPatternFor(rFunc, element.keywordId, element.pattern.value(), NODE_CURRENT);
 
   rFunc->searchType =
       keyword->sequential ?
@@ -847,10 +875,12 @@ void TXLGenerator::compileRefinementFunction_Level(
 
 void TXLGenerator::compileRefinementFunction_LevelPredicate(
     string const& name,
-    Rule::Location::PathElement const& path,
+    Rule::Location::PathElement const& element,
     int const index)
 {
   SCIS_ERROR("WIP " << __FUNCTION__);
+  // NOTE: templates in refinement functions
+  element.pattern; unrollPattern;
 }
 
 void TXLGenerator::compileRefinementHelperFunctions()
@@ -1145,6 +1175,8 @@ void TXLGenerator::compile()
   createMain();
 
   compileStandardWrappers(TXL_TYPE_STRING);
+
+  compilePOIGetters();
 
   compileContextCheckers();
 
