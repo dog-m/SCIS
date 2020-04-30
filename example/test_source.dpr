@@ -18,23 +18,31 @@ type
 procedure Main.something_else(args: array of string);
 begin
   if a >= b then
+  begin
     if a < 0 then
       System.writeln('Fizz Buzz!');
+  end;
 
   if a >= b then
+  begin
     if a < 0 then
       System.writeln('Fizz Buzz!');
+  end;
 end;
 
 procedure Main.main(args: array of string);
 begin
   if a >= b then
+  begin
     if a < 0 then
-      System.writeln('Fizz Buzz!');
+      System.writeln('Hello World!');
+  end;
 
   if a >= b then
+  begin
     if a < 0 then
-      System.writeln('Fizz Buzz!');
+      System.writeln('Hello World!');
+  end;
 end;
 
 begin

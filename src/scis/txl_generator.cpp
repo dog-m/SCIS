@@ -268,12 +268,19 @@ void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const*
 
     stringstream pattern;
     // BUG: only first variant used
-    grammar->types[type]->variants[0].toTXLWithNames(pattern, [&](string const& processingType) {
-        return type2name[processingType.data()] =
-            processingType == nextType ?
-              makeNameFromType(processingType) + to_string(i) :
-              "_";
-      });
+    grammar->types[type]->variants[0].toTXLWithNames(pattern, [&](string const& someType) {
+      // look for modifier separator
+      auto const pos = someType.find(' ');
+      auto const processingType =
+          pos != string::npos ?
+            someType.substr(pos + 1) :
+            someType;
+
+      return type2name[processingType] =
+          processingType == nextType ?
+            makeNameFromType(processingType) + to_string(i) :
+            NODE_ANONYMOUS;
+    });
 
     getter->deconstructVariable(type2name[type], pattern.str());
   }

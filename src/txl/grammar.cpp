@@ -4,7 +4,8 @@
 using namespace std;
 using namespace txl;
 
-void Grammar::PlainText::toTXL(ostream &ss, optional<NamingFunction> const) const
+void Grammar::PlainText::toTXL(ostream &ss,
+                               optional<NamingFunction> const) const
 {
   // BUG: potential formating bug here
   if (!text.empty() && text.front() != '\'')
@@ -13,7 +14,8 @@ void Grammar::PlainText::toTXL(ostream &ss, optional<NamingFunction> const) cons
   ss << text;
 }
 
-void Grammar::TypeReference::toTXL(ostream &ss, optional<NamingFunction> const namer) const
+void Grammar::TypeReference::toTXL(ostream &ss,
+                                   optional<NamingFunction> const namer) const
 {
   auto const prefix = (modifier.has_value() ? modifier.value() + " " : "");
 
@@ -27,7 +29,8 @@ void Grammar::TypeReference::toTXL(ostream &ss, optional<NamingFunction> const n
      << "]";
 }
 
-void Grammar::OptionalPlainText::toTXL(ostream &ss, optional<NamingFunction> const namer) const
+void Grammar::OptionalPlainText::toTXL(ostream &ss,
+                                       optional<NamingFunction> const namer) const
 {
   if (namer.has_value())
     ss << namer.value()(modifier + "_literal") << ' ';
@@ -50,7 +53,8 @@ void Grammar::TypeVariant::toTXL(ostream &ss,
   }
 }
 
-void Grammar::TypeVariant::toTXLWithNames(ostream& ss, const Grammar::NamingFunction namer) const
+void Grammar::TypeVariant::toTXLWithNames(ostream& ss,
+                                          Grammar::NamingFunction const namer) const
 {
   ss << "    ";
 
