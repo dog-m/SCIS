@@ -82,6 +82,24 @@
           keyword="if"
           value-of="condition"
           />
+
+        <point
+          id="while_condition"
+          keyword="while"
+          value-of="condition"
+          />
+
+        <point
+          id="do_while_condition"
+          keyword="do_while"
+          value-of="condition"
+          />
+
+        <point
+          id="for_expression"
+          keyword="for"
+          value-of="for_expression"
+          />
     </points-of-interest>
 
     <pointcuts>
@@ -90,9 +108,12 @@
           sequential="false"
           >
             <replacement-patterns>
-                <pattern search-type="repeat import_declaration">
+                <pattern search-type="repeat import_declaration" kind="replace">
                     __NODE__
                     <p name="all"/>
+                </pattern>
+                <pattern search-type="repeat import_declaration" kind="match">
+                    <!--repeat import_declaration-->
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -120,9 +141,14 @@
           sequential="false"
           >
             <replacement-patterns>
-                <pattern search-type="class_or_interface_body">
+                <pattern search-type="class_or_interface_body" kind="replace">
                     '{
                         <p name="all"/>
+                        <!--repeat class_body_declaration-->
+                    '} <!--opt literal-->
+                </pattern>
+                <pattern search-type="class_or_interface_body" kind="match">
+                    '{
                         <!--repeat class_body_declaration-->
                     '} <!--opt literal-->
                 </pattern>
@@ -147,13 +173,17 @@
           filter-poi="method_name"
           >
             <replacement-patterns>
-                <pattern search-type="method_declaration">
+                <pattern search-type="method_declaration" kind="replace">
                     <!--repeat modifier--> <!--opt generic_parameter--> <!--type_specifier--> <!--method_declarator--> <!--opt throws-->
                     '{
                         <p name="before_body"/>
                         <!--block-->
                         <p name="after_body"/>
                     '}
+                </pattern>
+                <pattern search-type="method_declaration" kind="match">
+                    <!--repeat modifier--> <!--opt generic_parameter--> <!--type_specifier--> <!--method_declarator--> <!--opt throws-->
+                    <!--block-->
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -180,7 +210,7 @@
           filter-poi="if_condition"
           >
             <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
+                <pattern search-type="repeat declaration_or_statement" kind="replace">
                     <p name="before"/>
                     'if '( <!--condition--> ') '{
                         <p name="before_body"/>
@@ -189,6 +219,11 @@
                     '}
                     <!--opt else_clause-->
                     <p name="after"/>
+                </pattern>
+                <pattern search-type="repeat declaration_or_statement" kind="match">
+                    'if '( <!--condition--> ')
+                        <!--statement-->
+                    <!--opt else_clause-->
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -213,7 +248,7 @@
           sequential="false"
           >
             <replacement-patterns>
-                <pattern search-type="else_clause">
+                <pattern search-type="else_clause" kind="replace">
                     'else '{
                         <p name="before_body"/>
                         <!--statement-->
@@ -221,6 +256,10 @@
                     '}
                 </pattern>
                 <!-- pointcut "after" already exists in "if" keyword -->
+                <pattern search-type="else_clause" kind="replace">
+                    'else
+                        <!--statement-->
+                </pattern>
             </replacement-patterns>
             <pointcuts>
                 <pointcut name="before_body">
@@ -239,9 +278,10 @@
 
         <keyword
           name="for"
+          filter-poi="for_expression"
           >
             <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
+                <pattern search-type="repeat declaration_or_statement" kind="replace">
                     <p name="before"/>
                     'for '( <!--for_init--> <!--for_expression--> <!--for_update--> ') '{
                         <p name="before_body"/>
@@ -249,6 +289,10 @@
                         <p name="after_body"/>
                     '}
                     <p name="after"/>
+                </pattern>
+                <pattern search-type="repeat declaration_or_statement" kind="match">
+                    'for '( <!--for_init--> <!--for_expression--> <!--for_update--> ')
+                        <!--statement-->
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -270,9 +314,10 @@
 
         <keyword
           name="while"
+          filter-poi="while_condition"
           >
             <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
+                <pattern search-type="repeat declaration_or_statement" kind="replace">
                     <p name="before"/>
                     'while '( <!--condition--> ') '{
                         <p name="before_body"/>
@@ -280,6 +325,10 @@
                         <p name="after_body"/>
                     '}
                     <p name="after"/>
+                </pattern>
+                <pattern search-type="repeat declaration_or_statement" kind="match">
+                    'while '( <!--condition--> ')
+                        <!--statement-->
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -301,9 +350,10 @@
 
         <keyword
           name="do_while"
+          filter-poi="do_while_condition"
           >
             <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
+                <pattern search-type="repeat declaration_or_statement" kind="replace">
                     <p name="before"/>
                     'do '{
                         <p name="before_body"/>
@@ -312,6 +362,11 @@
                     '}
                     'while '( <!--condition--> ') ';
                     <p name="after"/>
+                </pattern>
+                <pattern search-type="repeat declaration_or_statement" kind="match">
+                    'do
+                        <!--statement-->
+                    'while '( <!--condition--> ') ';
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -333,14 +388,20 @@
 
         <keyword
           name="switch"
+          filter-poi="switch_expression"
           >
             <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
+                <pattern search-type="repeat declaration_or_statement" kind="replace">
                     <p name="before"/>
                     'switch '( <!--expression--> ') '{
                         <!--repeat switch_alternative-->
                     '}
                     <p name="after"/>
+                </pattern>
+                <pattern search-type="repeat declaration_or_statement" kind="match">
+                    'switch '( <!--expression--> ') '{
+                        <!--repeat switch_alternative-->
+                    '}
                 </pattern>
             </replacement-patterns>
             <pointcuts>
@@ -360,13 +421,18 @@
 
         <keyword
           name="case"
+          filter-poi="case_label"
           >
             <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
+                <pattern search-type="repeat declaration_or_statement" kind="replace">
                     <!--switch_label-->
                         <p name="before_body"/>
                         <!--repeat declaration_or_statement-->
                         <p name="after_body"/>
+                </pattern>
+                <pattern search-type="repeat declaration_or_statement" kind="match">
+                    <!--switch_label-->
+                        <!--repeat declaration_or_statement-->
                 </pattern>
             </replacement-patterns>
             <pointcuts>
