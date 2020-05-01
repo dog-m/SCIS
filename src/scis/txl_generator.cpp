@@ -276,6 +276,12 @@ void TXLGenerator::compileGetterForPOI(GrammarAnnotation::PointOfInterest const*
             someType.substr(pos + 1) :
             someType;
 
+      // NOTE: unused type modifier in getter generator
+      auto const typeModifier =
+          pos != string::npos ?
+            someType.substr(0, pos) :
+            "";
+
       return type2name[processingType] =
           processingType == nextType ?
             makeNameFromType(processingType) + to_string(i) :
@@ -415,7 +421,7 @@ TXLFunction const* TXLGenerator::findContextCheckerByContext(string const& name)
 }
 
 void TXLGenerator::unrollPatternFor(
-    RefinementFunction *const rFunc,
+    TXLFunction *const rFunc,
     string const& keywordId,
     Pattern const& pattern,
     string const& variableName)
@@ -716,6 +722,16 @@ void TXLGenerator::compileRefinementFunctions(
   }
 }
 
+inline void TXLGenerator::applyRefinementFunctionSearchType(
+    RefinementFunction *const rFunc,
+    GrammarAnnotation::DirectedAcyclicGraph::Keyword const *const keyword)
+{
+  rFunc->searchType =
+      keyword->sequential ?
+        annotation->grammar.baseSequenceType :
+        rFunc->processingType;
+}
+
 void TXLGenerator::compileRefinementFunction_First(
     string const& name,
     Rule::Location::PathElement const& element,
@@ -731,17 +747,14 @@ void TXLGenerator::compileRefinementFunction_First(
   rFunc->sequential = keyword->sequential;
   rFunc->queueIndex = index;
 
-  // pattern matching if needed
-  if (element.pattern.has_value())
-    unrollPatternFor(rFunc, element.keywordId, element.pattern.value(), NODE_CURRENT);
-
-  rFunc->searchType =
-      keyword->sequential ?
-        annotation->grammar.baseSequenceType :
-        rFunc->processingType;
+  applyRefinementFunctionSearchType(rFunc, keyword);
 
   // hook-up together
   addToCallChain(rFunc);
+
+  // pattern matching if needed
+  if (element.pattern.has_value())
+    unrollPatternFor(rFunc, element.keywordId, element.pattern.value(), NODE_CURRENT);
 }
 
 void TXLGenerator::compileRefinementFunction_All(
@@ -789,17 +802,14 @@ void TXLGenerator::compileRefinementFunction_All(
   rFunc->skipCount = SKIP;
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
 
-  // pattern matching if needed
-  if (element.pattern.has_value())
-    unrollPatternFor(rFunc, element.keywordId, element.pattern.value(), NODE_CURRENT);
-
-  rFunc->searchType =
-      keyword->sequential ?
-        annotation->grammar.baseSequenceType :
-        rFunc->processingType;
+  applyRefinementFunctionSearchType(rFunc, keyword);
 
   // hook-up together
   addToCallChain(rFunc);
+
+  // pattern matching if needed
+  if (element.pattern.has_value())
+    unrollPatternFor(rFunc, element.keywordId, element.pattern.value(), NODE_CURRENT);
 }
 
 void TXLGenerator::compileRefinementFunction_Level(
@@ -846,15 +856,27 @@ void TXLGenerator::compileRefinementFunction_Level(
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
   rFunc->skipCountCounter = getSkipCounterName(rFunc->name);
 
-  // pattern matching if needed
-  if (element.pattern.has_value())
-    // FIXME: potential text template checking bug (with NODE_CURRENT)
-    unrollPatternFor(rFunc, element.keywordId, element.pattern.value(), NODE_CURRENT);
+  applyRefinementFunctionSearchType(rFunc, keyword);
 
-  rFunc->searchType =
-      keyword->sequential ?
-        annotation->grammar.baseSequenceType :
-        rFunc->processingType;
+  // hook-up together
+  addToCallChain(rFunc);
+
+  // pattern matching if needed
+  if (element.pattern.has_value()) {
+    // make small separate filtering function
+    auto const filter = createFunction<RefinementFunctionFilter>();
+    filter->isRule = false;
+    filter->name = name + "_filter";
+    filter->copyParamsFrom(rFunc);
+    filter->processingType = rFunc->processingType;
+    filter->searchType = rFunc->searchType;
+
+    // FIXME: potential text template checking bug (with NODE_CURRENT)
+    unrollPatternFor(filter, element.keywordId, element.pattern.value(), NODE_CURRENT);
+
+    // append after refiner function
+    addToCallChain(filter);
+  }
 
   // counter
   auto const counter = createFunction<TXLFunction>(); // TODO: move to a new class
@@ -875,9 +897,6 @@ void TXLGenerator::compileRefinementFunction_Level(
   counter->addStatementBott(
         "by",
         NODE_CURRENT);
-
-  // hook-up together
-  addToCallChain(rFunc);
 }
 
 void TXLGenerator::compileRefinementFunction_LevelPredicate(
@@ -888,6 +907,44 @@ void TXLGenerator::compileRefinementFunction_LevelPredicate(
   SCIS_ERROR("WIP " << __FUNCTION__);
   // NOTE: templates in refinement functions
   element.pattern; unrollPattern;
+}
+
+void TXLGenerator::compileRules()
+{
+  for (auto const& [_, rule] : ruleset->rules) {
+    // FIXME: check if rule disabled by user
+    SCIS_DEBUG("Processing rule \'" << rule->id << "\'");
+
+    for (auto const& ruleStmt : rule->statements) {
+      SCIS_DEBUG("Processing statement");
+
+      bool const isGlobalContext = (ruleStmt.location.contextId == GLOBAL_CONTEXT_ID);
+
+      auto const context =
+          isGlobalContext ?
+            GLOBAL_CONTEXT.get() :
+            ruleset->contexts[ruleStmt.location.contextId].get();
+
+      // generate chain of functions
+      if (!isGlobalContext) {
+        SCIS_DEBUG("compiling Collectors...");
+        compileCollectionFunctions(rule->id, context);
+
+        SCIS_DEBUG("compiling Filter...");
+        compileFilteringFunction(rule->id, context);
+      }
+
+      SCIS_DEBUG("compiling Path*...");
+      compileRefinementFunctions(rule->id, ruleStmt);
+
+      SCIS_DEBUG("compiling Instrumenter...");
+      compileInstrumentationFunction(rule->id, ruleStmt, context);
+
+      // add to a whole program
+      mainCallSequence.push_back(currentCallChain.front());
+      resetCallChain();
+    }
+  }
 }
 
 void TXLGenerator::compileRefinementHelperFunctions()
@@ -1104,15 +1161,12 @@ string TXLGenerator::prepareFragment(Fragment const* const fragment,
   return ss.str();
 }
 
-void TXLGenerator::createMain()
-{
-  mainFunc = createFunction<TXLFunction>();
-  mainFunc->isRule = false;
-  mainFunc->name = "main";
-}
-
 void TXLGenerator::compileMain()
 {
+  auto const mainFunc = createFunction<TXLFunction>();
+  mainFunc->isRule = false;
+  mainFunc->name = "main";
+
   mainFunc->addStatementTop(
         "replace [program]",
         "Program [program]");
@@ -1179,47 +1233,13 @@ void TXLGenerator::compile()
 
   evaluateKeywordsDistances();
 
-  createMain();
-
   compileStandardWrappers(TXL_TYPE_STRING);
 
   compilePOIGetters();
 
   compileContextCheckers();
 
-  for (auto const& [_, rule] : ruleset->rules) {
-    SCIS_DEBUG("Processing rule \'" << rule->id << "\'");
-
-    for (auto const& ruleStmt : rule->statements) {
-      SCIS_DEBUG("Processing statement");
-
-      bool const isGlobalContext = (ruleStmt.location.contextId == "@");
-
-      auto const context =
-          isGlobalContext ?
-            GLOBAL_CONTEXT.get() :
-            ruleset->contexts[ruleStmt.location.contextId].get();
-
-      // generate chain of functions
-      if (!isGlobalContext) {
-        SCIS_DEBUG("compiling Collectors...");
-        compileCollectionFunctions(rule->id, context);
-
-        SCIS_DEBUG("compiling Filter...");
-        compileFilteringFunction(rule->id, context);
-      }
-
-      SCIS_DEBUG("compiling Path*...");
-      compileRefinementFunctions(rule->id, ruleStmt);
-
-      SCIS_DEBUG("compiling Instrumenter...");
-      compileInstrumentationFunction(rule->id, ruleStmt, context);
-
-      // add to a whole program
-      mainCallSequence.push_back(currentCallChain.front());
-      resetCallChain();
-    }
-  }
+  compileRules();
 
   compileRefinementHelperFunctions();
 

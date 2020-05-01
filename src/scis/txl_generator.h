@@ -14,6 +14,7 @@ namespace scis {
   using namespace std;
   using namespace scis::codegen;
 
+  /// one-time use
   class TXLGenerator final {
     using RefinementFunctionGenerator = function<void(string const&, Rule::Location::PathElement const&, int const)>;
 
@@ -36,7 +37,6 @@ namespace scis {
     vector<CallChainFunction*> currentCallChain;
 
     vector<unique_ptr<TXLFunction>> functions;
-    TXLFunction* mainFunc = nullptr;
 
     deque<TXLFunction const*> mainCallSequence;
 
@@ -88,7 +88,7 @@ namespace scis {
 
     TXLFunction const* findContextCheckerByContext(string const& name);
 
-    void unrollPatternFor(RefinementFunction* const rFunc,
+    void unrollPatternFor(TXLFunction* const rFunc,
                           string const& keywordId,
                           Pattern const& pattern,
                           string const& variableName);
@@ -110,6 +110,9 @@ namespace scis {
     void compileRefinementFunctions(string const& ruleId,
                                     Rule::Statement const& ruleStmt);
 
+    inline void applyRefinementFunctionSearchType(RefinementFunction *const rFunc,
+                                                  GrammarAnnotation::DirectedAcyclicGraph::Keyword const* const keyword);
+
     void compileRefinementFunction_First(string const& name,
                                          Rule::Location::PathElement const& element,
                                          int const index);
@@ -126,6 +129,8 @@ namespace scis {
                                                   Rule::Location::PathElement const& element,
                                                   int const index);
 
+    void compileRules();
+
     void compileRefinementHelperFunctions();
 
     static string getSkipNodeName(int const index);
@@ -140,8 +145,6 @@ namespace scis {
 
     string prepareFragment(Fragment const* const fragment,
                            vector<string> const& args);
-
-    void createMain();
 
     void compileMain();
 

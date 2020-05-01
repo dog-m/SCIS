@@ -38,6 +38,7 @@ void FragmentParser::parseCode(XMLElement const* const code)
       string line;
       stringstream ss(text->Value());
 
+      vector<string> lines;
       while (!ss.eof()) {
         // trim left
         while (!ss.eof() && isspace(ss.peek()))
@@ -49,10 +50,16 @@ void FragmentParser::parseCode(XMLElement const* const code)
           while (!line.empty() && isblank(line.back()))
             line.pop_back();
 
-          auto txt = make_unique<Fragment::TextBlock>();
-          txt->text = line + (ss.eof() ? "" : "\n");
-          fragment->source.emplace_back(std::move(txt));
+          lines.push_back(line);
         }
+      }
+
+      for (size_t index = 0; index < lines.size(); index++) {
+        bool const isLast = (index+1 == lines.size());
+
+        auto txt = make_unique<Fragment::TextBlock>();
+        txt->text = lines[index] + (isLast ? "" : "\n");
+        fragment->source.emplace_back(std::move(txt));
       }
     }
 
@@ -64,6 +71,14 @@ void FragmentParser::parseCode(XMLElement const* const code)
       fragment->source.emplace_back(std::move(ref));
     }
   }
+
+  // remove unnecessary empty row at the end
+  if (!fragment->source.empty())
+    if (auto const plaintext = dynamic_cast<Fragment::TextBlock*>(fragment->source.back().get())) {
+      SCIS_INFO("plaintext: <" << plaintext->text << ">");
+      if (plaintext->text.empty())
+        fragment->source.pop_back();
+    }
 }
 
 void FragmentParser::parseFragment(XMLElement const* const root)

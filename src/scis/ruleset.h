@@ -43,7 +43,8 @@ namespace scis {
     void dump(ostream &str) override; // TODO: remove
   }; // BasicContext
 
-  inline unique_ptr<BasicContext> const GLOBAL_CONTEXT {};
+  inline string const GLOBAL_CONTEXT_ID = "@";
+  inline unique_ptr<BasicContext> const GLOBAL_CONTEXT;
 
   struct CompoundContext final : public Context {
     struct Reference {

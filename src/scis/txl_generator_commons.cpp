@@ -152,6 +152,19 @@ void FilteringFunction::generateStatements()
         NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
 }
 
+void RefinementFunctionFilter::generateStatements()
+{
+  addStatementTop(
+        "replace $ [" + searchType + "]",
+        NODE_CURRENT + " [" + processingType + "]");
+
+  /// pre-generated instructions there
+
+  addStatementBott(
+        "by",
+        NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
+}
+
 void RefinementFunction_First::generateStatements()
 {
   if (sequential) {
@@ -300,7 +313,7 @@ void RefinementFunction_Level::generateStatements()
 void InstrumentationFunction::generateStatements()
 {
   addStatementTop(
-        "replace [" + searchType + "]",
+        "replace $ [" + searchType + "]",
         NODE_CURRENT + " [" + processingType + "]");
 
   /// pre-generated instructions there

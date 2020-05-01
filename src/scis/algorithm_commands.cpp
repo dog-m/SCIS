@@ -59,6 +59,8 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
       string line;
       while (getline(ss, line))
         processedFragment += prefixWithSpace + line + postfixWithSpace + '\n';
+      // remove last "new line" symbol
+      processedFragment.pop_back();
 
       call.iFunc->createVariable(varName, varType, processedFragment);
 

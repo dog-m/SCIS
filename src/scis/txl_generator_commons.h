@@ -122,7 +122,7 @@ namespace scis::codegen {
     void connectTo(CallChainFunction *const other);
   };
 
-  /// Used by filtering function
+  /// Used by filtering function. Current node will be added at the end
   struct CollectionFunction final : public CallChainFunction {
     string processingKeyword;
 
@@ -134,9 +134,16 @@ namespace scis::codegen {
   };
 
   struct RefinementFunction : public CallChainFunction {
-    string searchType = "???";
+    string searchType;
     bool sequential = false;
     int queueIndex = 0;
+  };
+
+  /// primary used by "level" kind/modification of refiner
+  struct RefinementFunctionFilter : public CallChainFunction {
+    string searchType;
+
+    void generateStatements() override;
   };
 
   struct RefinementFunction_First final : public RefinementFunction {
