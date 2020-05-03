@@ -75,7 +75,6 @@ void FragmentParser::parseCode(XMLElement const* const code)
   // remove unnecessary empty row at the end
   if (!fragment->source.empty())
     if (auto const plaintext = dynamic_cast<Fragment::TextBlock*>(fragment->source.back().get())) {
-      SCIS_INFO("plaintext: <" << plaintext->text << ">");
       if (plaintext->text.empty())
         fragment->source.pop_back();
     }
@@ -111,7 +110,8 @@ unique_ptr<Fragment> FragmentParser::parse(const string_view& filename)
 {
   XMLDocument doc(true, PRESERVE_WHITESPACE);
   if (auto result = doc.LoadFile(filename.data()); result != XML_SUCCESS) {
-    SCIS_ERROR("Failed to load \'" << filename << "\'. Reason: " << doc.ErrorIDToName(result));
+    SCIS_ERROR("Failed to load \'" << filename << "\'. "
+               "Reason: " << doc.ErrorIDToName(result));
   }
   else
     SCIS_DEBUG("XML loaded normaly");

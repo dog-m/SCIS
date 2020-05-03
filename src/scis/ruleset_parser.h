@@ -20,9 +20,11 @@ namespace scis {
     void parseContexts(XMLElement const* const contexts);
 
     void parseBasicContext(string const& id,
+                           int32_t const sourceLine,
                            XMLElement const* const basic_context);
 
     void parseCompoundContext(string const& id,
+                              int32_t const sourceLine,
                               XMLElement const* const compound_context);
 
     void parseContextDisjunction(CompoundContext::Disjunction & disjunction,

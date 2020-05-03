@@ -38,14 +38,14 @@ end define
 
 
 define use_fragment_statement
-    'use 'fragment [stringlit] [NL]
+    [srclinenumber] 'use 'fragment [stringlit] [NL]
 end define
 
 
 
 define context_definition
     'context [SP] [SPOFF] [context_name] ': [SPON] [NL] [IN]
-        [basic_context_or_compound_context] [NL] [EX] [NL]
+        [srclinenumber] [basic_context_or_compound_context] [NL] [EX] [NL]
 end define
 
 define context_name
@@ -124,7 +124,7 @@ define rules
 end define
 
 define single_rule
-    [SPOFF] [id] ': [SPON] [NL] [IN]
+    [srclinenumber] [SPOFF] [id] ': [SPON] [NL] [IN]
         [repeat rule_statement+] [EX]
 end define
 
@@ -137,7 +137,7 @@ end define
 
 
 define rule_path
-    [SPOFF] '@ [context_name] [SPON] [repeat path_item_with_arrow+] '# [SP] [SPOFF] [pointcut] ': [SPON]
+    [srclinenumber] [SPOFF] '@ [context_name] [SPON] [repeat path_item_with_arrow+] '# [SP] [SPOFF] [pointcut] ': [SPON]
 end define
 
 define pointcut
@@ -177,7 +177,7 @@ define action_make
 end define
 
 define action_make_item
-    [id] '<- [string_chain] ';
+    [srclinenumber] [id] '<- [string_chain] ';
 end define
 
 define action_add
@@ -186,7 +186,7 @@ define action_add
 end define
 
 define action_id
-    [id] [opt template_args]
+    [srclinenumber] [id] [opt template_args]
 end define
 
 define template_args

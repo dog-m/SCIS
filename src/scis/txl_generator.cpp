@@ -116,7 +116,7 @@ Fragment const* TXLGenerator::getFragment(string const& id)
     return frag->second.get();
 
   else
-    SCIS_ERROR("Unknown fragment id <" << id << ">");
+    return nullptr;
 }
 
 void TXLGenerator::addToCallChain(CallChainFunction *const func)
@@ -171,7 +171,8 @@ string TXLGenerator::getWrapperForOperator(const string& op, const string& type)
   if (auto const x = operator2wrapper.find(op + type); x != operator2wrapper.cend())
     return x->second->name;
   else
-    SCIS_ERROR("Cant find suitable wrapper for operator \'" << op << "\' with type \'" << type << "\'");
+    SCIS_ERROR("Cant find suitable wrapper for operator \'" << op << "\' "
+               "with type \'" << type << "\'");
 }
 
 void TXLGenerator::evaluateKeywordsDistances()
@@ -322,7 +323,8 @@ void TXLGenerator::compileContextCheckers()
       for (auto const& constraint : basicCtx->constraints) {
         auto const poi = annotation->pointsOfInterest[constraint.id].get();
         if (!poi)
-          SCIS_ERROR("Unknown point-of-interest usage detected in context <" << ctx->id << ">");
+          SCIS_ERROR("Unknown point-of-interest usage detected in context <" << ctx->id << "> "
+                     "at line " << ctx->declarationLine);
       }
     }
     else if (auto const compoundCtx = dynamic_cast<CompoundContext const*>(ctx))
@@ -380,7 +382,7 @@ void TXLGenerator::compileContextCheckers()
 
   // dumb way to check for loops in dependency graph
   if (iter >= CONTEXT_DEPENDENCY_WAITING_LIMMIT)
-    SCIS_ERROR("Dependency loops were detected in contexts definitions");
+    SCIS_ERROR("Dependency loops or missing dependencies were detected in context definitions");
 }
 
 TXLFunction* TXLGenerator::prepareContextChecker(Context const* const context,
@@ -541,7 +543,8 @@ void TXLGenerator::compileCompoundContext(CompoundContext const* const context)
       auto const contextChecker = findContextCheckerByContext(reference.id);
       if (!contextChecker)
         // failed to create a thing
-        SCIS_ERROR("Cant find checker for <" << reference.id << "> when constructing checker <" << context->id << ">");
+        SCIS_ERROR("Cant find checker for <" << reference.id << "> "
+                   "when constructing checker <" << context->id << ">");
 
       // collect types required for context checks
       for (auto const& parameter : contextChecker->params)
@@ -598,7 +601,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
                                               Context const* const context)
 {
   unordered_set<string> keywordsUsedInContext;
-  // collect keywords
+  // collect keywords to build a chain
   if (auto const checker = findContextCheckerByContext(context->id)) {
     for (auto const& parameter : checker->params)
       // look for keyword name
@@ -621,7 +624,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
   for (auto const& k : sortedKeywords)
     cout << k << endl;
 
-  // FIXME: check for single starting point
+  // FIXME: check for exactly one starting point
 
   // create and add collection functions to a sequence
   for (auto const& keyword : sortedKeywords) {
@@ -701,7 +704,8 @@ void TXLGenerator::compileRefinementFunctions(
     { "first",   bind(&TXLGenerator::compileRefinementFunction_First,          this, _1, _2, _3) },
     { "all",     bind(&TXLGenerator::compileRefinementFunction_All,            this, _1, _2, _3) },
     { "level",   bind(&TXLGenerator::compileRefinementFunction_Level,          this, _1, _2, _3) },
-    { "level_p", bind(&TXLGenerator::compileRefinementFunction_LevelPredicate, this, _1, _2, _3) },
+    // TODO: more refinement function modifiers
+    //{ "level_p", bind(&TXLGenerator::compileRefinementFunction_LevelPredicate, this, _1, _2, _3) },
   };
 
   // add path functions
@@ -709,7 +713,9 @@ void TXLGenerator::compileRefinementFunctions(
   for (auto const& path : ruleStmt.location.path) {
     auto const generator = modifier2generator.find(path.modifier);
     if (generator == modifier2generator.cend())
-      SCIS_ERROR("Icorrect modifier near path element in rule <" << ruleId << ">");
+      SCIS_ERROR("Incorrect modifier near path element <" << path.modifier << "> "
+                 "in rule [" << ruleId << "] "
+                 "declared at " << ruleStmt.declarationLine);
 
     auto const name = ruleId + "_refiner_" + path.keywordId + "_" + path.modifier + to_string(index);
     generator->second(name, path, index);
@@ -1012,7 +1018,8 @@ void TXLGenerator::compileInstrumentationFunction(
 
   auto const pcut = keyword->pointcuts[ruleStmt.location.pointcut].get();
   if (!pcut) {
-    SCIS_WARNING("Keyword <" << keyword->id << "> have no pointcut with name <" << ruleStmt.location.pointcut << ">");
+    SCIS_WARNING("Keyword <" << keyword->id << "> "
+                 "have no pointcut with name <" << ruleStmt.location.pointcut << ">");
 
     // add fake function
     auto const iFunc = createFunction<CallChainFunction>();
@@ -1091,9 +1098,16 @@ void TXLGenerator::compileInstrumentationFunction(
     // ----
 
     auto const fragment = getFragment(add.fragmentId);
+    if (!fragment)
+      SCIS_ERROR("Unknown fragment <" << add.fragmentId << "> "
+                 "referenced at line " << add.declarationLine);
+
     // TODO: check dependencies
     if (fragment->language != annotation->grammar.language)
-      SCIS_ERROR("Missmatched languages of fragment <" << add.fragmentId << "> and annotation");
+      SCIS_ERROR("Fragment <" << fragment->name << "> "
+                 "language missmatch at line " << add.declarationLine << ": "
+                 "expected [" << annotation->grammar.language << "] "
+                 "got [" << fragment->language << "]");
 
     // check if all arguments actualy exist
     for (auto const& arg : add.args)

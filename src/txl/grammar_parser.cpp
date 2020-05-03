@@ -171,7 +171,7 @@ unique_ptr<Grammar> GrammarParser::parse(XMLDocument const& doc)
 
   // additional check
   if (grammar->types.find("program") == grammar->types.cend())
-    SCIS_WARNING("Type with name 'PROGRAM' not found in the grammar!");
+    SCIS_WARNING("Type [program] not found in the grammar!");
 
   return std::move(grammar);
 }

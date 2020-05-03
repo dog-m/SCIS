@@ -12,11 +12,15 @@ namespace scis {
 
   using namespace std;
 
-  struct FragmentRequest final {
+  struct SourceInfo {
+    int32_t declarationLine = 0;
+  };
+
+  struct FragmentRequest final : public SourceInfo {
     string path;
   };
 
-  struct PatternFragment final {
+  struct PatternFragment final : public SourceInfo {
     bool somethingBefore = false;
     string text;
     bool somethingAfter = false;
@@ -24,7 +28,7 @@ namespace scis {
   // string like "*text*"
   using Pattern = vector<PatternFragment>;
 
-  struct Context {
+  struct Context : public SourceInfo {
     string id;
 
     virtual ~Context() = default;
@@ -44,7 +48,7 @@ namespace scis {
   }; // BasicContext
 
   inline string const GLOBAL_CONTEXT_ID = "@";
-  inline unique_ptr<BasicContext> const GLOBAL_CONTEXT;
+  inline unique_ptr<BasicContext> const GLOBAL_CONTEXT = make_unique<BasicContext>();
 
   struct CompoundContext final : public Context {
     struct Reference {
@@ -59,7 +63,7 @@ namespace scis {
     void dump(ostream &str) override; // TODO: remove
   }; // CompoundContext
 
-  struct Rule final {
+  struct Rule final : public SourceInfo {
     struct Location final {
       struct PathElement final {
         string modifier;
@@ -72,7 +76,7 @@ namespace scis {
       string pointcut;
     }; // Location
 
-    struct Action {};
+    struct Action : public SourceInfo {};
 
     struct MakeAction final : public Action {
       struct Component {
@@ -107,7 +111,7 @@ namespace scis {
       vector<string> args;
     };
 
-    struct Statement final {
+    struct Statement final : public SourceInfo {
       Location location;
 
       vector<MakeAction> actionMake;
@@ -122,8 +126,8 @@ namespace scis {
 
   struct Ruleset final {
     vector<FragmentRequest> fragments;
-    unordered_map<string_view, unique_ptr<Context>> contexts;
-    unordered_map<string_view, unique_ptr<Rule>> rules;
+    unordered_map<string, unique_ptr<Context>> contexts;
+    unordered_map<string, unique_ptr<Rule>> rules;
 
     void dump(ostream &str);
   };

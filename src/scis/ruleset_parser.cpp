@@ -7,6 +7,13 @@ using namespace tinyxml2;
 
 #include "../xml_parser_utils.h"
 
+static auto const TAG_LINE_NUMBER = "srclinenumber";
+
+static inline int32_t getDeclarationLine(XMLElement const* const root)
+{
+  return atoi(expectedPath(root, { TAG_LINE_NUMBER })->GetText());
+}
+
 void RulesetParser::parseStringTemplate(
     Pattern &pattern,
     XMLElement const* const stringlit)
@@ -14,7 +21,7 @@ void RulesetParser::parseStringTemplate(
   string const text = unquote(stringlit->GetText());
 
   if (text.empty() || text == "*")
-    SCIS_ERROR("Empty pattern");
+    throw "Empty pattern"s;
 
   PatternFragment *part = nullptr;
   for (auto const c : text) {
@@ -44,11 +51,14 @@ void RulesetParser::parseUsedFragments(XMLElement const* const fragments)
 {
   FOREACH_XML_ELEMENT(fragments, fragment) {
     auto const path = expectedPath(fragment, { "stringlit" })->GetText();
+    auto const line = getDeclarationLine(fragment);
+
     auto& newFragment = ruleset->fragments.emplace_back(/* empty */);
     newFragment.path = path;
+    newFragment.declarationLine = line;
     unescapeString(newFragment.path);
 
-    SCIS_DEBUG("Found fragment request: " << path);
+    SCIS_DEBUG("Found fragment request at line " << line << ": " << path);
   }
 }
 
@@ -56,24 +66,32 @@ void RulesetParser::parseContexts(XMLElement const* const contexts)
 {
   FOREACH_XML_ELEMENT(contexts, ctx) {
     auto const id = expectedPath(ctx, { "context_name", "id" })->GetText();
+    auto const line = getDeclarationLine(ctx);
     auto const something = expectedPath(ctx, { "basic_context_or_compound_context" })->FirstChildElement();
-    SCIS_DEBUG("Found context \'" << id << '\'');
+
+    SCIS_DEBUG("Found context declaration \'" << id << "\' at line " << line);
+
+    if (ruleset->contexts.find(id) != ruleset->contexts.cend())
+      throw "Re-definition of a context with name \""s + id + "\" "
+            "at line "s + to_string(line);
 
     if (something->Name() == "basic_context"sv)
-      parseBasicContext(id, something);
+      parseBasicContext(id, line, something);
     else
       if (something->Name() == "compound_context"sv)
-        parseCompoundContext(id, something);
+        parseCompoundContext(id, line, something);
     else
       throw "Unknown context type. ID = "s + id;
   }
 }
 
 void RulesetParser::parseBasicContext(string const& id,
+                                      int32_t const sourceLine,
                                       XMLElement const* const basic_context)
 {
   auto ctx = make_unique<BasicContext>();
   ctx->id = id;
+  ctx->declarationLine = sourceLine;
 
   auto const list = expectedPath(basic_context, { "list_basic_context_constraint" });
   FOREACH_XML_ELEMENT(list, item) {
@@ -94,10 +112,12 @@ void RulesetParser::parseBasicContext(string const& id,
 }
 
 void RulesetParser::parseCompoundContext(string const& id,
+                                         int32_t const sourceLine,
                                          XMLElement const* const compound_context)
 {
   auto ctx = make_unique<CompoundContext>();
   ctx->id = id;
+  ctx->declarationLine = sourceLine;
 
   auto const something = expectedPath(compound_context, { "cnf_entry", "cnf_expression_lists" });
   if (auto const chain = something->FirstChildElement("repeat_cnf_expression_chain_and")) {
@@ -117,7 +137,7 @@ void RulesetParser::parseCompoundContext(string const& id,
         parseContextDisjunction(disjunction, element);
     }
   else
-    SCIS_ERROR("Unrecognized context reference chain");
+    throw "Unrecognized context reference chain"s;
 
   // TODO: check if every context (id) exists in compound context
 
@@ -149,15 +169,18 @@ void RulesetParser::parseRules(XMLElement const* const rules)
 {
   FOREACH_XML_ELEMENT(rules, singleRule) {
     auto rule = make_unique<Rule>();
+    auto const line = getDeclarationLine(singleRule);
 
     rule->id = expectedPath(singleRule, { "id" })->GetText();
-    SCIS_DEBUG("Found rule \'" << rule->id << '\'');
+    rule->declarationLine = line;
+
+    SCIS_DEBUG("Found rule \'" << rule->id << "\' at line " << line);
 
     parseRuleStatements(rule.get(), expectedPath(singleRule, { "repeat_rule_statement" }));
 
     // check for duplications
     if (ruleset->rules.find(rule->id) != ruleset->rules.cend())
-      SCIS_WARNING("Rule overwriting detected!");
+      SCIS_WARNING("Rule overwriting detected at line " << line << "!");
 
     ruleset->rules.insert_or_assign(rule->id, std::move(rule));
   }
@@ -166,21 +189,21 @@ void RulesetParser::parseRules(XMLElement const* const rules)
 void RulesetParser::parseRuleStatements(Rule *const rule,
                                         XMLElement const* const statements)
 {
-  FOREACH_XML_ELEMENT(statements, singleStmt) {
-    auto& statement = rule->statements.emplace_back(/* empty */);
+  FOREACH_XML_ELEMENT(statements, statement) {
+    auto& stmt = rule->statements.emplace_back(/* empty */);
 
-    parseStatementLocation(statement, expectedPath(singleStmt, { "rule_path" }));
-    parseStatementActions(statement, expectedPath(singleStmt, { "rule_actions" }));
+    parseStatementLocation(stmt, expectedPath(statement, { "rule_path" }));
+    parseStatementActions(stmt, expectedPath(statement, { "rule_actions" }));
   }
 }
 
 void RulesetParser::parseStatementLocation(Rule::Statement &statement,
                                            XMLElement const* const path)
 {
+  statement.declarationLine = getDeclarationLine(path);
   // set context name
-  string ctxId;
-  mergeTextRecursive(ctxId, expectedPath(path, { "context_name" }));
-  statement.location.contextId = ctxId;
+  statement.location.contextId.clear();
+  mergeTextRecursive(statement.location.contextId, expectedPath(path, { "context_name" }));
 
   // set path
   auto const pathElements = expectedPath(path, { "repeat_path_item_with_arrow" });
@@ -224,6 +247,7 @@ void RulesetParser::parseActions_Make(Rule::Statement &statement,
     auto& make = statement.actionMake.emplace_back(/* empty */);
 
     make.target = expectedPath(makeItem, { "id" })->GetText();
+    make.declarationLine = getDeclarationLine(makeItem);
 
     // process first element
     auto const chainHead = expectedPath(makeItem, { "string_chain", "stringlit_or_constant" });
@@ -265,6 +289,7 @@ void RulesetParser::parseActions_Add(Rule::Statement &statement,
     auto& act = statement.actionAdd.emplace_back(/* empty */);
 
     act.fragmentId = expectedPath(add, { "id" })->GetText();
+    act.declarationLine = getDeclarationLine(add);
 
     // TODO: check ID in imported fragments
 

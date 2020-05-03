@@ -11,6 +11,7 @@ XMLElement const* expectedPath(XMLNode const* root,
   for (auto const p : path) {
     node = node->FirstChildElement(p);
     if (!node)
+      // NOTE: good place for a breakpoint
       throw "Cant find element <"s + p + ">"s;
   }
   return node;
