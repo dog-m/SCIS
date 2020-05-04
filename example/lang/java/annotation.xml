@@ -2,7 +2,6 @@
     <grammar
       language="java"
       src="lang/java/grammar.txl"
-      base-executable-sequence-type="repeat declaration_or_statement"
       >
         <keyword-DAG>
             <package type="package_declaration">
@@ -105,23 +104,21 @@
     <pointcuts>
         <keyword
           name="imports"
+          search-type="repeat import_declaration"
           sequential="false"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat import_declaration" kind="replace">
-                    __NODE__
-                    <p name="all"/>
-                </pattern>
-                <pattern search-type="repeat import_declaration" kind="match">
+            <templates>
+                <template kind="replace">
                     <!--repeat import_declaration-->
-                </pattern>
-            </replacement-patterns>
+                    <p name="all"/>
+                </template>
+
+                <template kind="match">
+                    <!--repeat import_declaration-->
+                </template>
+            </templates>
             <pointcuts>
                 <pointcut name="all">
-                    <fragment
-                      type="repeat import_declaration"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <fragment-to-variable
                           name="Additions"
@@ -138,27 +135,21 @@
 
         <keyword
           name="body"
+          search-type="class_or_interface_body"
           sequential="false"
           >
-            <replacement-patterns>
-                <pattern search-type="class_or_interface_body" kind="replace">
+            <templates>
+                <template kind="replace">
                     '{
                         <p name="all"/>
                         <!--repeat class_body_declaration-->
                     '} <!--opt literal-->
-                </pattern>
-                <pattern search-type="class_or_interface_body" kind="match">
-                    '{
-                        <!--repeat class_body_declaration-->
-                    '} <!--opt literal-->
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
                 <pointcut name="all">
-                    <fragment
-                      type="repeat class_body_declaration"
-                      as="NewFields"
-                      />
                     <paste-algorithm>
                         <insert-fragment
                           />
@@ -169,34 +160,28 @@
 
         <keyword
           name="method"
+          search-type="method_declaration"
           sequential="false"
           filter-poi="method_name"
           >
-            <replacement-patterns>
-                <pattern search-type="method_declaration" kind="replace">
+            <templates>
+                <template kind="replace">
                     <!--repeat modifier--> <!--opt generic_parameter--> <!--type_specifier--> <!--method_declarator--> <!--opt throws-->
                     '{
                         <p name="before_body"/>
                         <!--block-->
                         <p name="after_body"/>
                     '}
-                </pattern>
-                <pattern search-type="method_declaration" kind="match">
+                </template>
+
+                <template kind="match">
                     <!--repeat modifier--> <!--opt generic_parameter--> <!--type_specifier--> <!--method_declarator--> <!--opt throws-->
                     <!--block-->
-                </pattern>
-            </replacement-patterns>
+                </template>
+            </templates>
             <pointcuts>
                 <pointcut name="before_body">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
-                        <deconstruct-variable
-                          type="method_body"
-                          variant="0"
-                          />
                         <insert-fragment
                           />
                     </paste-algorithm>
@@ -207,10 +192,11 @@
         <!-- match-type already here in keyword when we described it in keyword-DAG -->
         <keyword
           name="if"
+          search-type="repeat declaration_or_statement"
           filter-poi="if_condition"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement" kind="replace">
+            <templates>
+                <template kind="replace">
                     <p name="before"/>
                     'if '( <!--condition--> ') '{
                         <p name="before_body"/>
@@ -219,19 +205,12 @@
                     '}
                     <!--opt else_clause-->
                     <p name="after"/>
-                </pattern>
-                <pattern search-type="repeat declaration_or_statement" kind="match">
-                    'if '( <!--condition--> ')
-                        <!--statement-->
-                    <!--opt else_clause-->
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
                 <pointcut name="before">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <insert-fragment
                           />
@@ -245,28 +224,23 @@
 
         <keyword
           name="else"
+          search-type="else_clause"
           sequential="false"
           >
-            <replacement-patterns>
-                <pattern search-type="else_clause" kind="replace">
+            <templates>
+                <!-- pointcut "after" already exists in "if" keyword -->
+                <template kind="replace">
                     'else '{
                         <p name="before_body"/>
                         <!--statement-->
                         <p name="after_body"/>
                     '}
-                </pattern>
-                <!-- pointcut "after" already exists in "if" keyword -->
-                <pattern search-type="else_clause" kind="replace">
-                    'else
-                        <!--statement-->
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
                 <pointcut name="before_body">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <insert-fragment
                           />
@@ -278,10 +252,11 @@
 
         <keyword
           name="for"
+          search-type="repeat declaration_or_statement"
           filter-poi="for_expression"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement" kind="replace">
+            <templates>
+                <template kind="replace">
                     <p name="before"/>
                     'for '( <!--for_init--> <!--for_expression--> <!--for_update--> ') '{
                         <p name="before_body"/>
@@ -289,18 +264,12 @@
                         <p name="after_body"/>
                     '}
                     <p name="after"/>
-                </pattern>
-                <pattern search-type="repeat declaration_or_statement" kind="match">
-                    'for '( <!--for_init--> <!--for_expression--> <!--for_update--> ')
-                        <!--statement-->
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
                 <pointcut name="before">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <insert-fragment
                           />
@@ -314,10 +283,11 @@
 
         <keyword
           name="while"
+          search-type="repeat declaration_or_statement"
           filter-poi="while_condition"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement" kind="replace">
+            <templates>
+                <template kind="replace">
                     <p name="before"/>
                     'while '( <!--condition--> ') '{
                         <p name="before_body"/>
@@ -325,18 +295,12 @@
                         <p name="after_body"/>
                     '}
                     <p name="after"/>
-                </pattern>
-                <pattern search-type="repeat declaration_or_statement" kind="match">
-                    'while '( <!--condition--> ')
-                        <!--statement-->
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
                 <pointcut name="before">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <insert-fragment
                           />
@@ -350,10 +314,11 @@
 
         <keyword
           name="do_while"
+          search-type="repeat declaration_or_statement"
           filter-poi="do_while_condition"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement" kind="replace">
+            <templates>
+                <template kind="replace">
                     <p name="before"/>
                     'do '{
                         <p name="before_body"/>
@@ -362,19 +327,12 @@
                     '}
                     'while '( <!--condition--> ') ';
                     <p name="after"/>
-                </pattern>
-                <pattern search-type="repeat declaration_or_statement" kind="match">
-                    'do
-                        <!--statement-->
-                    'while '( <!--condition--> ') ';
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
                 <pointcut name="before">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <insert-fragment
                           />
@@ -388,28 +346,22 @@
 
         <keyword
           name="switch"
+          search-type="repeat declaration_or_statement"
           filter-poi="switch_expression"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement" kind="replace">
+            <templates>
+                <template kind="replace">
                     <p name="before"/>
                     'switch '( <!--expression--> ') '{
                         <!--repeat switch_alternative-->
                     '}
                     <p name="after"/>
-                </pattern>
-                <pattern search-type="repeat declaration_or_statement" kind="match">
-                    'switch '( <!--expression--> ') '{
-                        <!--repeat switch_alternative-->
-                    '}
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
                 <pointcut name="before">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <insert-fragment
                           />
@@ -421,36 +373,27 @@
 
         <keyword
           name="case"
+          search-type="repeat declaration_or_statement"
           filter-poi="case_label"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement" kind="replace">
+            <templates>
+                <template kind="replace">
                     <!--switch_label-->
                         <p name="before_body"/>
                         <!--repeat declaration_or_statement-->
                         <p name="after_body"/>
-                </pattern>
-                <pattern search-type="repeat declaration_or_statement" kind="match">
-                    <!--switch_label-->
-                        <!--repeat declaration_or_statement-->
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
                 <pointcut name="before_body">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <insert-fragment
                           />
                     </paste-algorithm>
                 </pointcut>
                 <pointcut name="after_body">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <fragment-to-variable
                           name="Additions"

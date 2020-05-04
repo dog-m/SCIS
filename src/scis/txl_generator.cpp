@@ -728,16 +728,6 @@ void TXLGenerator::compileRefinementFunctions(
   }
 }
 
-inline void TXLGenerator::applyRefinementFunctionSearchType(
-    RefinementFunction *const rFunc,
-    GrammarAnnotation::DirectedAcyclicGraph::Keyword const *const keyword)
-{
-  rFunc->searchType =
-      keyword->sequential ?
-        annotation->grammar.baseSequenceType :
-        rFunc->processingType;
-}
-
 void TXLGenerator::compileRefinementFunction_First(
     string const& name,
     Rule::Location::PathElement const& element,
@@ -748,12 +738,11 @@ void TXLGenerator::compileRefinementFunction_First(
   rFunc->isRule = false;
   rFunc->name = name;
   rFunc->copyParamsFrom(lastCallChainElement());
-  rFunc->processingType = keyword->type;
   rFunc->skipType = nullopt; // FIXME: refinement skipping
+  rFunc->searchType = keyword->searchType;
+  rFunc->processingType = keyword->type;
   rFunc->sequential = keyword->sequential;
   rFunc->queueIndex = index;
-
-  applyRefinementFunctionSearchType(rFunc, keyword);
 
   // hook-up together
   addToCallChain(rFunc);
@@ -800,6 +789,7 @@ void TXLGenerator::compileRefinementFunction_All(
   rFunc->name = name;
   rFunc->copyParamsFrom(lastCallChainElement());
   rFunc->skipType = nullopt; // FIXME: refinement skipping
+  rFunc->searchType = keyword->searchType;
   rFunc->processingType = keyword->type;
 
   // type-dependent data
@@ -807,8 +797,6 @@ void TXLGenerator::compileRefinementFunction_All(
   rFunc->queueIndex = index;
   rFunc->skipCount = SKIP;
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
-
-  applyRefinementFunctionSearchType(rFunc, keyword);
 
   // hook-up together
   addToCallChain(rFunc);
@@ -853,6 +841,7 @@ void TXLGenerator::compileRefinementFunction_Level(
   rFunc->name = name;
   rFunc->copyParamsFrom(helper);
   rFunc->skipType = nullopt; // FIXME: refinement skipping
+  rFunc->searchType = keyword->searchType;
   rFunc->processingType = keyword->type;
 
   // type-dependent data
@@ -861,8 +850,6 @@ void TXLGenerator::compileRefinementFunction_Level(
   rFunc->skipCount = SKIP;
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
   rFunc->skipCountCounter = getSkipCounterName(rFunc->name);
-
-  applyRefinementFunctionSearchType(rFunc, keyword);
 
   // hook-up together
   addToCallChain(rFunc);
@@ -1012,7 +999,7 @@ void TXLGenerator::compileInstrumentationFunction(
     Context const* const context)
 {
   auto const functionName = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + getUniqueId();
-  auto const lastFunc = lastCallChainElement();
+  auto const lastFunc = dynamic_cast<RefinementFunction*>(lastCallChainElement());
   auto const keyword = annotation->grammar.graph.keywords[ruleStmt.location.path.back().keywordId].get(); // BUG: empty path?
   auto const& workingType = keyword->type;
 
@@ -1037,7 +1024,8 @@ void TXLGenerator::compileInstrumentationFunction(
     return;
   }
 
-  auto const& pattern = keyword->replacement_patterns[0]; // BUG: only first pattern variant used
+  auto const templateMatch = keyword->getTemplate("match");
+  auto const templateReplace = keyword->getTemplate("replace");
 
   // add instrumentation function
   auto const iFunc = createFunction<InstrumentationFunction>();
@@ -1045,28 +1033,35 @@ void TXLGenerator::compileInstrumentationFunction(
   iFunc->isRule = false;
   iFunc->name = functionName;
   iFunc->copyParamsFrom(lastFunc);
-  iFunc->searchType = pattern.searchType;
+  iFunc->searchType = lastFunc->searchType;
   iFunc->processingType = lastFunc->processingType;
 
   // extract algorithm
   auto const& algo = pcut->aglorithm;
 
-  // deconstruct current node if possible
-  if (auto const type = grammar->types.find(workingType); type != grammar->types.cend()) {
-    stringstream pattern;
-    // BUG: only first variant used
-    type->second->variants[0].toTXLWithNames(pattern, makeNameFromType);
+  if (templateMatch->generateFromGrammar) {
+    // deconstruct current node if possible
+    if (auto const type = grammar->types.find(workingType); type != grammar->types.cend()) {
+      stringstream pattern;
+      // BUG: only first variant used
+      type->second->variants[0].toTXLWithNames(pattern, makeNameFromType);
 
+      iFunc->deconstructVariable(NODE_CURRENT, pattern.str());
+    }
+    else
+      SCIS_WARNING("Cant deconstruct type [" << workingType << "]");
+  }
+  else {
+    stringstream pattern;
+    templateMatch->toTXLWithNames(pattern, makeNameFromType);
     iFunc->deconstructVariable(NODE_CURRENT, pattern.str());
   }
-  else
-    SCIS_WARNING("Cant deconstruct type [" << workingType << "]");
 
   // introduce common variables and constants
   unordered_map<string, pair<string, string>> const PREDEFINED_IDENTIFIERS {
-    {"NODE",     {TXL_TYPE_ID,     "_ [typeof " + NODE_CURRENT + "]"}},
-    {"POINTCUT", {TXL_TYPE_ID,     '\'' + ruleStmt.location.pointcut}},
-    {"FILE",     {TXL_TYPE_STRING, "_ [+ " + quote(processingFilename) + "]"}},
+    { "NODE"    , { TXL_TYPE_ID    , "_ [typeof " + NODE_CURRENT + "]"         }},
+    { "POINTCUT", { TXL_TYPE_ID    , '\'' + ruleStmt.location.pointcut         }},
+    { "FILE"    , { TXL_TYPE_STRING, "_ [+ " + quote(processingFilename) + "]" }},
   };
 
   for (auto const& [name, typeAndValue] : PREDEFINED_IDENTIFIERS) {
@@ -1118,19 +1113,19 @@ void TXLGenerator::compileInstrumentationFunction(
     // ----
 
     string replacement = "";
-    for (auto const& block : pattern.blocks) {
+    for (auto const& block : templateReplace->blocks) {
       auto const ptr = block.get();
 
-      if (auto txt = dynamic_cast<GrammarAnnotation::Pattern::TextBlock*>(ptr))
+      if (auto txt = dynamic_cast<GrammarAnnotation::Template::TextBlock*>(ptr))
         replacement += txt->text + ' ';
 
       else
-        if (auto ref = dynamic_cast<GrammarAnnotation::Pattern::TypeReference*>(ptr)) {
+        if (auto ref = dynamic_cast<GrammarAnnotation::Template::TypeReference*>(ptr)) {
           replacement += makeNameFromType(ref->typeId) + ' ';
           // TODO: check if type exists in a current node
         }
       else
-        if (auto pt = dynamic_cast<GrammarAnnotation::Pattern::PointcutLocation*>(ptr)) {
+        if (auto pt = dynamic_cast<GrammarAnnotation::Template::PointcutLocation*>(ptr)) {
           // TODO: add pointcut name wildcard
           if (pt->name == ruleStmt.location.pointcut) {
             string algorithmResult;

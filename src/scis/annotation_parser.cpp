@@ -21,9 +21,6 @@ void AnnotationParser::parseGrammar(XMLElement const* const root)
   annotation->grammar.language = expectedAttribute(root, "language")->Value();
   annotation->grammar.txlSourceFilename = expectedAttribute(root, "src")->Value();
 
-  if (auto const seq = root->FindAttribute("base-executable-sequence-type"))
-    annotation->grammar.baseSequenceType = seq->Value();
-
   FOREACH_XML_ELEMENT(expectedPath(root, { "keyword-DAG" }), subtype)
     if (subtype->Attribute("type")) {
       parseDAGKeyword(subtype);
@@ -122,7 +119,8 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
   auto const keyword = annotation->grammar.graph.keywords.at(name).get();
 
   // base information
-  // TODO: sequences
+  keyword->searchType = expectedAttribute(root, "search-type")->Value();
+
   if (auto const seq = root->FindAttribute("sequential"))
     keyword->sequential = seq->BoolValue();
   else
@@ -132,20 +130,28 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
     keyword->filterPOI = fPOI->Value();
 
   // parsing patterns for a keyword
-  auto const patterns = expectedPath(root, { "replacement-patterns" });
-  FOREACH_XML_ELEMENT(patterns, pat) {
-    auto& pattern = keyword->replacement_patterns.emplace_back(/* empty */);
+  auto const templates = expectedPath(root, { "templates" });
+  FOREACH_XML_ELEMENT(templates, tmpl) {
+    // create and attach new template
+    auto const newTemplate = keyword->addTemplate(expectedAttribute(tmpl, "kind")->Value());
 
-    pattern.searchType = expectedAttribute(pat, "search-type")->Value();
+    if (auto autogen = tmpl->FindAttribute("auto-gen")) {
+      // NOTE: only "grammar" auto-generated type supported in a template
+      string const generator = autogen->Value();
+      if (generator == "grammar")
+        newTemplate->generateFromGrammar = true;
+      else
+        throw "Unsupported template auto-generator <" + generator + ">";
+    }
 
-    FOREACH_XML_NODE(pat, block) {
+    FOREACH_XML_NODE(tmpl, block) {
       // is it just text?
       if (auto const text = block->ToText()) {
-        auto txt = make_unique<GrammarAnnotation::Pattern::TextBlock>();
+        auto txt = make_unique<GrammarAnnotation::Template::TextBlock>();
 
         txt->text = text->Value();
 
-        pattern.blocks.emplace_back(std::move(txt));
+        newTemplate->blocks.emplace_back(std::move(txt));
       }
       else
         // or actual element?
@@ -153,11 +159,11 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
           auto const elementName = elem->Name();
           // pointcut
           if (elementName == "p"sv) {
-            auto pointcut = make_unique<GrammarAnnotation::Pattern::PointcutLocation>();
+            auto pointcut = make_unique<GrammarAnnotation::Template::PointcutLocation>();
 
             pointcut->name = expectedAttribute(elem, "name")->Value();
 
-            pattern.blocks.emplace_back(std::move(pointcut));
+            newTemplate->blocks.emplace_back(std::move(pointcut));
           }
           else
             throw "Unrecognized element <"s + elementName + ">"s;
@@ -165,11 +171,11 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
       else
         // probably a type-reference comment
         if (auto const comm = block->ToComment()) {
-          auto ref = make_unique<GrammarAnnotation::Pattern::TypeReference>();
+          auto ref = make_unique<GrammarAnnotation::Template::TypeReference>();
 
           ref->typeId = comm->Value();
 
-          pattern.blocks.emplace_back(std::move(ref));
+          newTemplate->blocks.emplace_back(std::move(ref));
         }
       else
         throw "Unknown element in pointcut"s;
@@ -178,9 +184,8 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
 
   // parsing actual pointcuts
   FOREACH_XML_ELEMENT(expectedPath(root, { "pointcuts" }), point) {
-    auto pointcut = make_unique<GrammarAnnotation::Pointcut>();
-
-    pointcut->name = expectedAttribute(point, "name")->Value();
+    // create and attach new pointcut
+    auto const pointcut = keyword->addPointcut(expectedAttribute(point, "name")->Value());
 
     if (auto const clone = point->FindAttribute("clone")) {
       // copy from another pointcut
@@ -196,20 +201,15 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
       // FIXME: deffer pointcut clonning
       try {
         auto const src = annotation->grammar.graph.keywords.at(srcKeyword)->pointcuts.at(srcName).get();
-        pointcut->fragType = src->fragType;
-        pointcut->fragAlias = src->fragAlias;
         // BUG: potential bug in algorithm clonning
         pointcut->aglorithm.insert(pointcut->aglorithm.begin(), src->aglorithm.cbegin(), src->aglorithm.cend());
       } catch (...) {
-        throw "Original pointcut <"s + path.data() + "> for <" + pointcut->name + "> has not been created";
+        throw "Original pointcut <"s + path.data() + "> "
+              "for <" + pointcut->name + "> has not been created";
       }
     }
     else {
       // original pointcut
-      auto const frag = expectedPath(point, { "fragment" });
-      pointcut->fragType = expectedAttribute(frag, "type")->Value();
-      pointcut->fragAlias = expectedAttribute(frag, "as")->Value();
-
       auto const algo = expectedPath(point, { "paste-algorithm" });
       FOREACH_XML_ELEMENT(algo, action) {
         auto& step = pointcut->aglorithm.emplace_back(/* empty */);
@@ -219,8 +219,6 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
           step.args.insert_or_assign(argument->Name(), argument->Value());
       }
     }
-
-    keyword->pointcuts.insert_or_assign(pointcut->name, std::move(pointcut));
   }
 }
 

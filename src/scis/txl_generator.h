@@ -110,9 +110,6 @@ namespace scis {
     void compileRefinementFunctions(string const& ruleId,
                                     Rule::Statement const& ruleStmt);
 
-    inline void applyRefinementFunctionSearchType(RefinementFunction *const rFunc,
-                                                  GrammarAnnotation::DirectedAcyclicGraph::Keyword const* const keyword);
-
     void compileRefinementFunction_First(string const& name,
                                          Rule::Location::PathElement const& element,
                                          int const index);

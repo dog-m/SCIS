@@ -1,4 +1,5 @@
 #include "annotation.h"
+#include "logging.h"
 
 using namespace std;
 using namespace scis;
@@ -24,21 +25,20 @@ void GrammarAnnotation::dump(ostream& str)
     }
     str << endl;
 
-    auto countP = keyword->replacement_patterns.size();
-    str << "  patterns (" << countP << "):" << endl;
-    for (auto const& pattern : keyword->replacement_patterns) {
-      str << "    search type = [" << pattern.searchType << "]" << endl;
-      for (auto const& block : pattern.blocks)
+    auto countT = keyword->templates.size();
+    str << "  templates (" << countT << "):" << endl;
+    for (auto const& [_, iTemplate] : keyword->templates) {
+      //str << "    search type = [" << pattern.searchType << "]" << endl;
+      for (auto const& block : iTemplate->blocks)
         block->dump(str);
 
-      if (countP --> 1)
+      if (countT --> 1)
         str << "  ....." << endl;
     }
     
     str << "  pointcuts (" << keyword->pointcuts.size() << "):" << endl;
     for (auto const& [_, point] : keyword->pointcuts) {
-      str << "    name: \'" << point->name << '\'' << endl
-          << "    ref: " << point->fragAlias << " [" << point->fragType << "]" << endl;
+      str << "    name: \'" << point->name << '\'' << endl;
 
       str << "    algorithm (" << point->aglorithm.size() << " steps):" << endl;
       for (auto const& x : point->aglorithm) {
@@ -58,17 +58,85 @@ void GrammarAnnotation::dump(ostream& str)
   }
 }
 
-void GrammarAnnotation::Pattern::TextBlock::dump(ostream& str)
+void GrammarAnnotation::Template::TextBlock::dump(ostream& str) const
 {
   str << "    ::text::\t" << text << endl;
 }
 
-void GrammarAnnotation::Pattern::PointcutLocation::dump(ostream& str)
+void GrammarAnnotation::Template::TextBlock::toTXLWithNames(
+    ostream& str,
+    NamingFunction const&) const
+{
+  str << text;
+}
+
+void GrammarAnnotation::Template::PointcutLocation::dump(ostream& str) const
 {
   str << "    ::pointcut::\t" << name << endl;
 }
 
-void GrammarAnnotation::Pattern::TypeReference::dump(ostream& str)
+void GrammarAnnotation::Template::PointcutLocation::toTXLWithNames(
+    ostream&,
+    NamingFunction const&) const
+{
+  SCIS_ERROR("Pointcut locations cannot be represented as TXL");
+}
+
+void GrammarAnnotation::Template::TypeReference::dump(ostream& str) const
 {
   str << "    ::type::\t" << typeId << endl;
+}
+
+void GrammarAnnotation::Template::TypeReference::toTXLWithNames(
+    ostream& str,
+    NamingFunction const& namer) const
+{
+  str << namer(typeId) << " [" << typeId << ']';
+}
+
+GrammarAnnotation::Template*
+GrammarAnnotation::DirectedAcyclicGraph::Keyword::addTemplate(string const& kind)
+{
+  auto tmpl = make_unique<GrammarAnnotation::Template>();
+  tmpl->kind = kind;
+
+  auto const newTemplate = tmpl.get();
+  templates.insert_or_assign(newTemplate->kind, std::move(tmpl));
+
+  return newTemplate;
+}
+
+GrammarAnnotation::Pointcut*
+GrammarAnnotation::DirectedAcyclicGraph::Keyword::addPointcut(string const& name)
+{
+  auto pcut = make_unique<GrammarAnnotation::Pointcut>();
+  pcut->name = name;
+
+  auto const pointcut = pcut.get();
+  pointcuts.insert_or_assign(pointcut->name, std::move(pcut));
+
+  return pointcut;
+}
+
+GrammarAnnotation::Template const*
+GrammarAnnotation::DirectedAcyclicGraph::Keyword::getTemplate(string const& kind) const
+{
+  if (auto const iTemplate = templates.find(kind); iTemplate != templates.cend())
+    return iTemplate->second.get();
+  else
+    SCIS_ERROR("Missing '" << kind << "' template version "
+               "in keyword <" << id << ">");
+}
+
+void GrammarAnnotation::Template::toTXLWithNames(
+    ostream& str,
+    NamingFunction const& namer) const
+{
+  auto count = blocks.size();
+  for (auto const& block : blocks) {
+    block->toTXLWithNames(str, namer);
+
+    if (count --> 1)
+      str << ' ';
+  }
 }
