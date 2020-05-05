@@ -5,7 +5,6 @@
     <grammar
       language="python"
       src="lang/python/grammar.txl"
-      base-executable-sequence-type="repeat statement_or_newline"
       >
         <keyword-DAG>
             <imports type="repeat statement_or_newline"/>
@@ -31,7 +30,7 @@
         <point
           id="class_name"
           keyword="class"
-          value-of="classdef_head:opt id"
+          value-of="classdef_head:id"
           />
 
         <point
@@ -39,25 +38,50 @@
           keyword="method"
           value-of="id"
           />
+
+        <point
+          id="if_condition"
+          keyword="if"
+          value-of="condition"
+          />
+
+        <point
+          id="elif_condition"
+          keyword="elif"
+          value-of="condition"
+          />
+
+        <point
+          id="for_expression"
+          keyword="for"
+          value-of="for_expression"
+          />
+
+        <point
+          id="while_condition"
+          keyword="while"
+          value-of="condition"
+          />
     </points-of-interest>
 
     <pointcuts>
         <keyword
           name="imports"
+          search-type="repeat statement_or_newline"
           sequential="false"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat statement_or_newline">
+            <templates>
+                <template kind="replace">
                     <p name="all"/>
-                    __NODE__
-                </pattern>
-            </replacement-patterns>
+                    <!--repeat statement_or_newline-->
+                </template>
+
+                <template kind="match">
+                    <!--repeat statement_or_newline-->
+                </template>
+            </templates>
             <pointcuts>
                 <pointcut name="all">
-                    <fragment
-                      type="???"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <create-variable
                           name="NewLine"
@@ -73,65 +97,49 @@
         </keyword>
 
         <keyword
+          name="body"
+          search-type="repeat statement_or_newline"
+          sequential="false"
+          >
+            <templates/>
+            <pointcuts/>
+        </keyword>
+
+        <keyword
           name="method"
+          search-type="funcdef"
           sequential="false"
           >
             <!--Sources of [suite] block should be added manualy-->
-            <replacement-patterns>
-                <pattern search-type="funcdef">
+            <templates>
+                <template kind="replace">
                     'def <!--id--> <!--parameters--> ': 'INDENT <!--newline-->
                         <p name="before_body"/>
                         <!--repeat statement_or_newline-->
                         <p name="after_body"/>
                     'DEDENT
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match">
+                    'def <!--id--> <!--parameters--> ': 'INDENT <!--newline-->
+                        <!--repeat statement_or_newline-->
+                    'DEDENT
+                </template>
+            </templates>
             <pointcuts>
                 <pointcut name="before_body">
-                    <fragment
-                      type="???"
-                      as="Additions"
-                      />
                     <paste-algorithm>
-                        <create-variable
-                          type="newline"
-                          value="_"
-                          />
-                        <deconstruct-variable
-                          type="suite"
-                          variant="0"
-                          />
-                        <deconstruct-variable
-                          type="block"
-                          variant="0"
-                          />
                         <insert-fragment
                           each-line-postfix="Newline"
                           />
                     </paste-algorithm>
                 </pointcut>
                 <pointcut name="after_body">
-                    <fragment
-                      type="???"
-                      as="Additions"
-                      />
                     <paste-algorithm>
-                        <create-variable
-                          type="newline"
-                          value="_"
-                          />
                         <fragment-to-variable
                           name="Additions"
-                          type="repeat import_declaration"
+                          type="repeat statement_or_newline"
                           each-line-postfix="Newline"
-                          />
-                        <deconstruct-variable
-                          type="suite"
-                          variant="0"
-                          />
-                        <deconstruct-variable
-                          type="block"
-                          variant="0"
                           />
                         <insert-call
                           function="."
@@ -144,9 +152,11 @@
 
         <keyword
           name="if"
+          search-type="repeat statement_or_newline"
+          filter-poi="if_condition"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat statement_or_newline">
+            <templates>
+                <template kind="replace">
                     <p name="before"/>
                     'if <!--condition--> ': 'INDENT <!--newline-->
                         <p name="before_body"/>
@@ -156,19 +166,19 @@
                     <!--repeat elif_clause-->
                     <!--opt else_clause-->
                     <p name="after"/>
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match">
+                    'if <!--condition--> ': 'INDENT <!--newline-->
+                        <!--repeat statement_or_newline-->
+                    'DEDENT
+                    <!--repeat elif_clause-->
+                    <!--opt else_clause-->
+                </template>
+            </templates>
             <pointcuts>
                 <pointcut name="before">
-                    <fragment
-                      type="???"
-                      as="Additions"
-                      />
                     <paste-algorithm>
-                        <create-variable
-                          type="newline"
-                          value="_"
-                          />
                         <insert-fragment
                           each-line-postfix="Newline"
                           />
@@ -182,17 +192,24 @@
 
         <keyword
           name="else"
+          search-type="else_clause"
           sequential="false"
           >
-            <replacement-patterns>
-                <pattern search-type="else_clause">
+            <templates>
+                <template kind="replace">
                     'else ': 'INDENT <!--newline-->
                         <p name="before_body"/>
                         <!--repeat statement_or_newline-->
                         <p name="after_body"/>
                     'DEDENT
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match">
+                    'else ': 'INDENT <!--newline-->
+                        <!--repeat statement_or_newline-->
+                    'DEDENT
+                </template>
+            </templates>
             <pointcuts>
                 <pointcut name="before_body" clone="if::before_body"/>
                 <pointcut name="after_body"  clone="if::after_body"/>
@@ -201,19 +218,28 @@
 
         <keyword
           name="for"
+          search-type="repeat statement_or_newline"
+          filter-poi="for_expression"
           >
-            <replacement-patterns>
-                <pattern search-type="for_statement">
+            <templates>
+                <template kind="replace">
                     <p name="before"/>
-                    'for <!--exprlist--> 'in <!--testlist--> ': 'INDENT <!--newline-->
+                    'for <!--for_expression--> ': 'INDENT <!--newline-->
                         <p name="before_body"/>
                         <!--repeat statement_or_newline-->
                         <p name="after_body"/>
                     'DEDENT
                     <!--opt else_clause-->
                     <p name="after"/>
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match">
+                    'for <!--for_expression--> ': 'INDENT <!--newline-->
+                        <!--repeat statement_or_newline-->
+                    'DEDENT
+                    <!--opt else_clause-->
+                </template>
+            </templates>
             <pointcuts>
                 <pointcut name="before"      clone="if::before"/>
                 <pointcut name="before_body" clone="if::before_body"/>
@@ -224,9 +250,11 @@
 
         <keyword
           name="while"
+          search-type="repeat statement_or_newline"
+          filter-poi="while_condition"
           >
-            <replacement-patterns>
-                <pattern search-type="while_statement">
+            <templates>
+                <template kind="replace">
                     <p name="before"/>
                     'while <!--condition--> ': 'INDENT <!--newline-->
                         <p name="before_body"/>
@@ -235,8 +263,15 @@
                     'DEDENT
                     <!--opt else_clause-->
                     <p name="after"/>
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="replace">
+                    'while <!--condition--> ': 'INDENT <!--newline-->
+                        <!--repeat statement_or_newline-->
+                    'DEDENT
+                    <!--opt else_clause-->
+                </template>
+            </templates>
             <pointcuts>
                 <pointcut name="before"      clone="if::before"/>
                 <pointcut name="before_body" clone="if::before_body"/>

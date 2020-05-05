@@ -379,11 +379,19 @@ define while_statement
     [opt else_clause] 
 end define 
 
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
 define for_statement 
-    'for [exprlist] 'in [testlist] ': 
+    'for [for_expression] ': 
         [suite] 
     [opt else_clause] 
 end define 
+
+define for_expression
+    [exprlist] 'in [testlist]
+end define
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 define try_statement 
     'try ': 
