@@ -172,7 +172,7 @@ string TXLGenerator::getWrapperForOperator(const string& op, const string& type)
     return x->second->name;
   else
     SCIS_ERROR("Cant find suitable wrapper for operator \'" << op << "\' "
-               "with type \'" << type << "\'");
+               "with type [" << type << "]");
 }
 
 void TXLGenerator::evaluateKeywordsDistances()
@@ -1003,8 +1003,9 @@ void TXLGenerator::compileInstrumentationFunction(
   auto const keyword = annotation->grammar.graph.keywords[ruleStmt.location.path.back().keywordId].get(); // BUG: empty path?
   auto const& workingType = keyword->type;
 
-  auto const pcut = keyword->pointcuts[ruleStmt.location.pointcut].get();
-  if (!pcut) {
+  auto const pointcut = keyword->pointcuts[ruleStmt.location.pointcut].get();
+  // there are no such pointcut -> doing nithing
+  if (!pointcut) {
     SCIS_WARNING("Keyword <" << keyword->id << "> "
                  "have no pointcut with name <" << ruleStmt.location.pointcut << ">");
 
@@ -1036,10 +1037,14 @@ void TXLGenerator::compileInstrumentationFunction(
   iFunc->searchType = lastFunc->searchType;
   iFunc->processingType = lastFunc->processingType;
 
-  // extract algorithm
-  auto const& algo = pcut->aglorithm;
+  // hook-up together
+  addToCallChain(iFunc);
 
+  // ==========
+
+  // render matching template
   if (templateMatch->generateFromGrammar) {
+    // get everything from a grammar
     // deconstruct current node if possible
     if (auto const type = grammar->types.find(workingType); type != grammar->types.cend()) {
       stringstream pattern;
@@ -1057,10 +1062,12 @@ void TXLGenerator::compileInstrumentationFunction(
     iFunc->deconstructVariable(NODE_CURRENT, pattern.str());
   }
 
+  // ==========
+
   // introduce common variables and constants
   unordered_map<string, pair<string, string>> const PREDEFINED_IDENTIFIERS {
     { "NODE"    , { TXL_TYPE_ID    , "_ [typeof " + NODE_CURRENT + "]"         }},
-    { "POINTCUT", { TXL_TYPE_ID    , '\'' + ruleStmt.location.pointcut         }},
+    { "POINTCUT", { TXL_TYPE_ID    , '\'' + pointcut->name                     }},
     { "FILE"    , { TXL_TYPE_STRING, "_ [+ " + quote(processingFilename) + "]" }},
   };
 
@@ -1071,9 +1078,8 @@ void TXLGenerator::compileInstrumentationFunction(
 
   context;// FIXME: add variables from POI
 
-  // ==========
-
-  unordered_set<string_view> syntheticVariables;
+  // instantiate user-defined variables
+  unordered_set<string_view> userVariables;
   for (auto const& make : ruleStmt.actionMake) {
     stringstream sequence;
     sequence << "_ ";
@@ -1084,82 +1090,87 @@ void TXLGenerator::compileInstrumentationFunction(
           make.target, TXL_TYPE_STRING,
           sequence.str());
 
-    syntheticVariables.insert(make.target);
+    userVariables.insert(make.target);
   }
 
   // ==========
 
+  // collect all fragments into a single source 'chunk'
+  string fragmentsChunk = "";
   for (auto const& add : ruleStmt.actionAdd) {
-    // ----
-
     auto const fragment = getFragment(add.fragmentId);
     if (!fragment)
       SCIS_ERROR("Unknown fragment <" << add.fragmentId << "> "
                  "referenced at line " << add.declarationLine);
 
     // TODO: check dependencies
+
     if (fragment->language != annotation->grammar.language)
       SCIS_ERROR("Fragment <" << fragment->name << "> "
-                 "language missmatch at line " << add.declarationLine << ": "
+                 "language missmatch on line " << add.declarationLine << ": "
                  "expected [" << annotation->grammar.language << "] "
                  "got [" << fragment->language << "]");
 
-    // check if all arguments actualy exist
+    // check if all the arguments actualy exist
     for (auto const& arg : add.args)
-      if (syntheticVariables.find(arg) == syntheticVariables.cend())
-        SCIS_ERROR("Variable <" << arg << "> not found");
+      if (userVariables.find(arg) == userVariables.cend())
+        SCIS_ERROR("Variable <" << arg << "> not found "
+                   "in [add] action on line " << add.declarationLine);
 
-    auto const preparedFragment = prepareFragment(fragment, add.args);
-    // ----
-
-    string replacement = "";
-    for (auto const& block : templateReplace->blocks) {
-      auto const ptr = block.get();
-
-      if (auto txt = dynamic_cast<GrammarAnnotation::Template::TextBlock*>(ptr))
-        replacement += txt->text + ' ';
-
-      else
-        if (auto ref = dynamic_cast<GrammarAnnotation::Template::TypeReference*>(ptr)) {
-          replacement += makeNameFromType(ref->typeId) + ' ';
-          // TODO: check if type exists in a current node
-        }
-      else
-        if (auto pt = dynamic_cast<GrammarAnnotation::Template::PointcutLocation*>(ptr)) {
-          // TODO: add pointcut name wildcard
-          if (pt->name == ruleStmt.location.pointcut) {
-            string algorithmResult;
-
-            auto const handler = [&](FunctionCall::Result const& result) {
-              if (!result.byText.empty())
-                algorithmResult += result.byText + " ";
-            };
-
-            // execute algorithm
-            for (auto const& step : algo)
-              // TODO: check command return value (bool)
-              callAlgorithmCommand({
-                                     .function = step.function,
-                                     .args = step.args,
-                                     .preparedFragment = preparedFragment,
-                                     .iFunc = iFunc,
-                                     .grammar = grammar.get()
-                                   },
-                                   handler);
-
-            // append result
-            replacement += algorithmResult + " ";
-          }
-        }
-      else
-        SCIS_ERROR("Undefined pattern block");
-    }
-
-    iFunc->replacement = replacement;
+    // fill fragment and glue to others
+    fragmentsChunk += prepareFragment(fragment, add.args) + "\n";
   }
+  // remove unnecessary newline symbol at the end
+  if(fragmentsChunk.back() == '\n')
+    fragmentsChunk.pop_back();
 
-  // hook-up together
-  addToCallChain(iFunc);
+  // ==========
+
+  // render a replacement text from a template performing actions on the way down
+  iFunc->replacement = "";
+  for (auto const& block : templateReplace->blocks) {
+    auto const ptr = block.get();
+
+    if (auto txt = dynamic_cast<GrammarAnnotation::Template::TextBlock*>(ptr))
+      iFunc->replacement += txt->text + ' ';
+
+    else
+      if (auto ref = dynamic_cast<GrammarAnnotation::Template::TypeReference*>(ptr)) {
+        iFunc->replacement += makeNameFromType(ref->typeId) + ' ';
+        // TODO: check if type exists in a current node
+      }
+    else
+      if (auto pLocation = dynamic_cast<GrammarAnnotation::Template::PointcutLocation*>(ptr)) {
+        // TODO: add pointcut name wildcard
+        if (pLocation->name == pointcut->name) {
+          // join output lines together
+          string algorithmResult;
+          auto const handler = [&](FunctionCall::Result const& result) {
+            if (!result.byText.empty())
+              algorithmResult += result.byText + " ";
+          };
+
+          // execute an algorithm
+          for (auto const& step : pointcut->aglorithm) {
+            // TODO: check command return value (bool)
+            callAlgorithmCommand({
+                                   .function = step.function,
+                                   .args = step.args,
+                                   .preparedFragment = fragmentsChunk,
+                                   .iFunc = iFunc,
+                                   .grammar = grammar.get()
+                                 },
+                                 handler);
+          }
+
+          // add result to a full text (empty symbol at the end already exists, see 'handler')
+          iFunc->replacement += algorithmResult;
+        }
+      }
+    else
+      SCIS_ERROR("Undefined pattern block");
+  }
+  // all done
 }
 
 string TXLGenerator::prepareFragment(Fragment const* const fragment,
