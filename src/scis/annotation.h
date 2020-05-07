@@ -125,7 +125,7 @@ namespace scis {
     vector<unique_ptr<Function>> library;
     unordered_map<string, unique_ptr<PointOfInterest>> pointsOfInterest;
 
-    string pipeline = "txl %SRC% %TRANSFORM% %PARAMS%";
+    string pipeline = "txl %SRC% %TRANSFORM% -o %DST% %PARAMS%";
 
     void dump(ostream &str);
   }; // GrammarAnnotation

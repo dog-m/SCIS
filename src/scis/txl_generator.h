@@ -21,7 +21,7 @@ namespace scis {
   public:
     unique_ptr<txl::Grammar> grammar;
 
-    unique_ptr<GrammarAnnotation> annotation;
+    GrammarAnnotation* annotation;
 
     unique_ptr<Ruleset> ruleset;
 
