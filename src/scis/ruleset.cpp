@@ -42,25 +42,26 @@ void CompoundContext::dump(ostream &str)
   }
 }
 
-void Rule::MakeAction::StringComponent::dump(ostream &str)
+void Rule::MakeAction::StringComponent::dump(ostream &str) const
 {
   str << text;
 }
 
-void Rule::MakeAction::StringComponent::toTXL(ostream& str)
+void Rule::MakeAction::StringComponent::toTXL(ostream& str) const
 {
   // WARNING: text already have quotes
   str << " [+ " << text << "]";
 }
 
-void Rule::MakeAction::ConstantComponent::dump(ostream &str)
+void Rule::MakeAction::ConstantComponent::dump(ostream &str) const
 {
-  str << "$" + id;
+  str << '$' << group << ':' << id;
 }
 
-void Rule::MakeAction::ConstantComponent::toTXL(ostream& str)
+void Rule::MakeAction::ConstantComponent::toTXL(ostream& str) const
 {
-  string upcase = id;
+  // WARNING: same as in 'makeNameFromPOIName'
+  string upcase = group + "_" + id;
   for (auto& c : upcase)
     c = toupper(c);
 

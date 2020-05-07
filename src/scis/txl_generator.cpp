@@ -431,7 +431,7 @@ void TXLGenerator::unrollPatternFor(
   auto const keyword = annotation->grammar.graph.keywords[keywordId].get();
 
   if (keyword->filterPOI.has_value()) {
-    auto const poi = annotation->pointsOfInterest[POI_GROUP_PREFIX + keyword->filterPOI.value()].get();
+    auto const poi = annotation->pointsOfInterest[ANNOTATION_POI_GROUP_PREFIX + keyword->filterPOI.value()].get();
     auto const getter = poi2getter[poi];
 
     auto const valueHolder = "value_holder_" + getUniqueId();
@@ -1066,9 +1066,9 @@ void TXLGenerator::compileInstrumentationFunction(
 
   // introduce common variables and constants
   unordered_map<string, pair<string, string>> const PREDEFINED_IDENTIFIERS {
-    { "NODE"    , { TXL_TYPE_ID    , "_ [typeof " + NODE_CURRENT + "]"         }},
-    { "POINTCUT", { TXL_TYPE_ID    , '\'' + pointcut->name                     }},
-    { "FILE"    , { TXL_TYPE_STRING, "_ [+ " + quote(processingFilename) + "]" }},
+    { "STD_NODE"    , { TXL_TYPE_ID    , "_ [typeof " + NODE_CURRENT + "]"         }},
+    { "STD_POINTCUT", { TXL_TYPE_ID    , '\'' + pointcut->name                     }},
+    { "STD_FILE"    , { TXL_TYPE_STRING, "_ [+ " + quote(processingFilename) + "]" }},
   };
 
   for (auto const& [name, typeAndValue] : PREDEFINED_IDENTIFIERS) {
@@ -1076,7 +1076,55 @@ void TXLGenerator::compileInstrumentationFunction(
     iFunc->createVariable(name, type, value);
   }
 
-  context;// FIXME: add variables from POI
+  // ==========
+
+  // instantiate variables used to hold POI data
+  unordered_map<string, string> accessibleData_type2name;
+  // collect all available data types (type -> name)
+  for (auto const& p : iFunc->params)
+    accessibleData_type2name.insert_or_assign(p.type, p.id);
+  accessibleData_type2name.insert_or_assign(iFunc->processingType, NODE_CURRENT);
+
+  unordered_set<GrammarAnnotation::PointOfInterest const*> usedPOIs;
+  // collect all used points-of-interest
+  for (auto const& make : ruleStmt.actionMake)
+    for (auto const& component : make.components)
+      // NOTE: only 'poi' and 'std' special groups are handled
+      if (auto constant = dynamic_cast<Rule::MakeAction::ConstantComponent*>(component.get())) {
+        if (constant->group == "poi") {
+          auto const poiName = ANNOTATION_POI_GROUP_PREFIX + constant->id;
+          auto const poi = annotation->pointsOfInterest[poiName].get();
+          if (!poi)
+            SCIS_ERROR("Undefined POI <" << poiName << "> referenced "
+                       "at line " << make.declarationLine);
+
+          usedPOIs.insert(poi);
+        }
+        else if (constant->group == "std") {
+          // do nothing
+        }
+        else
+          SCIS_ERROR("Unsupported name group <" << constant->group << "> found "
+                     "at line " << make.declarationLine);
+      }
+
+  // create variables
+  for (auto const& poi : usedPOIs) {
+    auto const kw = annotation->grammar.graph.keywords[poi->keyword].get();
+    auto const& dataSource = accessibleData_type2name[kw->type];
+    if (dataSource.empty())
+      SCIS_ERROR("Cant find suitable data source for POI with name <" << poi->id << "> "
+                 "in one of [make] sections of rule <" << ruleId << ">");
+
+    // variable names should match the same names used in used-defined 'variables'
+    auto const valueHolder = makeNameFromPOIName(poi->id);
+    auto const getter = poi2getter[poi]->name;
+    iFunc->createVariable(
+          valueHolder, TXL_TYPE_STRING,
+          "_ [" + getter + " " + dataSource + "]");
+  }
+
+  // ==========
 
   // instantiate user-defined variables
   unordered_set<string_view> userVariables;
@@ -1114,7 +1162,7 @@ void TXLGenerator::compileInstrumentationFunction(
     // check if all the arguments actualy exist
     for (auto const& arg : add.args)
       if (userVariables.find(arg) == userVariables.cend())
-        SCIS_ERROR("Variable <" << arg << "> not found "
+        SCIS_ERROR("User variable with name <" << arg << "> not found "
                    "in [add] action on line " << add.declarationLine);
 
     // fill fragment and glue to others

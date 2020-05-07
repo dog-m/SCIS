@@ -209,7 +209,7 @@ define stringlit_or_constant
 end define
 
 define string_constant
-    [SP] [SPOFF] '$ [id] [SPON]
+    [SP] [SPOFF] '$ [id_with_group] [SPON]
 end define
 
 

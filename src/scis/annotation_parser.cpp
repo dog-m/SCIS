@@ -95,7 +95,7 @@ void AnnotationParser::parsePointsOfInterest(XMLElement const* const root)
   FOREACH_XML_ELEMENT(root, element) {
     auto poi = make_unique<GrammarAnnotation::PointOfInterest>();
 
-    poi->id = POI_GROUP_PREFIX + expectedAttribute(element, "id")->Value();
+    poi->id = ANNOTATION_POI_GROUP_PREFIX + expectedAttribute(element, "id")->Value();
 
     poi->keyword = expectedAttribute(element, "keyword")->Value();
 

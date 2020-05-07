@@ -81,25 +81,23 @@ namespace scis {
     struct MakeAction final : public Action {
       struct Component {
         virtual ~Component() = default;
-        virtual void dump(ostream &str) = 0; // TODO: remove
-
-        virtual void toTXL(ostream &str) = 0;
+        virtual void dump(ostream &str) const = 0; // TODO: remove
+        virtual void toTXL(ostream &str) const = 0;
       };
 
       struct StringComponent final : public Component {
         string text;
 
-        void dump(ostream &str) override; // TODO: remove
-
-        void toTXL(ostream &str) override;
+        void dump(ostream &str) const override; // TODO: remove
+        void toTXL(ostream &str) const override;
       };
 
       struct ConstantComponent final : public Component {
+        string group;
         string id;
 
-        void dump(ostream &str) override; // TODO: remove
-
-        void toTXL(ostream &str) override;
+        void dump(ostream &str) const override; // TODO: remove
+        void toTXL(ostream &str) const override;
       };
 
       string target;

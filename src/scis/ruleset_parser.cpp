@@ -266,7 +266,9 @@ void RulesetParser::parseActions_Make_singleComponent(Rule::MakeAction &make,
   if (something->Name() == "string_constant"sv) {
     auto ptr = make_unique<Rule::MakeAction::ConstantComponent>();
 
-    ptr->id = expectedPath(something, { "id" })->GetText();
+    auto const gid = expectedPath(something, { "id_with_group" });
+    ptr->group = expectedPath(gid, { "group_id", "id" })->GetText();
+    ptr->id    = expectedPath(gid, { "id" })->GetText();
 
     make.components.emplace_back(std::move(ptr));
   }

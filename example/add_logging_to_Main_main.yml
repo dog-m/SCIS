@@ -26,8 +26,8 @@ rules:
       add:
         logging_init
   
-    @class_m -> [all] method -> [first] if("*< 0") # before:
+    @class_and_method_m -> [all] method -> [first] if("*< 0") # before:
       make:
-        msg <- $pointcut + " " + $node + " block in " + $file + " class, in " + $method_name + " method";
+        msg <- $std:pointcut + " " + $std:node + " block in " + $std:file + " class, in " + $poi:method_name + " method";
       add:
         logging_message(msg)

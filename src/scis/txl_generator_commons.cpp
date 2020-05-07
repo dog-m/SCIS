@@ -368,7 +368,7 @@ string scis::codegen::makeNameFromPOIName(string const& poi)
   string processedPOI = poi;
 
   for (auto& c : processedPOI)
-    c = isalpha(c) ? c : '_';
+    c = isalpha(c) ? toupper(c) : '_';
 
   return processedPOI;
 }

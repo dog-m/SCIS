@@ -12,7 +12,8 @@ namespace scis {
 
   using namespace std;
 
-  inline string const POI_GROUP_PREFIX = "poi:";
+  inline string const ANNOTATION_GROUP_SEPARATOR = ":";
+  inline string const ANNOTATION_POI_GROUP_PREFIX = "poi" + ANNOTATION_GROUP_SEPARATOR;
 
   struct GrammarAnnotation final {
 
