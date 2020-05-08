@@ -20,8 +20,8 @@ namespace scis {
     struct Pointcut final {
       struct Step final {
         string function;
-        unordered_map<string, string> args; // TODO: get better idea
-      };
+        unordered_map<string, string> args;
+      }; // Step
 
       string name;
       vector<Step> aglorithm;
@@ -35,7 +35,7 @@ namespace scis {
         virtual void dump(ostream &str) const = 0;
         virtual void toTXLWithNames(ostream &str,
                            NamingFunction const& namer) const = 0;
-      };
+      }; // Block
 
       struct TextBlock final : public Block {
         string text;
@@ -43,7 +43,7 @@ namespace scis {
         void dump(ostream &str) const override;
         void toTXLWithNames(ostream &str,
                             NamingFunction const& namer) const override;
-      };
+      }; // TextBlock
 
       struct PointcutLocation final : public Block {
         string name;
@@ -51,7 +51,7 @@ namespace scis {
         void dump(ostream &str) const override;
         void toTXLWithNames(ostream &str,
                             NamingFunction const& namer) const override;
-      };
+      }; // PointcutLocation
 
       struct TypeReference final : public Block {
         string typeId;
@@ -59,7 +59,7 @@ namespace scis {
         void dump(ostream &str) const override;
         void toTXLWithNames(ostream &str,
                             NamingFunction const& namer) const override;
-      };
+      }; // TypeReference
 
       string kind;
       vector<unique_ptr<Block>> blocks;
@@ -67,7 +67,7 @@ namespace scis {
 
       void toTXLWithNames(ostream &str,
                           NamingFunction const& namer) const;
-    }; // Pattern
+    }; // Template
 
     struct DirectedAcyclicGraph final {
       struct Keyword final {
@@ -84,7 +84,7 @@ namespace scis {
         Pointcut* addPointcut(string const& name);
 
         Template const* getTemplate(string const& kind) const;
-      };
+      }; // Keyword
 
       vector<Keyword const*> topKeywords;
       unordered_map<string, unique_ptr<Keyword>> keywords;
@@ -94,19 +94,19 @@ namespace scis {
       string language;
       string txlSourceFilename;
       DirectedAcyclicGraph graph;
-    };
+    }; // GrammarDescription
 
     enum class FunctionPolicy {
       DIRECT_CALL,
       BEFORE_ALL,
       AFTER_ALL,
-    };
+    }; // FunctionPolicy
 
     struct Function final {
       struct Parameter final {
         string id;
         string type;
-      };
+      }; // Parameter
 
       string name;
       bool isRule = false;
@@ -119,7 +119,7 @@ namespace scis {
       string id;
       string keyword;
       vector<string> valueTypePath;
-    };
+    }; // POI
 
     GrammarDescription grammar;
     vector<unique_ptr<Function>> library;

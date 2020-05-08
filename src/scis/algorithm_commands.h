@@ -19,14 +19,14 @@ namespace scis {
     string function;
     unordered_map<string, string> args;
     string preparedFragment;
-    codegen::InstrumentationFunction * iFunc;
+    codegen::InstrumentationFunction* iFunc;
     txl::Grammar const* grammar;
   }; // FunctionCall
 
   using FunctionResultHandler = function<void (FunctionCall::Result const&)>;
 
-  bool callAlgorithmCommand(FunctionCall const& params,
-                            FunctionResultHandler const& resultHandler);
+  bool callAlgorithmCommand(FunctionCall&& params,
+                            FunctionResultHandler&& resultHandler);
 
 } // scis
 

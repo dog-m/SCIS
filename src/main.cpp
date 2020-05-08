@@ -17,7 +17,6 @@ using namespace tinyxml2;
 /* =================================================================================== */
 
 
-
 template<typename Parser>
 static auto tryParse(const char* xml)
 {
@@ -72,57 +71,111 @@ static auto loadAndParseAnnotation(string_view && filename)
 }
 
 
+/* =================================================================================== */
+
+
+// TODO: move to a separate location [caching]
+static string generateFilenameByRuleset(string const& rulesetFilename)
+{
+  return "./example/example-generated.txl";
+}
+
+
+// TODO: move to a separate location [caching]
+static bool checkCache(string const& outTxlFilename)
+{
+  return false;
+}
+
+
+// TODO: move to a separate location [core]
+static void generateTXLinstructions(
+    string const& outTxlFile,
+    scis::GrammarAnnotation* const annotation)
+{
+  scis::TXLGenerator generator;
+  SCIS_INFO("Loading grammar");
+  generator.grammar = loadAndParseGrammar(scis::args::ARG_GRAMMAR);
+
+  // annotation is already loaded
+  generator.annotation = annotation;
+
+  SCIS_INFO("Loading ruleset");
+  generator.ruleset = loadAndParseRuleset(scis::args::ARG_RULESET);
+
+  generator.fragmentsDir = scis::args::ARG_FRAGMENTS_DIR;
+
+  SCIS_INFO("Building...");
+  generator.compile();
+
+  ofstream outputFile(outTxlFile);
+  SCIS_INFO("Generating code...");
+  generator.generateCode(outputFile);
+
+  SCIS_INFO("Generated TXL code saved as [" << outTxlFile << "]");
+}
+
+
+// TODO: move to a separate location [pipelining]
+static string preparePipeline(
+    string const& pipeline,
+    string const& outTxlFile)
+{
+  string cmd = pipeline;
+  cmd = replace_all(cmd, "%WORKDIR%"  , scis::args::ARG_WORKING_DIR     );
+  cmd = replace_all(cmd, "%SRC%"      , scis::args::ARG_SRC_FILENAME    );
+  cmd = replace_all(cmd, "%DST%"      , scis::args::ARG_DST_FILENAME    );
+  cmd = replace_all(cmd, "%TRANSFORM%", outTxlFile                      );
+  cmd = replace_all(cmd, "%PARAMS%"   , scis::args::ARG_TXL_PARAMETERS  );
+  return cmd;
+}
+
+
+// TODO: move to a separate location [pipelining]
+static void runPipeline(string const& preparedPipeline)
+{
+  string rOut, rErr;
+  auto const result = txl::Wrapper::runShellCommand(preparedPipeline,
+                                                    txl::Wrapper::STRING_READER(rErr),
+                                                    txl::Wrapper::STRING_READER(rOut));
+  if (result != 0) {
+    SCIS_WARNING("Something went wrong. Return code = " << result);
+    // render txl utility output
+    SCIS_INFO("TXL output:" << endl << rErr << rOut);
+
+    // copy source file to a destination
+    ifstream a(scis::args::ARG_SRC_FILENAME, ios::binary);
+    ofstream b(scis::args::ARG_DST_FILENAME, ios::binary);
+    b << a.rdbuf();
+    SCIS_INFO("Source file has been copied as a result");
+  }
+  else
+    SCIS_INFO("Instrumented successfuly");
+}
+
 
 /* =================================================================================== */
+
 
 int main(int argc, char** argv)
 {
   scis::args::updateArguments(argc, argv);
 
-  string const outTxlFile = "./example/example-generated.txl";
-  auto const checkCache = [](){ return false; };
+  string const outTxlFile = generateFilenameByRuleset(scis::args::ARG_RULESET);
 
+  SCIS_INFO("Loading annotation");
   auto const annotation = loadAndParseAnnotation(scis::args::ARG_ANNOTATION);
 
-  bool const cached = checkCache() && scis::args::ARG_USE_CACHE;
+  bool const cached = checkCache(outTxlFile) && scis::args::ARG_USE_CACHE;
   if (!cached) {
-    SCIS_INFO("There are no cahed results for a particular ruleset. Generating TXL instructions...");
-
-    scis::TXLGenerator generator;
-    SCIS_INFO("Loading grammar");
-    generator.grammar = loadAndParseGrammar(scis::args::ARG_GRAMMAR);
-
-    SCIS_INFO("Loading annotation");
-    generator.annotation = annotation.get();
-
-    SCIS_INFO("Loading ruleset");
-    generator.ruleset = loadAndParseRuleset(scis::args::ARG_RULESET);
-
-    generator.processingFilename = scis::args::ARG_SRC_FILENAME;
-    generator.fragmentsDir = scis::args::ARG_FRAGMENTS_DIR;
-
-    SCIS_INFO("Building...");
-    generator.compile();
-
-    ofstream outputFile(outTxlFile);
-    SCIS_INFO("Generating code...");
-    generator.generateCode(outputFile);
-
-    SCIS_INFO("Generated TXL code saved as [" << outTxlFile << "]");
+    SCIS_INFO("There are no cached results for a particular ruleset. Generating TXL instructions...");
+    generateTXLinstructions(outTxlFile, annotation.get());
   }
 
-  string cmd = annotation->pipeline;
-  cmd = replace_all(cmd, "%WORKDIR%", scis::args::ARG_WORKING_DIR);
-  cmd = replace_all(cmd, "%SRC%", scis::args::ARG_SRC_FILENAME);
-  cmd = replace_all(cmd, "%DST%", scis::args::ARG_DST_FILENAME);
-  cmd = replace_all(cmd, "%TRANSFORM%", outTxlFile);
-  cmd = replace_all(cmd, "%PARAMS%", scis::args::ARG_TXL_PARAMETERS);
+  // prepare and run instrumentation command
+  string cmd = preparePipeline(annotation->pipeline, outTxlFile);
+  SCIS_DEBUG("Prepared command:" << endl << cmd);
+  runPipeline(cmd);
 
-  SCIS_INFO("Prepared command:" << endl << cmd << endl << endl << "Result:");
-  txl::Wrapper::runShellCommand(cmd,
-                                txl::Wrapper::LOG_READER,
-                                txl::Wrapper::LOG_READER);
-
-  SCIS_INFO("All done");
   return 0;
 }

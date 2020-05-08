@@ -6,7 +6,7 @@ using namespace scis;
 
 void GrammarAnnotation::dump(ostream& str)
 {
-  str << "pipeline: " << pipeline << endl  // TODO: unused pipeline string in annotation
+  str << "pipeline: " << pipeline << endl
       << "Grammar:" << endl
       << "  lang = " << grammar.language << endl
       << "  src = " << grammar.txlSourceFilename << endl
@@ -28,7 +28,6 @@ void GrammarAnnotation::dump(ostream& str)
     auto countT = keyword->templates.size();
     str << "  templates (" << countT << "):" << endl;
     for (auto const& [_, iTemplate] : keyword->templates) {
-      //str << "    search type = [" << pattern.searchType << "]" << endl;
       for (auto const& block : iTemplate->blocks)
         block->dump(str);
 

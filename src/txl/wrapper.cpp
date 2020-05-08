@@ -41,6 +41,14 @@ bool Wrapper::LOG_READER(string const& line)
   return true;
 }
 
+ReaderFunction Wrapper::STRING_READER(string& out)
+{
+  return [&out](string const& line){
+      out += line + '\n';
+      return true;
+    };
+}
+
 int Wrapper::runNoInput(initializer_list<string_view> && params,
                         ReaderFunction const& errReader,
                         ReaderFunction const& outReader)

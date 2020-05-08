@@ -100,8 +100,8 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
 
 };
 
-bool scis::callAlgorithmCommand(FunctionCall const& params,
-                                FunctionResultHandler const& resultHandler)
+bool scis::callAlgorithmCommand(FunctionCall&& params,
+                                FunctionResultHandler&& resultHandler)
 {
   auto const func = STANDARD_FUNCTIONS.find(params.function);
   if (func == STANDARD_FUNCTIONS.cend())

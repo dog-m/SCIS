@@ -25,8 +25,6 @@ namespace scis {
 
     unique_ptr<Ruleset> ruleset;
 
-    string processingFilename;
-
     string fragmentsDir;
 
   protected:
@@ -137,8 +135,7 @@ namespace scis {
     static string getSkipCounterName(string const& refiner);
 
     void compileInstrumentationFunction(string const& ruleId,
-                                        Rule::Statement const& ruleStmt,
-                                        Context const* const context);
+                                        Rule::Statement const& ruleStmt);
 
     string prepareFragment(Fragment const* const fragment,
                            vector<string> const& args);

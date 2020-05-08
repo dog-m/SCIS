@@ -65,7 +65,7 @@ void Rule::MakeAction::ConstantComponent::toTXL(ostream& str) const
   for (auto& c : upcase)
     c = toupper(c);
 
-  str << " [quote " << upcase << "]";
+  str << " [+ " << upcase << "]";
 }
 
 void Ruleset::dump(ostream &str)

@@ -931,7 +931,7 @@ void TXLGenerator::compileRules()
       compileRefinementFunctions(rule->id, ruleStmt);
 
       SCIS_DEBUG("compiling Instrumenter...");
-      compileInstrumentationFunction(rule->id, ruleStmt, context);
+      compileInstrumentationFunction(rule->id, ruleStmt);
 
       // add to a whole program
       mainCallSequence.push_back(currentCallChain.front());
@@ -995,8 +995,7 @@ string TXLGenerator::getSkipCounterName(const string& refiner)
 
 void TXLGenerator::compileInstrumentationFunction(
     string const& ruleId,
-    Rule::Statement const& ruleStmt,
-    Context const* const context)
+    Rule::Statement const& ruleStmt)
 {
   auto const functionName = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + getUniqueId();
   auto const lastFunc = dynamic_cast<RefinementFunction*>(lastCallChainElement());
@@ -1064,16 +1063,21 @@ void TXLGenerator::compileInstrumentationFunction(
 
   // ==========
 
+  // special txl internal data source
+  iFunc->importVariable(
+        NODE_TXL_INPUT, TXL_TYPE_STRING);
+
   // introduce common variables and constants
   unordered_map<string, pair<string, string>> const PREDEFINED_IDENTIFIERS {
-    { "STD_NODE"    , { TXL_TYPE_ID    , "_ [typeof " + NODE_CURRENT + "]"         }},
-    { "STD_POINTCUT", { TXL_TYPE_ID    , '\'' + pointcut->name                     }},
-    { "STD_FILE"    , { TXL_TYPE_STRING, "_ [+ " + quote(processingFilename) + "]" }},
+    { "std:node"    , { TXL_TYPE_ID    , "_ [typeof " + NODE_CURRENT + "]"  }},
+    { "std:pointcut", { TXL_TYPE_ID    , "\'" + pointcut->name              }},
+    { "std:file"    , { TXL_TYPE_STRING, "_ [+ " + NODE_TXL_INPUT + "]"     }},
   };
 
   for (auto const& [name, typeAndValue] : PREDEFINED_IDENTIFIERS) {
     auto const& [type, value] = typeAndValue;
-    iFunc->createVariable(name, type, value);
+    iFunc->createVariable(
+        makeNameFromPOIName(name), type, value);
   }
 
   // ==========

@@ -28,6 +28,6 @@ rules:
   
     @class_and_method_m -> [all] method -> [first] if("*< 0") # before:
       make:
-        msg <- $std:pointcut + " " + $std:node + " block in " + $poi:class_name + " class, in " + $poi:method_name + " method";
+        msg <- $std:pointcut + " <" + $std:node + "> block in [" + $poi:class_name + "] class, in {" + $poi:method_name + "} method";
       add:
         logging_message(msg)

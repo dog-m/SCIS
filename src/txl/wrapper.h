@@ -16,6 +16,8 @@ namespace txl {
     
     static bool LOG_READER(string const& line);
 
+    static ReaderFunction STRING_READER(string& out);
+
     static int runNoInput(initializer_list<string_view> && params,
                           ReaderFunction const& errReader,
                           ReaderFunction const& outReader = NOOP_READER);

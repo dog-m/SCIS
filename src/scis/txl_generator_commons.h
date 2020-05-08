@@ -15,6 +15,8 @@ namespace scis::codegen {
   inline string const TXL_TYPE_ID     = "id";
   inline string const TXL_TYPE_NUMBER = "number";
 
+  inline string const NODE_TXL_INPUT = "TXLinput";
+
   inline string const NODE_ANONYMOUS     = "_";
   inline string const NODE_CURRENT       = "__NODE__";
   inline string const NODE_SEQ_TAIL      = "__TAIL__";
@@ -54,12 +56,12 @@ namespace scis::codegen {
     struct Parameter final {
       string id;
       string type;
-    };
+    }; // Parameter
 
     struct Statement final {
       string action;
       string text;
-    };
+    }; // Statement
 
     bool isRule = false;
     string name = "???";
@@ -116,46 +118,46 @@ namespace scis::codegen {
     TXLFunction const* callFrom = nullptr;
     /// calleE
     TXLFunction const* callTo = nullptr;
-  };
+  }; // CallChainElement
 
   struct CallChainFunction : public TXLFunction, public CallChainElement {
     void connectTo(CallChainFunction *const other);
-  };
+  }; // CallChainFunction
 
   /// Used by filtering function. Current node will be added at the end
   struct CollectionFunction final : public CallChainFunction {
     string processingKeyword;
 
     void generateStatements() override;
-  };
+  }; // CollectionFunction
 
   struct FilteringFunction final : public CallChainFunction {
     void generateStatements() override;
-  };
+  }; // FilteringFunction
 
   struct RefinementFunction : public CallChainFunction {
     string searchType;
     bool sequential = false;
     int queueIndex = 0;
-  };
+  }; // RefinementFunction
 
   /// primary used by "level" kind/modification of refiner
   struct RefinementFunctionFilter : public CallChainFunction {
     string searchType;
 
     void generateStatements() override;
-  };
+  }; // RefinementFunctionFilter
 
   struct RefinementFunction_First final : public RefinementFunction {
     void generateStatements() override;
-  };
+  }; // RefinementFunction_First
 
   struct RefinementFunction_All final : public RefinementFunction {
     string skipCount;
     string skipCountDecrementer;
 
     void generateStatements() override;
-  };
+  }; // RefinementFunction_All
 
   struct RefinementFunction_Level final : public RefinementFunction {
     string skipCount;
@@ -163,14 +165,14 @@ namespace scis::codegen {
     string skipCountDecrementer;
 
     void generateStatements() override;
-  };
+  }; // RefinementFunction_Level
 
   struct InstrumentationFunction final : public CallChainFunction {
     string searchType;
     string replacement;
 
     void generateStatements() override;
-  };
+  }; // InstrumentationFunction
 
 } // scis
 
