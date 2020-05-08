@@ -10,6 +10,7 @@
 #include "scis/arguments.h"
 #include "xml_parser_utils.h"
 #include "txl/wrapper.h"
+#include "scis/caching.h"
 
 using namespace std;
 using namespace tinyxml2;
@@ -74,20 +75,6 @@ static auto loadAndParseAnnotation(string_view && filename)
 /* =================================================================================== */
 
 
-// TODO: move to a separate location [caching]
-static string generateFilenameByRuleset(string const& rulesetFilename)
-{
-  return "./example/example-generated.txl";
-}
-
-
-// TODO: move to a separate location [caching]
-static bool checkCache(string const& outTxlFilename)
-{
-  return false;
-}
-
-
 // TODO: move to a separate location [core]
 static void generateTXLinstructions(
     string const& outTxlFile,
@@ -122,11 +109,11 @@ static string preparePipeline(
     string const& outTxlFile)
 {
   string cmd = pipeline;
-  cmd = replace_all(cmd, "%WORKDIR%"  , scis::args::ARG_WORKING_DIR     );
-  cmd = replace_all(cmd, "%SRC%"      , scis::args::ARG_SRC_FILENAME    );
-  cmd = replace_all(cmd, "%DST%"      , scis::args::ARG_DST_FILENAME    );
-  cmd = replace_all(cmd, "%TRANSFORM%", outTxlFile                      );
-  cmd = replace_all(cmd, "%PARAMS%"   , scis::args::ARG_TXL_PARAMETERS  );
+  cmd = replace_all(cmd, "%WORKDIR%"  , '\"' + scis::args::ARG_WORKING_DIR  + '\"'  );
+  cmd = replace_all(cmd, "%SRC%"      , '\"' + scis::args::ARG_SRC_FILENAME + '\"'  );
+  cmd = replace_all(cmd, "%DST%"      , '\"' + scis::args::ARG_DST_FILENAME + '\"'  );
+  cmd = replace_all(cmd, "%TRANSFORM%", '\"' + outTxlFile                   + '\"'  );
+  cmd = replace_all(cmd, "%PARAMS%"   , scis::args::ARG_TXL_PARAMETERS              );
   return cmd;
 }
 
@@ -161,12 +148,12 @@ int main(int argc, char** argv)
 {
   scis::args::updateArguments(argc, argv);
 
-  string const outTxlFile = generateFilenameByRuleset(scis::args::ARG_RULESET);
+  string const outTxlFile = scis::caching::generateFilenameByRuleset(scis::args::ARG_RULESET);
 
   SCIS_INFO("Loading annotation");
   auto const annotation = loadAndParseAnnotation(scis::args::ARG_ANNOTATION);
 
-  bool const cached = checkCache(outTxlFile) && scis::args::ARG_USE_CACHE;
+  bool const cached = scis::caching::checkCache(outTxlFile) && scis::args::ARG_USE_CACHE;
   if (!cached) {
     SCIS_INFO("There are no cached results for a particular ruleset. Generating TXL instructions...");
     generateTXLinstructions(outTxlFile, annotation.get());

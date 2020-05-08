@@ -76,6 +76,9 @@ if(Boost_FOUND)
       src/scis/arguments.h
       src/scis/arguments.cpp
 
+      src/scis/caching.h
+      src/scis/caching.cpp
+
       src/include/common.h
       src/include/logging.h
 
