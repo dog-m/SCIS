@@ -75,14 +75,14 @@ int Wrapper::runNoInput(initializer_list<string_view> && params,
   return c.exit_code();
 }
 
-int Wrapper::runShellCommand(string const& command,
+int Wrapper::runShellCommand(string const& command/*,
                              ReaderFunction const& errReader,
-                             ReaderFunction const& outReader)
+                             ReaderFunction const& outReader*/)
 {
-  boost::asio::io_service ios;
+  /*boost::asio::io_service ios;
   std::future<string> data_err, data_out;
   auto ret = boost::process::system(command,
-                                    std_in.close(),
+                                    //std_in.close(),
                                     std_out > data_out,
                                     std_err > data_err,
                                     ios);
@@ -94,5 +94,7 @@ int Wrapper::runShellCommand(string const& command,
   read_line_by_line(data_err.get(), errReader);
   read_line_by_line(data_out.get(), outReader);
 
-  return ret;
+  return ret;*/
+
+  return std::system(command.data());
 }

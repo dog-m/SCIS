@@ -1,10 +1,10 @@
 <!-- default pipeline: txl "%SRC%" "%TRANSFORM%" -o "%DST%" %PARAMS% -->
 <annotation
-  pipeline='txl "%SRC%" "%WORKDIR%/lang/python/pyindent.txl" | txl stdin "%TRANSFORM%" -o "%DST%" %PARAMS%'
+  pipeline='txl "%SRC%" "%WORKDIR%\example\lang\python\pyindent.txl" | txl stdin "%TRANSFORM%" -o "%DST%" %PARAMS%'
   >
     <grammar
       language="python"
-      src="lang/python/grammar.txl"
+      src="lang\python\grammar.txl"
       >
         <keyword-DAG>
             <imports type="repeat statement_or_newline"/>

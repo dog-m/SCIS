@@ -1,7 +1,7 @@
 <annotation>
     <grammar
       language="java"
-      src="lang/java/grammar.txl"
+      src="lang\java\grammar.txl"
       >
         <keyword-DAG>
             <package type="package_declaration">

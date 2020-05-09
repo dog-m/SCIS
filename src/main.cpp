@@ -126,14 +126,16 @@ static string preparePipeline(
 // TODO: move to a separate location [pipelining]
 static void runPipeline(string const& preparedPipeline)
 {
-  string rOut, rErr;
-  auto const result = txl::Wrapper::runShellCommand(preparedPipeline,
+  // TODO: find way to get output of any shell command (including pipes)
+  SCIS_INFO("Executing transformation pipeline...");
+  //string rOut, rErr;
+  auto const result = txl::Wrapper::runShellCommand(preparedPipeline/*,
                                                     txl::Wrapper::STRING_READER(rErr),
-                                                    txl::Wrapper::STRING_READER(rOut));
+                                                    txl::Wrapper::STRING_READER(rOut)*/);
   if (result != 0) {
     SCIS_WARNING("Something went wrong. Return code = " << result);
     // render txl utility output
-    SCIS_INFO("TXL output:" << endl << rErr << rOut);
+    //SCIS_INFO("TXL output:" << endl << rErr << rOut);
 
     // copy source file to a destination
     ifstream a(scis::args::ARG_SRC_FILENAME, ios::binary);

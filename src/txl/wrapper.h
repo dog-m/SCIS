@@ -22,9 +22,9 @@ namespace txl {
                           ReaderFunction const& errReader,
                           ReaderFunction const& outReader = NOOP_READER);
 
-    static int runShellCommand(string const& command,
+    static int runShellCommand(string const& command/*,
                                ReaderFunction const& errReader,
-                               ReaderFunction const& outReader = NOOP_READER);
+                               ReaderFunction const& outReader = NOOP_READER*/);
   private:
     Wrapper() = delete;
   };
