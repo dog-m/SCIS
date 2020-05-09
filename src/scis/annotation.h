@@ -15,6 +15,8 @@ namespace scis {
   inline string const ANNOTATION_GROUP_SEPARATOR = ":";
   inline string const ANNOTATION_POI_GROUP_PREFIX = "poi" + ANNOTATION_GROUP_SEPARATOR;
 
+  inline string const DEFAULT_PIPELINE = R"***(txl "%SRC%" "%TRANSFORM%" -o "%DST%" %PARAMS%)***";
+
   struct GrammarAnnotation final {
 
     struct Pointcut final {
@@ -125,7 +127,7 @@ namespace scis {
     vector<unique_ptr<Function>> library;
     unordered_map<string, unique_ptr<PointOfInterest>> pointsOfInterest;
 
-    string pipeline = "txl %SRC% %TRANSFORM% -o %DST% %PARAMS%";
+    string pipeline = DEFAULT_PIPELINE;
 
     void dump(ostream &str);
   }; // GrammarAnnotation

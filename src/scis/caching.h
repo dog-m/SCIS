@@ -1,15 +1,28 @@
 #ifndef CACHING_H
 #define CACHING_H
 
-#include <string>
+#include "common.h"
+#include <ostream>
 
 namespace scis::caching {
 
   using namespace std;
 
+  struct CacheSignData {
+    string lang = "???";
+    string hash = "???";
+
+    string ver = scis::PROGRAM_VERSION;
+  };
+
   string generateFilenameByRuleset(string const& rulesetFilename);
 
-  bool checkCache(string const& outTxlFilename);
+  CacheSignData initCacheSign(string const& rulesetFilename, string const& language);
+
+  void applyCacheFileSign(ostream& stream, CacheSignData const& data);
+
+  bool checkCache(string const& outTxlFilename,
+                  CacheSignData const& data);
 
 } // scis
 

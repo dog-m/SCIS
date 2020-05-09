@@ -78,6 +78,7 @@ static auto loadAndParseAnnotation(string_view && filename)
 // TODO: move to a separate location [core]
 static void generateTXLinstructions(
     string const& outTxlFile,
+    scis::caching::CacheSignData const& signData,
     scis::GrammarAnnotation* const annotation)
 {
   scis::TXLGenerator generator;
@@ -96,6 +97,10 @@ static void generateTXLinstructions(
   generator.compile();
 
   ofstream outputFile(outTxlFile);
+  // place cache-specific mark on it
+  scis::caching::applyCacheFileSign(outputFile, signData);
+  outputFile << endl;
+
   SCIS_INFO("Generating code...");
   generator.generateCode(outputFile);
 
@@ -109,11 +114,11 @@ static string preparePipeline(
     string const& outTxlFile)
 {
   string cmd = pipeline;
-  cmd = replace_all(cmd, "%WORKDIR%"  , '\"' + scis::args::ARG_WORKING_DIR  + '\"'  );
-  cmd = replace_all(cmd, "%SRC%"      , '\"' + scis::args::ARG_SRC_FILENAME + '\"'  );
-  cmd = replace_all(cmd, "%DST%"      , '\"' + scis::args::ARG_DST_FILENAME + '\"'  );
-  cmd = replace_all(cmd, "%TRANSFORM%", '\"' + outTxlFile                   + '\"'  );
-  cmd = replace_all(cmd, "%PARAMS%"   , scis::args::ARG_TXL_PARAMETERS              );
+  cmd = replace_all(cmd, "%WORKDIR%"  , scis::args::ARG_WORKING_DIR     );
+  cmd = replace_all(cmd, "%SRC%"      , scis::args::ARG_SRC_FILENAME    );
+  cmd = replace_all(cmd, "%DST%"      , scis::args::ARG_DST_FILENAME    );
+  cmd = replace_all(cmd, "%TRANSFORM%", outTxlFile                      );
+  cmd = replace_all(cmd, "%PARAMS%"   , scis::args::ARG_TXL_PARAMETERS  );
   return cmd;
 }
 
@@ -153,10 +158,12 @@ int main(int argc, char** argv)
   SCIS_INFO("Loading annotation");
   auto const annotation = loadAndParseAnnotation(scis::args::ARG_ANNOTATION);
 
-  bool const cached = scis::caching::checkCache(outTxlFile) && scis::args::ARG_USE_CACHE;
+  auto const data = scis::caching::initCacheSign(scis::args::ARG_RULESET, annotation->grammar.language);
+
+  bool const cached = scis::args::ARG_USE_CACHE && scis::caching::checkCache(outTxlFile, data);
   if (!cached) {
     SCIS_INFO("There are no cached results for a particular ruleset. Generating TXL instructions...");
-    generateTXLinstructions(outTxlFile, annotation.get());
+    generateTXLinstructions(outTxlFile, data, annotation.get());
   }
 
   // prepare and run instrumentation command
