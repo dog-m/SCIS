@@ -3,5 +3,7 @@
     <required name="logging_imports"/>
   </dependencies>
 
-  <code black-list="imports, if, for"/>
+  <code black-list="imports, if, for">
+    iLogger: TLogger;
+  </code>
 </fragment>

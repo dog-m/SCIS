@@ -3,7 +3,7 @@ program test;
 {$APPTYPE CONSOLE}
 
 uses
-  System;
+  SysUtils;
 
 type
   Main = class

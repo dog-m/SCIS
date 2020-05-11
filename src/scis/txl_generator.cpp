@@ -819,7 +819,7 @@ void TXLGenerator::compileRefinementFunction_Level(
   helper->isRule = false;
   helper->name = name + SUFFIX_HELPER;
   helper->copyParamsFrom(lastCallChainElement());
-  helper->processingType = lastCallChainElement()->processingType;
+  helper->processingType = keyword->searchType;
 
   helper->addStatementTop(
         "replace * [" + helper->processingType + "]",
@@ -998,7 +998,7 @@ void TXLGenerator::compileInstrumentationFunction(
     Rule::Statement const& ruleStmt)
 {
   auto const functionName = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + getUniqueId();
-  auto const lastFunc = dynamic_cast<RefinementFunction*>(lastCallChainElement());
+  auto const lastFunc = lastCallChainElement();
   auto const keyword = annotation->grammar.graph.keywords[ruleStmt.location.path.back().keywordId].get(); // BUG: empty path?
   auto const& workingType = keyword->type;
 
@@ -1033,8 +1033,8 @@ void TXLGenerator::compileInstrumentationFunction(
   iFunc->isRule = false;
   iFunc->name = functionName;
   iFunc->copyParamsFrom(lastFunc);
-  iFunc->searchType = lastFunc->searchType;
-  iFunc->processingType = lastFunc->processingType;
+  iFunc->searchType = keyword->searchType;
+  iFunc->processingType = keyword->type;
 
   // hook-up together
   addToCallChain(iFunc);
@@ -1139,7 +1139,7 @@ void TXLGenerator::compileInstrumentationFunction(
       component->toTXL(sequence);
 
     iFunc->createVariable(
-          make.target, TXL_TYPE_STRING,
+          make.target, annotation->grammar.userVariableType,
           sequence.str());
 
     userVariables.insert(make.target);

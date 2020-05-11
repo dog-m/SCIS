@@ -8,8 +8,9 @@ void GrammarAnnotation::dump(ostream& str)
 {
   str << "pipeline: " << pipeline << endl
       << "Grammar:" << endl
-      << "  lang = " << grammar.language << endl
-      << "  src = " << grammar.txlSourceFilename << endl
+      << "  lang = "          << grammar.language << endl
+      << "  src = "           << grammar.txlSourceFilename << endl
+      << "  user-var-type = " << grammar.userVariableType << endl
       << "DAG:" << endl;
 
   for (auto const& [_, keyword] : grammar.graph.keywords) {

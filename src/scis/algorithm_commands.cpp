@@ -72,7 +72,7 @@ static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
     {
       auto const& type = call.args.at("type");
       // BUG: check boundaries
-      auto const index = atoi(call.args.at("variant").data());
+      auto const index = std::stoi(call.args.at("variant"));
       auto const variant = index < 0 ? 0 : index;
 
       stringstream pattern;

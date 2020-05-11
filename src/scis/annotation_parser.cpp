@@ -21,6 +21,9 @@ void AnnotationParser::parseGrammar(XMLElement const* const root)
   annotation->grammar.language = expectedAttribute(root, "language")->Value();
   annotation->grammar.txlSourceFilename = expectedAttribute(root, "src")->Value();
 
+  if (auto const x = root->FindAttribute("user-variable-type"))
+    annotation->grammar.userVariableType = x->Value();
+
   FOREACH_XML_ELEMENT(expectedPath(root, { "keyword-DAG" }), subtype)
     if (subtype->Attribute("type")) {
       parseDAGKeyword(subtype);

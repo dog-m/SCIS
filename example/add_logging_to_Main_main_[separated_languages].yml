@@ -1,0 +1,33 @@
+use fragment "logging/dependencies"
+use fragment "logging/fields"
+use fragment "logging/init"
+use fragment "logging/message"
+
+context namespace_m:
+  { poi:method_namespace = "Main." }
+
+context method_m:
+  { poi:method_name matches "mai*" }
+
+context class_and_method_m:
+  namespace_m & method_m
+
+rules:
+  print_usefull_message_to_the_log:
+    @@ -> [first] imports # all:
+      add:
+        logging_dependencies
+  
+    @@ -> [level] class("Main") # all:
+      add:
+        logging_fields
+  
+    @class_and_method_m -> [first] method # before_body:
+      add:
+        logging_init
+  
+    @class_and_method_m -> [all] method -> [first] if("*<* 0") # before:
+      make:
+        msg <- $std:pointcut + " <" + $std:node + "> block in [" + $poi:method_name_full + "] method";
+      add:
+        logging_message(msg)

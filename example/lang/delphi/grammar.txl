@@ -1,3 +1,5 @@
+% !!! MODIFIED !!!
+
 % Name:   delphi.grammar
 % Purpose:  TXL Grammar for Borland Delphi Language
 % Author:   Jorge L. Cangas
@@ -121,6 +123,14 @@ define ctrlchar
 end define
 
 %----------------------------------    top level - file types  --------------------------------------------
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
+define program
+    [delphi_file]
+end define
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 define delphi_file
       [program_file]
@@ -371,14 +381,22 @@ end define
 
 %-----------------------------  Type Declarations   ---------------------------------
 
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
 define type_section
-    'type [NL]
+    [type_keyword] [NL]
        [IN][repeat type_decl+][EX]
 end define
 
 define type_decl
-    [identlist][equal][opt 'type][type_spec][opt hint_directive] '; [NL]
+    [identlist] [equal] [opt type_keyword] [type_spec] [opt hint_directive] '; [NL]
 end define
+
+define type_keyword
+    'type
+end define
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 define type_spec
         [simple_type]
@@ -606,11 +624,19 @@ define class_reference_type
     'class 'of [qualified_id]
 end define
 
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
 define class_type
-    [opt 'packed] % support record
+    [opt packing] % support record
     [class_keyword] [opt heritage_list]
     [NL][opt class_body] % end can be omited if no members: TDerived = class(TComponent);
 end define
+
+define packing
+    'packed % support record
+end define
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 define class_body
     [visibility_default]
@@ -849,17 +875,24 @@ define statement
     [opt labelid_colon] [unlabeled_stm]
 end define
 
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
 define unlabeled_stm
         [sequence_stm]
-    |   [loop_stm]
+    |   [until_statement]
+    |   [while_statement]
+    |   [for_statement]
     |   [with_stm]
     |   [try_finally_stm]
     |   [try_except_stm]
-    |   [selection_stm]
+    |   [if_statement]
+    |   [case_statement]
     |   [jump_stm]
     |   [assign_stm]
     |   [call_stm]
 end define
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 define assign_stm
      [expr]':= [expr]
@@ -884,21 +917,37 @@ define sequence_stm
     [end_struct]
 end define
 
-define loop_stm
-        'repeat [statement_list] 'until [expr]
-    |   'while [expr] 'do [nested_stm]
-        % for variable always local declared!
-    |   'for [id]':=[expr] [to_or_downto] [expr] 'do [nested_stm]
-    |   'for [id] in [id] 'do [nested_stm]
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
+define until_statement
+    'repeat [statement_list] 'until [expr]
 end define
 
-define selection_stm
-        'if [expr] 'then [nested_stm][opt else_stm]
-    |   'case [expr] 'of 
-            [repeat case_selector]
-            [opt case_else]
-        [end_struct]
+define while_statement
+    'while [expr] 'do [nested_stm]
 end define
+
+define for_statement
+    % for variable always local declared!
+    'for [for_expression] 'do [nested_stm]
+end define
+
+define for_expression
+        [id] ':= [expr] [to_or_downto] [expr]
+     |  [id] 'in [id]
+end define
+
+define if_statement
+    'if [expr] 'then [nested_stm][opt else_stm]
+end define
+
+define case_statement
+    'case [expr] 'of 
+        [repeat case_selector]
+    [end_struct]
+end define
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 define with_stm
     'with [list expr+] 'do [nested_stm]
@@ -929,11 +978,18 @@ define else_stm
      [NL]'else [nested_stm]
 end define
 
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
 define case_selector
-    [list case_label][colon][nested_stm][opt ';] %last branch don't requires ';
+    [case_label] [opt colon] [nested_stm] [opt ';] %last branch don't requires ';
 end define
 
 define case_label
+        [list case_label_single]
+    |   'else
+end define
+
+define case_label_single
     [expr] [opt dotdot_expr]
 end define
 
@@ -941,6 +997,8 @@ define case_else
     'else
         [statement_list]
 end define
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 define to_or_downto
     'to | 'downto

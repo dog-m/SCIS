@@ -2,7 +2,6 @@
   <dependencies/>
 
   <code white-list="imports">
-    uses
-      System;
+    Logger
   </code>
 </fragment>

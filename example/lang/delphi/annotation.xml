@@ -1,32 +1,36 @@
+<!-- default value of "user-variable-type" is "stringlit" -->
 <annotation>
     <grammar
       language="delphi"
-      src="lang/delphi/grammar.txl"
-      base-executable-sequence-type="repeat statement_semi"
+      src="lang\delphi\grammar.txl"
+      user-variable-type="charlit"
       >
         <keyword-DAG>
-            <program type="program_decl">
+            <program type="program_file">
+                <imports type="list uses_item"/>
+                <class type="type_decl"/>
+                <method type="procedure_impl_decl">
+                    <if type="if_statement">
+                        <else type="else_stm"/>
+                    </if>
+                    <switch type="case_statement">
+                        <case type="case_selector"/>
+                    </switch>
+                    <for type="for_statement"/>
+                    <while type="while_statement"/>
+                    <do_while type="until_statement"/>
+                    ...
+                </method>
             </program>
-            <package type="package_decl">
+            <package type="package_file">
+                <imports/>
+                <class/>
+                <method/>
             </package>
-            <unit type="unit_decl">
-                <imports type="repeat import_declaration"/>
-                <class type="class_declaration">
-                    <body type="class_or_interface_body">
-                        <method type="method_declaration">
-                            <if type="if_statement">
-                                <else type="else_clause"/>
-                            </if>
-                            <switch type="switch_statement">
-                                <case type="switch_alternative"/>
-                            </switch>
-                            <for type="for_statement"/>
-                            <while type="while_statement"/>
-                            <do_while type="do_statement"/>
-                            ...
-                        </method>
-                    </body>
-                </class>
+            <unit type="unit_file">
+                <imports/>
+                <class/>
+                <method/>
             </unit>
         </keyword-DAG>
     </grammar>
@@ -37,75 +41,135 @@
           apply="after-all"
           >
             <source>
-                replace [block]
-                  '{'{ Statements [repeat declaration_or_statement] '}'}
+                replace [nested_stm]
+                  'begin 'begin Statements [statement_list] 'end; 'end
                 by
-                  '{ Statements '}
+                  'begin Statements 'end
             </source>
         </rule>
 
         <function
-          name="addToImportsIfNotExists"
+          name="addToUsesUnique"
           apply="call"
-          params="Addition:import_declaration"
+          params="Addition:uses_item"
           >
             <source>
-                replace [repeat import_declaration]
-                  Imports [repeat import_declaration]
-
-                deconstruct not * [import_declaration] Imports
+                replace [list uses_item]
+                  Imports [list uses_item]
+                deconstruct not * [uses_item] Imports
                   Addition
-
                 by
-                  Imports [^ Addition]
+                  Imports [, Addition]
             </source>
         </function>
     </lib>
 
     <points-of-interest>
+        <!--WARNING: no libraries-->
+        <point
+          id="program_name"
+          keyword="program"
+          value-of="program_decl:qualified_id"
+          />
+
         <point
           id="package_name"
           keyword="package"
-          value-of="package_header:package_name"
+          value-of="package_decl:qualified_id"
+          />
+
+        <point
+          id="unit_name"
+          keyword="unit"
+          value-of="unit_decl:qualified_id"
           />
 
         <point
           id="class_name"
           keyword="class"
-          value-of="class_header:class_name"
+          value-of="identlist"
+          />
+
+        <point
+          id="method_namespace"
+          keyword="method"
+          value-of="procedure_intf_decl:procedure_signature:procedure_id:namespace"
           />
 
         <point
           id="method_name"
           keyword="method"
-          value-of="method_declarator:method_name"
+          value-of="procedure_intf_decl:procedure_signature:procedure_id:id"
+          />
+
+        <point
+          id="method_name_full"
+          keyword="method"
+          value-of="procedure_intf_decl:procedure_signature:procedure_id"
+          />
+
+        <point
+          id="if_condition"
+          keyword="if"
+          value-of="expr"
+          />
+
+        <point
+          id="for_expression"
+          keyword="for"
+          value-of="for_expression"
+          />
+
+        <point
+          id="while_condition"
+          keyword="while"
+          value-of="expr"
+          />
+
+        <point
+          id="do_while_condition"
+          keyword="do_while"
+          value-of="expr"
+          />
+
+        <point
+          id="switch_expression"
+          keyword="switch"
+          value-of="expr"
+          />
+
+        <point
+          id="case_label"
+          keyword="case"
+          value-of="case_label"
           />
     </points-of-interest>
 
     <pointcuts>
         <keyword
           name="imports"
+          search-type="list uses_item"
           sequential="false"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat import_declaration">
-                    __NODE__
+            <templates>
+                <template kind="replace">
+                    <!--list uses_item-->
                     <p name="all"/>
-                </pattern>
-            </replacement-patterns>
+                </template>
+
+                <template kind="match">
+                    <!--list uses_item-->
+                </template>
+            </templates>
             <pointcuts>
                 <pointcut name="all">
-                    <fragment
-                      type="repeat import_declaration"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <fragment-to-variable
                           name="Additions"
-                          type="repeat import_declaration"
+                          type="list uses_item"
                           />
                         <insert-call
-                          function="addToImportsIfNotExists"
+                          function="addToUsesUnique"
                           params="each Additions"
                           />
                     </paste-algorithm>
@@ -114,54 +178,32 @@
         </keyword>
 
         <keyword
-          name="body"
+          name="class"
+          search-type="type_decl"
           sequential="false"
+          filter-poi="class_name"
           >
-            <replacement-patterns>
-                <pattern search-type="class_or_interface_body">
-                    '{
+            <templates>
+                <template kind="replace">
+                    <!--identlist--> '= <!--opt type_keyword--> <!--opt packing--> <!--class_keyword--> <!--opt heritage_list-->
                         <p name="all"/>
-                        <!--repeat class_body_declaration-->
-                    '} <!--opt literal-->
-                </pattern>
-            </replacement-patterns>
+                        <!--repeat class_member-->
+                        <!--repeat visibility_block-->
+                    <!--end_struct-->  <!--opt hint_directive--> ';
+                </template>
+
+                <template kind="match">
+                    <!--identlist--> '= <!--opt type_keyword--> <!--opt packing--> <!--class_keyword--> <!--opt heritage_list-->
+                        <!--visibility_default-->
+                        <!--repeat visibility_block-->
+                    <!--end_struct-->  <!--opt hint_directive--> ';
+                </template>
+            </templates>
             <pointcuts>
                 <pointcut name="all">
-                    <fragment
-                      type="repeat class_body_declaration"
-                      as="NewFields"
-                      />
-                    <paste-algorithm>
-                        <insert-fragment
-                          />
-                    </paste-algorithm>
-                </pointcut>
-            </pointcuts>
-        </keyword>
-
-        <keyword
-          name="method"
-          sequential="false"
-          >
-            <replacement-patterns>
-                <pattern search-type="method_declaration">
-                    <!--repeat modifier--> <!--opt generic_parameter--> <!--type_specifier--> <!--method_declarator--> <!--opt throws-->
-                    '{
-                        <p name="before_body"/>
-                        <!--block-->
-                        <p name="after_body"/>
-                    '}
-                </pattern>
-            </replacement-patterns>
-            <pointcuts>
-                <pointcut name="before_body">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <deconstruct-variable
-                          type="method_body"
+                          type="visibility_default"
                           variant="0"
                           />
                         <insert-fragment
@@ -171,59 +213,94 @@
             </pointcuts>
         </keyword>
 
-        <!-- match-type already here in keyword when we described it in keyword-DAG -->
         <keyword
-          name="if"
+          name="method"
+          search-type="procedure_impl_decl"
+          sequential="false"
+          filter-poi="method_name_full"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
-                    <p name="before"/>
-                    'if '( <!--condition--> ') '{
+            <templates>
+                <template kind="replace">
+                    <!--procedure_intf_decl--> <!--nested_decl_block-->
+                    'begin
                         <p name="before_body"/>
-                        <!--statement-->
+                        'begin
+                            <!--statement_list-->
+                        'end;
                         <p name="after_body"/>
-                    '}
-                    <!--opt else_clause-->
-                    <p name="after"/>
-                </pattern>
-            </replacement-patterns>
+                    'end ';
+                </template>
+
+                <template kind="match">
+                    <!--procedure_intf_decl--> <!--nested_decl_block-->
+                    'begin
+                        <!--statement_list-->
+                    'end ';
+                </template>
+            </templates>
             <pointcuts>
-                <pointcut name="before">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
+                <pointcut name="before_body">
                     <paste-algorithm>
                         <insert-fragment
                           />
                     </paste-algorithm>
                 </pointcut>
-                <pointcut name="before_body" clone="if::before"/>
-                <pointcut name="after_body" clone="if::before"/>
+                <pointcut name="after_body" clone="method::before_body"/>
+            </pointcuts>
+        </keyword>
+
+        <!-- match-type already here in keyword when we described it in keyword-DAG -->
+        <keyword
+          name="if"
+          search-type="if_statement"
+          sequential="false"
+          filter-poi="if_condition"
+          >
+            <templates>
+                <template kind="replace">
+                    'if 'true 'then
+                    'begin
+                        <p name="before"/>
+                        'if <!--expr--> 'then
+                            <!--nested_stm-->
+                        <!--opt else_stm--> ';
+                        <p name="after"/>
+                    'end
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
+            <pointcuts>
+                <pointcut name="before">
+                    <paste-algorithm>
+                        <insert-fragment
+                          />
+                    </paste-algorithm>
+                </pointcut>
+
                 <pointcut name="after" clone="if::before"/>
             </pointcuts>
         </keyword>
 
         <keyword
           name="else"
+          search-type="else_stm"
           sequential="false"
           >
-            <replacement-patterns>
-                <pattern search-type="else_clause">
-                    'else '{
-                        <p name="before_body"/>
-                        <!--statement-->
-                        <p name="after_body"/>
-                    '}
-                </pattern>
+            <templates>
                 <!-- pointcut "after" already exists in "if" keyword -->
-            </replacement-patterns>
+                <template kind="replace">
+                    'else 'begin
+                        <p name="before_body"/>
+                        <!--nested_stm-->
+                        <p name="after_body"/>
+                    'end
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
                 <pointcut name="before_body">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
                     <paste-algorithm>
                         <insert-fragment
                           />
@@ -235,163 +312,143 @@
 
         <keyword
           name="for"
+          search-type="for_statement"
+          sequential="false"
+          filter-poi="for_expression"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
-                    <p name="before"/>
-                    'for '( <!--for_init--> <!--for_expression--> <!--for_update--> ') '{
-                        <p name="before_body"/>
-                        <!--statement-->
-                        <p name="after_body"/>
-                    '}
-                    <p name="after"/>
-                </pattern>
-            </replacement-patterns>
+            <templates>
+                <!--it works only because it's marked as part of a sequence-->
+                <template kind="replace">
+                    'for GLOBAL_THREADLOCAL_VARIABLE ':= '0 'to '1 'do
+                    'begin
+                        <p name="before"/>
+                        'for <!--for_expression--> 'do
+                        'begin
+                            <p name="before_body"/>
+                            <!--nested_stm-->
+                            <p name="after_body"/>
+                        'end ';
+                        <p name="after"/>
+                    'end
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
-                <pointcut name="before">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
-                    <paste-algorithm>
-                        <insert-fragment
-                          />
-                    </paste-algorithm>
-                </pointcut>
-                <pointcut name="before_body" clone="for::before"/>
-                <pointcut name="after_body" clone="for::before"/>
-                <pointcut name="after" clone="for::before"/>
+                <pointcut name="before"       clone="if::before"/>
+                <pointcut name="before_body"  clone="for::before"/>
+                <pointcut name="after_body"   clone="for::before"/>
+                <pointcut name="after"        clone="if::after"/>
             </pointcuts>
         </keyword>
 
         <keyword
           name="while"
+          search-type="while_statement"
+          sequential="false"
+          filter-poi="while_condition"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
-                    <p name="before"/>
-                    'while '( <!--condition--> ') '{
-                        <p name="before_body"/>
-                        <!--statement-->
-                        <p name="after_body"/>
-                    '}
-                    <p name="after"/>
-                </pattern>
-            </replacement-patterns>
+            <templates>
+                <template kind="replace">
+                    'while 'true 'do
+                    'begin
+                        <p name="before"/>
+                        'while <!--expr--> 'do
+                        'begin
+                            <p name="before_body"/>
+                            <!--nested_stm-->
+                            <p name="after_body"/>
+                        'end;
+                        <p name="after"/>
+                        'break ';
+                    'end
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
-                <pointcut name="before">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
-                    <paste-algorithm>
-                        <insert-fragment
-                          />
-                    </paste-algorithm>
-                </pointcut>
-                <pointcut name="before_body" clone="while::before"/>
-                <pointcut name="after_body" clone="while::before"/>
-                <pointcut name="after" clone="while::before"/>
+                <pointcut name="before"       clone="for::before"/>
+                <pointcut name="before_body"  clone="for::before_body"/>
+                <pointcut name="after_body"   clone="for::after_body"/>
+                <pointcut name="after"        clone="for::after"/>
             </pointcuts>
         </keyword>
 
         <keyword
           name="do_while"
+          search-type="until_statement"
+          sequential="false"
+          filter-poi="do_while_condition"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
-                    <p name="before"/>
-                    'do '{
-                        <p name="before_body"/>
-                        <!--statement-->
-                        <p name="after_body"/>
-                    '}
-                    'while '( <!--condition--> ') ';
-                    <p name="after"/>
-                </pattern>
-            </replacement-patterns>
+            <templates>
+                <template kind="replace">
+                    'repeat
+                        <p name="before"/>
+                        'repeat
+                            <p name="before_body"/>
+                            <!--statement_list-->
+                            <p name="after_body"/>
+                        'until <!--expr--> ';
+                        <p name="after"/>
+                    'until 'false
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
-                <pointcut name="before">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
-                    <paste-algorithm>
-                        <insert-fragment
-                          />
-                    </paste-algorithm>
-                </pointcut>
-                <pointcut name="before_body" clone="do_while::before"/>
-                <pointcut name="after_body" clone="do_while::before"/>
-                <pointcut name="after" clone="do_while::before"/>
+                <pointcut name="before"       clone="for::before"/>
+                <pointcut name="before_body"  clone="for::before_body"/>
+                <pointcut name="after_body"   clone="for::after_body"/>
+                <pointcut name="after"        clone="for::after"/>
             </pointcuts>
         </keyword>
 
         <keyword
           name="switch"
+          search-type="case_statement"
+          sequential="false"
+          filter-poi="switch_expression"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
-                    <p name="before"/>
-                    'switch '( <!--expression--> ') '{
-                        <!--repeat switch_alternative-->
-                    '}
-                    <p name="after"/>
-                </pattern>
-            </replacement-patterns>
+            <templates>
+                <template kind="replace">
+                    'case '1 'of
+                        '1 ':
+                            <p name="before"/>
+                            'case <!--expr--> 'of 
+                                <!--repeat case_selector-->
+                            'end ';
+                            <p name="after"/>
+                    <!--end_struct-->
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
-                <pointcut name="before">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
-                    <paste-algorithm>
-                        <insert-fragment
-                          />
-                    </paste-algorithm>
-                </pointcut>
-                <pointcut name="after" clone="switch::before"/>
+                <pointcut name="before" clone="if::before"/>
+                <pointcut name="after"  clone="if::after"/>
             </pointcuts>
         </keyword>
 
         <keyword
           name="case"
+          search-type="case_selector"
+          sequential="false"
+          filter-poi="case_label"
           >
-            <replacement-patterns>
-                <pattern search-type="repeat declaration_or_statement">
-                    <!--switch_label-->
+            <templates>
+                <template kind="replace">
+                    <!--case_label--> <!--opt colon--> 'begin
                         <p name="before_body"/>
-                        <!--repeat declaration_or_statement-->
+                        <!--nested_stm-->
                         <p name="after_body"/>
-                </pattern>
-            </replacement-patterns>
+                    'end <!--opt literal-->
+                </template>
+
+                <template kind="match" auto-gen="grammar"/>
+            </templates>
             <pointcuts>
-                <pointcut name="before_body">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
-                    <paste-algorithm>
-                        <insert-fragment
-                          />
-                    </paste-algorithm>
-                </pointcut>
-                <pointcut name="after_body">
-                    <fragment
-                      type="repeat declaration_or_statement"
-                      as="Additions"
-                      />
-                    <paste-algorithm>
-                        <fragment-to-variable
-                          name="Additions"
-                          type="repeat declaration_or_statement"
-                          />
-                        <insert-call
-                          function="."
-                          params="Additions"
-                          />
-                    </paste-algorithm>
-                </pointcut>
+                <pointcut name="before_body"  clone="for::before_body"/>
+                <pointcut name="after_body"   clone="for::after_body"/>
             </pointcuts>
         </keyword>
     </pointcuts>

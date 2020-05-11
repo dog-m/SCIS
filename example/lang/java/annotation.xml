@@ -186,6 +186,7 @@
                           />
                     </paste-algorithm>
                 </pointcut>
+                <pointcut name="after_body" clone="method::before_body"/>
             </pointcuts>
         </keyword>
 

@@ -96,6 +96,7 @@ namespace scis {
       string language;
       string txlSourceFilename;
       DirectedAcyclicGraph graph;
+      string userVariableType = "stringlit";
     }; // GrammarDescription
 
     enum class FunctionPolicy {

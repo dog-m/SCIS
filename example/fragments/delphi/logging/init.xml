@@ -4,5 +4,7 @@
     <required name="logging_fields"/>
   </dependencies>
 
-  <code/>
+  <code>
+    iLogger := getGlobalLogger();
+  </code>
 </fragment>
