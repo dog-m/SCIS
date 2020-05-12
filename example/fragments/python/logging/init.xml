@@ -6,7 +6,7 @@
 
   <code black-list="imports, if, for">
     logging.basicConfig()
-    self.logger = logging.getLogger("simpleExample")
-    self.logger.setLevel(logging.DEBUG)
+    self.iLogger = logging.getLogger("simpleExample")
+    self.iLogger.setLevel(logging.DEBUG)
   </code>
 </fragment>

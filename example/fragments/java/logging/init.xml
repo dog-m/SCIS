@@ -5,8 +5,8 @@
   </dependencies>
 
   <code black-list="imports, if, for">
-    instrumentationHandler.setLevel(Level.ALL);
-    instrumentationLogger.addHandler(instrumentationHandler);
-    instrumentationLogger.setLevel(Level.ALL);
+    iHandler.setLevel(Level.ALL);
+    iLogger.addHandler(iHandler);
+    iLogger.setLevel(Level.ALL);
   </code>
 </fragment>

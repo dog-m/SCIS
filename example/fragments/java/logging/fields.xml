@@ -4,7 +4,7 @@
   </dependencies>
 
   <code black-list="imports, if, for">
-    private static final Logger instrumentationLogger = Logger.getLogger(getClass().getName());
-    private static final Handler instrumentationHandler = newConsoleHandler();
+    private static final Logger iLogger = Logger.getLogger(getClass().getName());
+    private static final Handler iHandler = newConsoleHandler();
   </code>
 </fragment>
