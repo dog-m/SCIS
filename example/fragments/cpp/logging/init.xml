@@ -1,0 +1,10 @@
+<fragment language="cpp" name="logging_init">
+  <dependencies>
+    <required name="logging_imports"/>
+    <required name="logging_fields"/>
+  </dependencies>
+
+  <code>
+    __INSTRUM_ID := 2;
+  </code>
+</fragment>

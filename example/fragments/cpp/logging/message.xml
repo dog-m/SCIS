@@ -1,0 +1,10 @@
+<fragment language="cpp" name="logging_message">
+  <dependencies>
+    <required name="logging_imports"/>
+    <required name="logging_fields"/>
+  </dependencies>
+
+  <code black-list="imports" params="message">
+    std::cout &lt;&lt; "[LOG] " &lt;&lt; __INSTRUM_ID &lt;&lt; <p id="message"/> &lt;&lt; std::endl;
+  </code>
+</fragment>

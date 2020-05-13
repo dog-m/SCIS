@@ -1,0 +1,7 @@
+<fragment language="cpp" name="logging_dependencies">
+  <dependencies/>
+
+  <code white-list="imports">
+    #include &lt;iostream&gt;
+  </code>
+</fragment>

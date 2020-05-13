@@ -1,0 +1,9 @@
+<fragment language="cpp" name="logging_fields">
+  <dependencies>
+    <required name="logging_imports"/>
+  </dependencies>
+
+  <code black-list="imports, if, for">
+    unsigned int __INSTRUM_ID = 1;
+  </code>
+</fragment>

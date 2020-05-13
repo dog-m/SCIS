@@ -1,37 +1,25 @@
-<!-- default value of "user-variable-type" is "stringlit" -->
 <annotation>
     <grammar
-      language="delphi"
-      src="lang\delphi\grammar.txl"
-      user-variable-type="charlit"
+      language="cpp"
+      src="lang\cpp\grammar.txl"
       >
         <keyword-DAG>
-            <program type="program_file">
-                <imports type="list uses_item"/>
-                <class type="type_decl"/>
-                <method type="procedure_impl_decl">
+            <imports type="repeat declaration"/>
+            <class type="class_specifier">
+                <method type="function_definition">
                     <if type="if_statement">
-                        <else type="else_stm"/>
+                        <else type="else_statement"/>
                     </if>
-                    <switch type="case_statement">
-                        <case type="case_selector"/>
+                    <switch type="switch_statement">
+                        <case type="statement"/>
                     </switch>
                     <for type="for_statement"/>
                     <while type="while_statement"/>
-                    <do_while type="until_statement"/>
+                    <do_while type="do_while_statement"/>
                     ...
                 </method>
-            </program>
-            <package type="package_file">
-                <imports/>
-                <class/>
-                <method/>
-            </package>
-            <unit type="unit_file">
-                <imports/>
-                <class/>
-                <method/>
-            </unit>
+            </class>
+            <method/>
         </keyword-DAG>
     </grammar>
 
@@ -41,10 +29,10 @@
           apply="after-all"
           >
             <source>
-                replace [nested_stm]
-                  'begin 'begin Statements [statement_list] 'end; 'end
+                replace [compound_statement]
+                  '{ '{ Statements [statement_list] '} '}
                 by
-                  'begin Statements 'end
+                  '{ Statements '}
             </source>
         </rule>
 
@@ -54,64 +42,45 @@
           params="Addition:uses_item"
           >
             <source>
-                replace [list uses_item]
-                  Imports [list uses_item]
-                deconstruct not * [uses_item] Imports
+                replace [repeat declaration]
+                  Imports [repeat declaration]
+                deconstruct not * [declaration] Imports
                   Addition
                 by
-                  Imports [, Addition]
+                  Imports [. Addition]
             </source>
         </function>
     </lib>
 
     <points-of-interest>
-        <!--WARNING: no libraries-->
-        <point
-          id="program_name"
-          keyword="program"
-          value-of="program_decl:qualified_id"
-          />
-
-        <point
-          id="package_name"
-          keyword="package"
-          value-of="package_decl:qualified_id"
-          />
-
-        <point
-          id="unit_name"
-          keyword="unit"
-          value-of="unit_decl:qualified_id"
-          />
-
         <point
           id="class_name"
           keyword="class"
-          value-of="identlist"
+          value-of="class_name_variants"
           />
 
         <point
           id="method_namespace"
           keyword="method"
-          value-of="procedure_intf_decl:procedure_signature:procedure_id:namespace"
+          value-of="function_declarator:declared_item:declared_name:nested_name_spec"
           />
 
         <point
           id="method_name"
           keyword="method"
-          value-of="procedure_intf_decl:procedure_signature:procedure_id:id"
+          value-of="function_declarator:declared_item:declared_name:name"
           />
 
         <point
           id="method_name_full"
           keyword="method"
-          value-of="procedure_intf_decl:procedure_signature:procedure_id"
+          value-of="function_declarator:declared_item"
           />
 
         <point
           id="if_condition"
           keyword="if"
-          value-of="expr"
+          value-of="expression"
           />
 
         <point
@@ -123,19 +92,19 @@
         <point
           id="while_condition"
           keyword="while"
-          value-of="expr"
+          value-of="expression"
           />
 
         <point
           id="do_while_condition"
           keyword="do_while"
-          value-of="expr"
+          value-of="expression"
           />
 
         <point
           id="switch_expression"
           keyword="switch"
-          value-of="expr"
+          value-of="expression"
           />
 
         <point
@@ -148,17 +117,17 @@
     <pointcuts>
         <keyword
           name="imports"
-          search-type="list uses_item"
+          search-type="repeat declaration"
           sequential="false"
           >
             <templates>
                 <template kind="replace">
-                    <!--list uses_item-->
+                    <!--repeat declaration-->
                     <p name="all"/>
                 </template>
 
                 <template kind="match">
-                    <!--list uses_item-->
+                    <!--repeat declaration-->
                 </template>
             </templates>
             <pointcuts>
@@ -166,7 +135,7 @@
                     <paste-algorithm>
                         <fragment-to-variable
                           name="Additions"
-                          type="list uses_item"
+                          type="repeat declaration"
                           />
                         <insert-call
                           function="addToUsesUnique"
@@ -179,33 +148,23 @@
 
         <keyword
           name="class"
-          search-type="type_decl"
+          search-type="class_specifier"
           sequential="false"
           filter-poi="class_name"
           >
             <templates>
                 <template kind="replace">
-                    <!--identlist--> '= <!--opt type_keyword--> <!--opt packing--> <!--class_keyword--> <!--opt heritage_list-->
+                    <!--class_head--> '{
                         <p name="all"/>
-                        <!--repeat class_member-->
-                        <!--repeat visibility_block-->
-                    'end <!--opt hint_directive--> ';
+                        <!--repeat member-->
+                    '}
                 </template>
 
-                <template kind="match">
-                    <!--identlist--> '= <!--opt type_keyword--> <!--opt packing--> <!--class_keyword--> <!--opt heritage_list-->
-                        <!--visibility_default-->
-                        <!--repeat visibility_block-->
-                    'end <!--opt hint_directive--> ';
-                </template>
+                <template kind="match" auto-gen="grammar"/>
             </templates>
             <pointcuts>
                 <pointcut name="all">
                     <paste-algorithm>
-                        <deconstruct-variable
-                          type="visibility_default"
-                          variant="0"
-                          />
                         <insert-fragment
                           />
                     </paste-algorithm>
@@ -215,30 +174,22 @@
 
         <keyword
           name="method"
-          search-type="procedure_impl_decl"
+          search-type="function_definition"
           sequential="false"
           filter-poi="method_name_full"
           >
             <templates>
                 <template kind="replace">
-                    <!--procedure_intf_decl-->
-                    <!--nested_decl_block-->
-                    'begin
+                    <!--opt decl_specifiers--> <!--function_declarator--> <!--opt ctor_initializer--> <!--opt exception_specification-->
+                    '{
                         <p name="before_body"/>
-                        'begin
-                            <!--statement_list-->
-                        'end;
+                        <!--compound_statement-->
                         <p name="after_body"/>
-                    'end ';
+                    '}
+                    <!--opt literal-->
                 </template>
 
-                <template kind="match">
-                    <!--procedure_intf_decl-->
-                    <!--nested_decl_block-->
-                    'begin
-                        <!--statement_list-->
-                    'end ';
-                </template>
+                <template kind="match" auto-gen="grammar"/>
             </templates>
             <pointcuts>
                 <pointcut name="before_body">
@@ -254,23 +205,23 @@
         <!-- match-type already here in keyword when we described it in keyword-DAG -->
         <keyword
           name="if"
-          search-type="unlabeled_stm"
+          search-type="unlabeled_statement"
           sequential="false"
           filter-poi="if_condition"
           >
             <templates>
                 <template kind="replace">
-                    'begin
+                    '{
                         <p name="before"/>
-                        'if <!--expr--> 'then
-                        'begin
+                        'if <!--expression--> 'then
+                        '{
                             <p name="before_body"/>
-                            'case '1 'of '1 ': <!--nested_stm--> 'end;
+                            <!--statement-->
                             <p name="after_body"/>
-                        'end
-                        <!--opt else_stm--> ';
+                        '}
+                        <!--opt else_statement-->
                         <p name="after"/>
-                    'end
+                    '}
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -291,17 +242,17 @@
 
         <keyword
           name="else"
-          search-type="else_stm"
+          search-type="else_statement"
           sequential="false"
           >
             <templates>
                 <!-- pointcut "after" already exists in "if" keyword -->
                 <template kind="replace">
-                    'else 'begin
+                    'else '{
                         <p name="before_body"/>
-                        'case '1 'of '1 ': <!--nested_stm--> 'end;
+                        <!--statement-->
                         <p name="after_body"/>
-                    'end
+                    '}
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -319,22 +270,21 @@
 
         <keyword
           name="for"
-          search-type="unlabeled_stm"
+          search-type="unlabeled_statement"
           sequential="false"
           filter-poi="for_expression"
           >
             <templates>
                 <template kind="replace">
-                    'begin
+                    '{
                         <p name="before"/>
-                        'for <!--for_expression--> 'do
-                        'begin
+                        'for '( <!--for_expression--> ') '{
                             <p name="before_body"/>
-                            'if 'true 'then <!--nested_stm--> ';
+                            <!--statement-->
                             <p name="after_body"/>
-                        'end ';
+                        '}
                         <p name="after"/>
-                    'end
+                    '}
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -349,22 +299,21 @@
 
         <keyword
           name="while"
-          search-type="unlabeled_stm"
+          search-type="unlabeled_statement"
           sequential="false"
           filter-poi="while_condition"
           >
             <templates>
                 <template kind="replace">
-                    'begin
+                    '{
                         <p name="before"/>
-                        'while <!--expr--> 'do
-                        'begin
+                        'while '( <!--expression--> ') '{
                             <p name="before_body"/>
-                            'if 'true 'then <!--nested_stm--> ';
+                            <!--statement-->
                             <p name="after_body"/>
-                        'end;
+                        '}
                         <p name="after"/>
-                    'end
+                    '}
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -379,21 +328,21 @@
 
         <keyword
           name="do_while"
-          search-type="unlabeled_stm"
+          search-type="unlabeled_statement"
           sequential="false"
           filter-poi="do_while_condition"
           >
             <templates>
                 <template kind="replace">
-                    'begin
+                    '{
                         <p name="before"/>
-                        'repeat
+                        'do '{
                             <p name="before_body"/>
-                            <!--statement_list-->
+                            <!--statement-->
                             <p name="after_body"/>
-                        'until <!--expr--> ';
+                        '} 'while '( <!--expression--> ');
                         <p name="after"/>
-                    'end
+                    '}
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -408,19 +357,18 @@
 
         <keyword
           name="switch"
-          search-type="unlabeled_stm"
+          search-type="unlabeled_statement"
           sequential="false"
           filter-poi="switch_expression"
           >
             <templates>
                 <template kind="replace">
-                    'begin
+                    '{
                         <p name="before"/>
-                        'case <!--expr--> 'of 
-                            <!--repeat case_selector-->
-                        'end ';
+                        'switch '( <!--expression--> ')
+                            <!--statement-->
                         <p name="after"/>
-                    'end
+                    '}
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -431,20 +379,20 @@
             </pointcuts>
         </keyword>
 
+        <!--FIXME: wrong template-->
         <keyword
           name="case"
-          search-type="case_selector"
+          search-type="statement"
           sequential="false"
           filter-poi="case_label"
           >
             <templates>
                 <template kind="replace">
-                    <!--case_label--> <!--opt colon-->
-                    'begin
+                    <!--repeat label--> '{
                         <p name="before_body"/>
-                        'if 'true 'then <!--nested_stm--> ';
+                        <!--unlabeled_statement-->
                         <p name="after_body"/>
-                    'end <!--opt literal-->
+                    '}
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
