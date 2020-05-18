@@ -111,8 +111,8 @@ static void unrollPattern(
 
 Fragment const* TXLGenerator::getFragment(string const& id)
 {
-  auto const frag = fragments.find(id);
-  if (frag != fragments.cend())
+  auto const frag = loadedFragments.find(id);
+  if (frag != loadedFragments.cend())
     return frag->second.get();
 
   else
@@ -218,12 +218,21 @@ void TXLGenerator::loadRequestedFragments()
 {
   FragmentParser parser;
 
+  // load all listed fragments
   for (auto const& request : ruleset->fragments) {
     SCIS_DEBUG("Loading fragment from [" << request.path << "]");
 
-    auto fragment = parser.parse(fragmentsDir + request.path + ".xml");
-    fragments.insert_or_assign(fragment->name, std::move(fragment));
+    auto fragment = parser.parse(fragmentsDir + "/" + request.path + ".xml");
+    loadedFragments.insert_or_assign(fragment->name, std::move(fragment));
   }
+
+  // check dependencies (regardless of the listing order)
+  for (auto const& [_, frag] : loadedFragments)
+    for (auto const& dep : frag->dependencies) {
+      if (dep.required && loadedFragments.find(dep.target) == loadedFragments.cend())
+        SCIS_ERROR("Required fragment <" << dep.target << "> in not loaded "
+                   "for [" << frag->name << "]");
+    }
 }
 
 void TXLGenerator::sortKeywords(vector<string>& keywords) const
@@ -1294,7 +1303,7 @@ void TXLGenerator::compileStandardWrappers(string const& baseType)
   }
 }
 
-void TXLGenerator::genTXLImports(ostream& str)
+void TXLGenerator::includeGrammar(ostream& str)
 {
   str << "include \"" << annotation->grammar.txlSourceFilename << '\"' << endl;
 }
@@ -1324,7 +1333,7 @@ void TXLGenerator::generateCode(ostream& str)
 {
   SCIS_DEBUG("Generating TXL sources");
 
-  genTXLImports(str);
+  includeGrammar(str);
 
   // generate all functions including utilities and main
   for (auto const& func : functions) {

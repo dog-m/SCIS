@@ -1,7 +1,9 @@
-<annotation>
+<annotation
+  pipeline='txl "%SRC%" "%TRANSFORM%" -o "%DST%" %PARAMS%'
+  >
     <grammar
       language="java"
-      src="lang\java\grammar.txl"
+      src="grammar.txl"
       >
         <keyword-DAG>
             <package type="package_declaration">

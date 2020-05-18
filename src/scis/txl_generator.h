@@ -28,7 +28,7 @@ namespace scis {
     string fragmentsDir;
 
   protected:
-    unordered_map<string, unique_ptr<Fragment>> fragments;
+    unordered_map<string, unique_ptr<Fragment>> loadedFragments;
 
     unordered_map<string, int> maxDistanceToRoot;
 
@@ -146,7 +146,7 @@ namespace scis {
 
     void compileStandardWrappers(string const& baseType);
 
-    void genTXLImports(ostream &str);
+    void includeGrammar(ostream &str);
 
   public:
     void compile();

@@ -113,12 +113,19 @@ static string preparePipeline(
     string const& pipeline,
     string const& outTxlFile)
 {
+  // combine params
+  string params;
+  params += txl::PARAM_INCLUDE_DIR + "\"" + scis::args::ARG_ANNOTATION_DIR + "\" ";
+  //params += txl::PARAM_VERBOSE;
+  params += scis::args::ARG_TXL_PARAMETERS;
+
+  // build-up shell command by replacing placeholders
   string cmd = pipeline;
   cmd = replace_all(cmd, "%WORKDIR%"  , scis::args::ARG_WORKING_DIR     );
   cmd = replace_all(cmd, "%SRC%"      , scis::args::ARG_SRC_FILENAME    );
   cmd = replace_all(cmd, "%DST%"      , scis::args::ARG_DST_FILENAME    );
   cmd = replace_all(cmd, "%TRANSFORM%", outTxlFile                      );
-  cmd = replace_all(cmd, "%PARAMS%"   , scis::args::ARG_TXL_PARAMETERS  );
+  cmd = replace_all(cmd, "%PARAMS%"   , params                          );
   return cmd;
 }
 
@@ -159,6 +166,7 @@ int main(int argc, char** argv)
 
   SCIS_INFO("Loading annotation");
   auto const annotation = loadAndParseAnnotation(scis::args::ARG_ANNOTATION);
+  scis::args::updateGrammarLocation(annotation->grammar.txlSourceFilename);
 
   auto const data = scis::caching::initCacheSign(scis::args::ARG_RULESET, annotation->grammar.language);
 

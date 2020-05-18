@@ -18,6 +18,8 @@ namespace scis::codegen {
   inline string const NODE_TXL_INPUT = "TXLinput";
 
   inline string const NODE_ANONYMOUS     = "_";
+  inline string const NODE_INPUT         = "__INPUT__";
+  inline string const NODE_OUTPUT        = "__OUTPUT__";
   inline string const NODE_CURRENT       = "__NODE__";
   inline string const NODE_SEQ_TAIL      = "__TAIL__";
   inline string const NODE_SEQ_SINGLE    = "__SINGLE_BOX_ARRAY__";

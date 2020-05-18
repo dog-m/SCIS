@@ -1,6 +1,6 @@
 <fragment language="java" name="logging_message">
   <dependencies>
-    <required name="logging_imports"/>
+    <required name="logging_dependencies"/>
     <required name="logging_fields"/>
   </dependencies>
 

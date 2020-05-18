@@ -2,7 +2,7 @@
 <annotation>
     <grammar
       language="delphi"
-      src="lang\delphi\grammar.txl"
+      src="grammar.txl"
       user-variable-type="charlit"
       >
         <keyword-DAG>

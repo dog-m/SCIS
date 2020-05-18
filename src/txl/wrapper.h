@@ -10,6 +10,10 @@ namespace txl {
 
   using ReaderFunction = std::function< bool(string const&) >;
 
+  /// expecting a single space at the end of all parameters
+  inline string PARAM_INCLUDE_DIR = "-i ";
+  inline string PARAM_VERBOSE     = "-v ";
+
   struct Wrapper final
   {
     static bool NOOP_READER(string const&);

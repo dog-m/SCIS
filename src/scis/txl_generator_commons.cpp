@@ -155,14 +155,22 @@ void FilteringFunction::generateStatements()
 void RefinementFunctionFilter::generateStatements()
 {
   addStatementTop(
-        "replace $ [" + searchType + "]",
+        "deconstruct " + NODE_INPUT,
         NODE_CURRENT + " [" + processingType + "]");
+
+  // will be placed on top of deconstruction
+  addStatementTop(
+        "replace $ [" + searchType + "]",
+        NODE_INPUT + " [" + searchType + "]");
 
   /// pre-generated instructions there
 
+  createVariable(NODE_OUTPUT, searchType,
+                 NODE_INPUT + " [" + callTo->name + getParamNames() + "]");
+
   addStatementBott(
         "by",
-        NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
+        NODE_OUTPUT);
 }
 
 void RefinementFunction_First::generateStatements()
@@ -206,6 +214,8 @@ void RefinementFunction_All::generateStatements()
           "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "] " + NODE_SEQ_TAIL + " [" + searchType + "]");
 
+    /// pre-generated instructions there
+
     importVariable(
           skipCount, TXL_TYPE_NUMBER);
 
@@ -242,6 +252,7 @@ void RefinementFunction_All::generateStatements()
           "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "]");
 
+    /// pre-generated instructions there
     // WARNING: missed something?
 
     addStatementBott(

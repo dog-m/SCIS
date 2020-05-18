@@ -1,6 +1,6 @@
 <fragment language="java" name="logging_fields">
   <dependencies>
-    <required name="logging_imports"/>
+    <required name="logging_dependencies"/>
   </dependencies>
 
   <code black-list="imports, if, for">

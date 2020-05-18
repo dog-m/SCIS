@@ -8,6 +8,7 @@ namespace scis::args {
   using namespace std;
 
   inline string ARG_WORKING_DIR    = "";
+  inline string ARG_ANNOTATION_DIR = "";
 
   inline string ARG_SRC_FILENAME   = "";
   inline string ARG_DST_FILENAME   = "";
@@ -21,6 +22,8 @@ namespace scis::args {
 
   void updateArguments(int const argc,
                        char** const argv);
+
+  void updateGrammarLocation(string const& grmRelativePath);
 
 };
 

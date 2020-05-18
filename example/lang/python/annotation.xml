@@ -4,7 +4,7 @@
   >
     <grammar
       language="python"
-      src="lang\python\grammar.txl"
+      src="grammar.txl"
       >
         <keyword-DAG>
             <imports type="repeat statement_or_newline"/>
@@ -150,10 +150,12 @@
             </pointcuts>
         </keyword>
 
+        <!--"sequential=false" is useful in cases where blocks are prohibited in the middle of other blocks-->
         <keyword
           name="if"
           search-type="repeat statement_or_newline"
           filter-poi="if_condition"
+          sequential="true"
           >
             <templates>
                 <template kind="replace">
@@ -220,6 +222,7 @@
           name="for"
           search-type="repeat statement_or_newline"
           filter-poi="for_expression"
+          sequential="true"
           >
             <templates>
                 <template kind="replace">
@@ -252,6 +255,7 @@
           name="while"
           search-type="repeat statement_or_newline"
           filter-poi="while_condition"
+          sequential="true"
           >
             <templates>
                 <template kind="replace">

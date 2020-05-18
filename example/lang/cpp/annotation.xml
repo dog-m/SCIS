@@ -1,7 +1,7 @@
 <annotation>
     <grammar
       language="cpp"
-      src="lang\cpp\grammar.txl"
+      src="grammar.txl"
       >
         <keyword-DAG>
             <imports type="repeat declaration"/>

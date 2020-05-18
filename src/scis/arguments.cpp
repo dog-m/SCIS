@@ -3,7 +3,7 @@
 
 #include <argparse.hpp>
 
-//#include <filesystem> // TODO: use std::filesystem
+//#include <filesystem> // TODO: use std::filesystem, broken in mingw81
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
 
@@ -19,9 +19,6 @@ constexpr string_view PARAM_DESTINATION_SHORTCUT = "-d";
 constexpr string_view PARAM_RULESET          = "--ruleset";
 constexpr string_view PARAM_RULESET_SHORTCUT = "-r";
 
-constexpr string_view PARAM_GRAMMAR          = "--grammar";
-constexpr string_view PARAM_GRAMMAR_SHORTCUT = "-g";
-
 constexpr string_view PARAM_ANNOTATION          = "--annotation";
 constexpr string_view PARAM_ANNOTATION_SHORTCUT = "-a";
 
@@ -33,9 +30,16 @@ constexpr string_view PARAM_NO_CACHE       = "--no-cache";
 constexpr string_view PARAM_TXL_ARGS       = "txl_params";
 
 
+static string normalizePath(string const& path)
+{
+  return boost::filesystem::absolute(path).lexically_normal().make_preferred().string();
+}
+
+
 static string getFilenameParameter(argparse::ArgumentParser& parser, string_view const& name)
 {
-  return boost::filesystem::absolute(parser.get<string>(name)).make_preferred().string();
+  auto const path = parser.get<string>(name);
+  return normalizePath(path);
 }
 
 
@@ -58,11 +62,6 @@ void scis::args::updateArguments(int const argc,
   parser
       .add_argument(PARAM_RULESET, PARAM_RULESET_SHORTCUT)
       .help("ruleset\t")
-      .required();
-
-  parser
-      .add_argument(PARAM_GRAMMAR, PARAM_GRAMMAR_SHORTCUT)
-      .help("grammar\t")
       .required();
 
   parser
@@ -106,7 +105,6 @@ void scis::args::updateArguments(int const argc,
   ARG_SRC_FILENAME  = getFilenameParameter(parser, PARAM_SOURCE);
   ARG_DST_FILENAME  = getFilenameParameter(parser, PARAM_DESTINATION);
   ARG_RULESET       = getFilenameParameter(parser, PARAM_RULESET);
-  ARG_GRAMMAR       = getFilenameParameter(parser, PARAM_GRAMMAR);
   ARG_ANNOTATION    = getFilenameParameter(parser, PARAM_ANNOTATION);
   ARG_FRAGMENTS_DIR = getFilenameParameter(parser, PARAM_FRAGMENTS);
 
@@ -117,4 +115,13 @@ void scis::args::updateArguments(int const argc,
   ARG_TXL_PARAMETERS = "";
   for (auto const& param : parser.get<vector<string>>(PARAM_TXL_ARGS))
     ARG_TXL_PARAMETERS += ' ' + param;
+
+  // post-processing
+  ARG_ANNOTATION_DIR = normalizePath(boost::filesystem::path(ARG_ANNOTATION).parent_path().string());
+}
+
+void scis::args::updateGrammarLocation(string const& grmRelativePath)
+{
+  // TODO: use `boost::filesystem::path`
+  ARG_GRAMMAR = ARG_ANNOTATION_DIR + '/' + grmRelativePath;
 }
