@@ -108,7 +108,6 @@
         <keyword
           name="method"
           search-type="funcdef"
-          sequential="false"
           >
             <!--Sources of [suite] block should be added manualy-->
             <templates>
@@ -150,7 +149,7 @@
             </pointcuts>
         </keyword>
 
-        <!--"sequential=false" is useful in cases where blocks are prohibited in the middle of other blocks-->
+        <!--"sequential=false" is default value. useful in cases where blocks are prohibited in the middle of other blocks-->
         <keyword
           name="if"
           search-type="repeat statement_or_newline"

@@ -175,7 +175,7 @@ void RefinementFunctionFilter::generateStatements()
 
 void RefinementFunction_First::generateStatements()
 {
-  if (sequential) {
+  if (isSequence) {
     addStatementTop(
           "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "] " + NODE_SEQ_TAIL + " [" + searchType + "]");
@@ -196,20 +196,28 @@ void RefinementFunction_First::generateStatements()
   }
   else {
     addStatementTop(
-          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          "deconstruct " + NODE_INPUT,
           NODE_CURRENT + " [" + processingType + "]");
+
+    // will be placed on top of deconstruction
+    addStatementTop(
+          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          NODE_INPUT + " [" + searchType + "]");
 
     /// pre-generated instructions there
 
+    createVariable(NODE_OUTPUT, searchType,
+                   NODE_INPUT + " [" + callTo->name + getParamNames() + "]");
+
     addStatementBott(
           "by",
-          NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
+          NODE_OUTPUT);
   }
 }
 
 void RefinementFunction_All::generateStatements()
 {
-  if (sequential) {
+  if (isSequence) {
     addStatementTop(
           "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "] " + NODE_SEQ_TAIL + " [" + searchType + "]");
@@ -249,15 +257,23 @@ void RefinementFunction_All::generateStatements()
   }
   else {
     addStatementTop(
-          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          "deconstruct " + NODE_INPUT,
           NODE_CURRENT + " [" + processingType + "]");
 
+    // will be placed on top of deconstruction
+    addStatementTop(
+          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          NODE_INPUT + " [" + searchType + "]");
+
     /// pre-generated instructions there
-    // WARNING: missed something?
+    // WARNING: missed something here?
+
+    createVariable(NODE_OUTPUT, searchType,
+                   NODE_INPUT + " [" + callTo->name + getParamNames() + "]");
 
     addStatementBott(
           "by",
-          NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
+          NODE_OUTPUT);
   }
 }
 
@@ -280,7 +296,7 @@ void RefinementFunction_Level::generateStatements()
         "BOXES_TO_SKIP [= 0]");
 
   // type-dependent instructions
-  if (sequential) {
+  if (isSequence) {
     addStatementTop(
           "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "] " + NODE_SEQ_TAIL + " [" + searchType + "]");
@@ -305,8 +321,13 @@ void RefinementFunction_Level::generateStatements()
   }
   else {
     addStatementTop(
-          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          "deconstruct " + NODE_INPUT,
           NODE_CURRENT + " [" + processingType + "]");
+
+    // will be placed on top of deconstruction
+    addStatementTop(
+          "replace " + getRepeatModifier() + " [" + searchType + "]",
+          NODE_INPUT + " [" + searchType + "]");
 
     /// pre-generated instructions there
 
@@ -314,9 +335,12 @@ void RefinementFunction_Level::generateStatements()
           NODE_ANONYMOUS, searchType,
           NODE_CURRENT + " [" + skipCountCounter + "] [" + skipCountDecrementer + "]");
 
+    createVariable(NODE_OUTPUT, searchType,
+                   NODE_INPUT + " [" + callTo->name + getParamNames() + "]");
+
     addStatementBott(
           "by",
-          NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
+          NODE_OUTPUT);
   }
 }
 

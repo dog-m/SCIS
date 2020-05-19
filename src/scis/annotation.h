@@ -76,7 +76,7 @@ namespace scis {
         string id;
         string type;
         string searchType;
-        bool sequential = true;
+        bool sequential = false;
         optional<string> filterPOI = nullopt;
         unordered_map<string, unique_ptr<Pointcut>> pointcuts;
         unordered_map<string, unique_ptr<Template>> templates;

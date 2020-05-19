@@ -139,7 +139,7 @@ namespace scis::codegen {
 
   struct RefinementFunction : public CallChainFunction {
     string searchType;
-    bool sequential = false;
+    bool isSequence = false;
     int queueIndex = 0;
   }; // RefinementFunction
 

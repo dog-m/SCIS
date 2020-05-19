@@ -163,8 +163,8 @@
         <keyword
           name="method"
           search-type="method_declaration"
-          sequential="false"
           filter-poi="method_name"
+          sequential="false"
           >
             <templates>
                 <template kind="replace">
@@ -200,14 +200,16 @@
           >
             <templates>
                 <template kind="replace">
-                    <p name="before"/>
-                    'if '( <!--condition--> ') '{
-                        <p name="before_body"/>
-                        <!--statement-->
-                        <p name="after_body"/>
+                    '{
+                        <p name="before"/>
+                        'if '( <!--condition--> ') '{
+                            <p name="before_body"/>
+                            <!--statement-->
+                            <p name="after_body"/>
+                        '}
+                        <!--opt else_clause-->
+                        <p name="after"/>
                     '}
-                    <!--opt else_clause-->
-                    <p name="after"/>
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -260,13 +262,15 @@
           >
             <templates>
                 <template kind="replace">
-                    <p name="before"/>
-                    'for '( <!--for_init--> <!--for_expression--> <!--for_update--> ') '{
-                        <p name="before_body"/>
-                        <!--statement-->
-                        <p name="after_body"/>
+                    '{
+                        <p name="before"/>
+                        'for '( <!--for_init--> <!--for_expression--> <!--for_update--> ') '{
+                            <p name="before_body"/>
+                            <!--statement-->
+                            <p name="after_body"/>
+                        '}
+                        <p name="after"/>
                     '}
-                    <p name="after"/>
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -291,13 +295,15 @@
           >
             <templates>
                 <template kind="replace">
-                    <p name="before"/>
-                    'while '( <!--condition--> ') '{
-                        <p name="before_body"/>
-                        <!--statement-->
-                        <p name="after_body"/>
+                    '{
+                        <p name="before"/>
+                        'while '( <!--condition--> ') '{
+                            <p name="before_body"/>
+                            <!--statement-->
+                            <p name="after_body"/>
+                        '}
+                        <p name="after"/>
                     '}
-                    <p name="after"/>
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -322,14 +328,16 @@
           >
             <templates>
                 <template kind="replace">
-                    <p name="before"/>
-                    'do '{
-                        <p name="before_body"/>
-                        <!--statement-->
-                        <p name="after_body"/>
+                    '{
+                        <p name="before"/>
+                        'do '{
+                            <p name="before_body"/>
+                            <!--statement-->
+                            <p name="after_body"/>
+                        '}
+                        'while '( <!--condition--> ') ';
+                        <p name="after"/>
                     '}
-                    'while '( <!--condition--> ') ';
-                    <p name="after"/>
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -354,11 +362,13 @@
           >
             <templates>
                 <template kind="replace">
-                    <p name="before"/>
-                    'switch '( <!--expression--> ') '{
-                        <!--repeat switch_alternative-->
+                    '{
+                        <p name="before"/>
+                        'switch '( <!--expression--> ') '{
+                            <!--repeat switch_alternative-->
+                        '}
+                        <p name="after"/>
                     '}
-                    <p name="after"/>
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -374,10 +384,12 @@
             </pointcuts>
         </keyword>
 
+        <!--TODO: CHECK-->
         <keyword
           name="case"
           search-type="repeat declaration_or_statement"
           filter-poi="case_label"
+          sequential="true"
           >
             <templates>
                 <template kind="replace">

@@ -124,10 +124,9 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
   // base information
   keyword->searchType = expectedAttribute(root, "search-type")->Value();
 
+  // NOTE: by default `sequential` is false
   if (auto const seq = root->FindAttribute("sequential"))
     keyword->sequential = seq->BoolValue();
-  else
-    keyword->sequential = true;
 
   if (auto const fPOI = root->FindAttribute("filter-poi"))
     keyword->filterPOI = fPOI->Value();

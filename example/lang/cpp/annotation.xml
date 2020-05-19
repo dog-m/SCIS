@@ -149,8 +149,8 @@
         <keyword
           name="class"
           search-type="class_specifier"
-          sequential="false"
           filter-poi="class_name"
+          sequential="false"
           >
             <templates>
                 <template kind="replace">
@@ -175,8 +175,8 @@
         <keyword
           name="method"
           search-type="function_definition"
-          sequential="false"
           filter-poi="method_name_full"
+          sequential="false"
           >
             <templates>
                 <template kind="replace">
@@ -206,7 +206,6 @@
         <keyword
           name="if"
           search-type="unlabeled_statement"
-          sequential="false"
           filter-poi="if_condition"
           >
             <templates>
@@ -271,7 +270,6 @@
         <keyword
           name="for"
           search-type="unlabeled_statement"
-          sequential="false"
           filter-poi="for_expression"
           >
             <templates>
@@ -300,7 +298,6 @@
         <keyword
           name="while"
           search-type="unlabeled_statement"
-          sequential="false"
           filter-poi="while_condition"
           >
             <templates>
@@ -329,7 +326,6 @@
         <keyword
           name="do_while"
           search-type="unlabeled_statement"
-          sequential="false"
           filter-poi="do_while_condition"
           >
             <templates>
@@ -358,7 +354,6 @@
         <keyword
           name="switch"
           search-type="unlabeled_statement"
-          sequential="false"
           filter-poi="switch_expression"
           >
             <templates>
@@ -383,7 +378,6 @@
         <keyword
           name="case"
           search-type="statement"
-          sequential="false"
           filter-poi="case_label"
           >
             <templates>

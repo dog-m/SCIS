@@ -750,7 +750,7 @@ void TXLGenerator::compileRefinementFunction_First(
   rFunc->skipType = nullopt; // FIXME: refinement skipping
   rFunc->searchType = keyword->searchType;
   rFunc->processingType = keyword->type;
-  rFunc->sequential = keyword->sequential;
+  rFunc->isSequence = keyword->sequential;
   rFunc->queueIndex = index;
 
   // hook-up together
@@ -802,7 +802,7 @@ void TXLGenerator::compileRefinementFunction_All(
   rFunc->processingType = keyword->type;
 
   // type-dependent data
-  rFunc->sequential = keyword->sequential;
+  rFunc->isSequence = keyword->sequential;
   rFunc->queueIndex = index;
   rFunc->skipCount = SKIP;
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
@@ -854,7 +854,7 @@ void TXLGenerator::compileRefinementFunction_Level(
   rFunc->processingType = keyword->type;
 
   // type-dependent data
-  rFunc->sequential = keyword->sequential;
+  rFunc->isSequence = keyword->sequential;
   rFunc->queueIndex = index;
   rFunc->skipCount = SKIP;
   rFunc->skipCountDecrementer = getSkipDecrementerName(index);
