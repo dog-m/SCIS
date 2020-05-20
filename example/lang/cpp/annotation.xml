@@ -39,7 +39,7 @@
         <function
           name="addToUsesUnique"
           apply="call"
-          params="Addition:uses_item"
+          params="Addition:declaration"
           >
             <source>
                 replace [repeat declaration]
@@ -56,7 +56,7 @@
         <point
           id="class_name"
           keyword="class"
-          value-of="class_name_variants"
+          value-of="class_head:class_name_variants"
           />
 
         <point
@@ -110,7 +110,7 @@
         <point
           id="case_label"
           keyword="case"
-          value-of="case_label"
+          value-of="label"
           />
     </points-of-interest>
 
@@ -186,7 +186,6 @@
                         <!--compound_statement-->
                         <p name="after_body"/>
                     '}
-                    <!--opt literal-->
                 </template>
 
                 <template kind="match" auto-gen="grammar"/>
@@ -194,6 +193,10 @@
             <pointcuts>
                 <pointcut name="before_body">
                     <paste-algorithm>
+                        <deconstruct-variable
+                          type="function_body"
+                          variant="0"
+                          />
                         <insert-fragment
                           />
                     </paste-algorithm>
@@ -212,8 +215,7 @@
                 <template kind="replace">
                     '{
                         <p name="before"/>
-                        'if <!--expression--> 'then
-                        '{
+                        'if '( <!--expression--> ') '{
                             <p name="before_body"/>
                             <!--statement-->
                             <p name="after_body"/>

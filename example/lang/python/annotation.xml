@@ -1,6 +1,6 @@
 <!-- default pipeline: txl "%SRC%" "%TRANSFORM%" -o "%DST%" %PARAMS% -->
 <annotation
-  pipeline='txl "%SRC%" "%WORKDIR%\example\lang\python\pyindent.txl" | txl stdin "%TRANSFORM%" -o "%DST%" %PARAMS%'
+  pipeline='txl "%SRC%" "%WORKDIR%\lang\python\pyindent.txl" | txl stdin "%TRANSFORM%" -o "%DST%" %PARAMS%'
   >
     <grammar
       language="python"
@@ -24,7 +24,28 @@
         </keyword-DAG>
     </grammar>
 
-    <lib/>
+    <lib>
+      <function
+          name="addToImportsIfNotExists"
+          apply="call"
+          params="Addition:statement_or_newline"
+          >
+            <source>
+                replace [repeat statement_or_newline]
+                  Imports [repeat statement_or_newline]
+
+                deconstruct * Addition
+                  Statement [simple_statement] _ [endofline]
+
+                deconstruct not * [simple_statement] Imports
+                  Statement
+                construct Processed [repeat statement_or_newline]
+                  Addition
+                by
+                  Processed [. Imports]
+            </source>
+        </function>
+    </lib>
 
     <points-of-interest>
         <point
@@ -72,8 +93,8 @@
           >
             <templates>
                 <template kind="replace">
-                    <p name="all"/>
                     <!--repeat statement_or_newline-->
+                    <p name="all"/>
                 </template>
 
                 <template kind="match">
@@ -88,8 +109,14 @@
                           type="newline"
                           value="_"
                           />
-                        <insert-fragment
+                        <fragment-to-variable
+                          name="Additions"
+                          type="repeat statement_or_newline"
                           each-line-postfix="NewLine"
+                          />
+                        <insert-call
+                          function="addToImportsIfNotExists"
+                          params="each Additions"
                           />
                     </paste-algorithm>
                 </pointcut>

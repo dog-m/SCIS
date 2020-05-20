@@ -4,7 +4,7 @@ use fragment "logging/init"
 use fragment "logging/message"
 
 context namespace_m:
-  { poi:method_namespace = "Main." }
+  { poi:method_namespace matches "Main*" }
 
 context method_m:
   { poi:method_name matches "mai*" }

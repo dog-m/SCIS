@@ -4,8 +4,8 @@ using namespace std;
 
 class Main {
 
-  int a = 10;
-  int b = 20;
+  int a = 20;
+  int b = 10;
 
   static void something_else() {
     if (a >= b) {

@@ -5,6 +5,6 @@
   </dependencies>
 
   <code>
-    __INSTRUM_ID := 2;
+    __INSTRUM_ID = 2;
   </code>
 </fragment>

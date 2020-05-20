@@ -11,19 +11,23 @@ using namespace std;
 using namespace scis::args;
 
 constexpr string_view PARAM_SOURCE          = "--src";
-constexpr string_view PARAM_SOURCE_SHORTCUT = "-s";
+constexpr string_view PARAM_SOURCE_SHORTCUT = "-S";
 
 constexpr string_view PARAM_DESTINATION          = "--dst";
-constexpr string_view PARAM_DESTINATION_SHORTCUT = "-d";
+constexpr string_view PARAM_DESTINATION_SHORTCUT = "-D";
 
 constexpr string_view PARAM_RULESET          = "--ruleset";
-constexpr string_view PARAM_RULESET_SHORTCUT = "-r";
+constexpr string_view PARAM_RULESET_SHORTCUT = "-R";
 
 constexpr string_view PARAM_ANNOTATION          = "--annotation";
-constexpr string_view PARAM_ANNOTATION_SHORTCUT = "-a";
+constexpr string_view PARAM_ANNOTATION_SHORTCUT = "-A";
 
 constexpr string_view PARAM_FRAGMENTS          = "--fragments-dir";
-constexpr string_view PARAM_FRAGMENTS_SHORTCUT = "-f";
+constexpr string_view PARAM_FRAGMENTS_SHORTCUT = "-F";
+
+// TODO: move internal CLI params to settings
+constexpr string_view PARAM_INTERNAL_GRM_RULESET  = "--scis-grm-ruleset";
+constexpr string_view PARAM_INTERNAL_GRM_TXL      = "--scis-grm-txl";
 
 constexpr string_view PARAM_DISABLED_RULES = "--disable";
 constexpr string_view PARAM_NO_CACHE       = "--no-cache";
@@ -49,6 +53,18 @@ void scis::args::updateArguments(int const argc,
   argparse::ArgumentParser parser("scis");
 
   // describe all possible options
+  parser
+      .add_argument(PARAM_INTERNAL_GRM_TXL)
+      .help("standard grammar for TXL language\t")
+      .required();
+
+
+  parser
+      .add_argument(PARAM_INTERNAL_GRM_RULESET)
+      .help("standard grammar for a set of rules (ruleset)\t")
+      .required();
+
+
   parser
       .add_argument(PARAM_SOURCE, PARAM_SOURCE_SHORTCUT)
       .help("program source text file to be processed\t")
@@ -98,8 +114,11 @@ void scis::args::updateArguments(int const argc,
     SCIS_ERROR(err.what() << endl << parser);
   }
 
-  ARG_WORKING_DIR = boost::filesystem::current_path().string();
-  SCIS_DEBUG("WORKDIR: " << ARG_WORKING_DIR);
+  // internal values
+  ARG_EXECUTABLE_DIR        = normalizePath(boost::filesystem::path(argv[0]).parent_path().string());
+  ARG_WORKING_DIR           = boost::filesystem::current_path().string();
+  ARG_INTERNAL_GRM_TXL      = getFilenameParameter(parser, PARAM_INTERNAL_GRM_TXL);
+  ARG_INTERNAL_GRM_RULESET  = getFilenameParameter(parser, PARAM_INTERNAL_GRM_RULESET);
 
   // extract parsed data from parser
   ARG_SRC_FILENAME  = getFilenameParameter(parser, PARAM_SOURCE);
@@ -108,9 +127,8 @@ void scis::args::updateArguments(int const argc,
   ARG_ANNOTATION    = getFilenameParameter(parser, PARAM_ANNOTATION);
   ARG_FRAGMENTS_DIR = getFilenameParameter(parser, PARAM_FRAGMENTS);
 
-  ARG_DISABLED_RULES = parser.get<string>(PARAM_DISABLED_RULES);
-
-  ARG_USE_CACHE = !parser.get<bool>(PARAM_NO_CACHE);
+  ARG_DISABLED_RULES  = parser.get<string>(PARAM_DISABLED_RULES);
+  ARG_USE_CACHE       = !parser.get<bool>(PARAM_NO_CACHE);
 
   ARG_TXL_PARAMETERS = "";
   for (auto const& param : parser.get<vector<string>>(PARAM_TXL_ARGS))
@@ -122,6 +140,5 @@ void scis::args::updateArguments(int const argc,
 
 void scis::args::updateGrammarLocation(string const& grmRelativePath)
 {
-  // TODO: use `boost::filesystem::path`
-  ARG_GRAMMAR = ARG_ANNOTATION_DIR + '/' + grmRelativePath;
+  ARG_GRAMMAR = normalizePath(ARG_ANNOTATION_DIR + '/' + grmRelativePath);
 }

@@ -55,6 +55,9 @@ static auto loadAndParseGrammar(string_view && filename)
   auto const xml = txl::Interpreter::grammarToXML(filename);
   SCIS_DEBUG("Grammar size: " << xml.size());
 
+  if (xml.size() == 0)
+    SCIS_ERROR("Failed to load grammar. Did you forget txl grammar?");
+
   return tryParse<txl::GrammarParser>(xml.data());
 }
 
@@ -81,6 +84,10 @@ static void generateTXLinstructions(
     scis::caching::CacheSignData const& signData,
     scis::GrammarAnnotation* const annotation)
 {
+  ofstream outputFile(outTxlFile, ios::trunc);
+  if (!outputFile.is_open())
+    SCIS_ERROR("Failed to create/rewrite transformation source");
+
   scis::TXLGenerator generator;
   SCIS_INFO("Loading grammar");
   generator.grammar = loadAndParseGrammar(scis::args::ARG_GRAMMAR);
@@ -96,7 +103,6 @@ static void generateTXLinstructions(
   SCIS_INFO("Building...");
   generator.compile();
 
-  ofstream outputFile(outTxlFile);
   // place cache-specific mark on it
   scis::caching::applyCacheFileSign(outputFile, signData);
   outputFile << endl;
@@ -162,11 +168,31 @@ int main(int argc, char** argv)
 {
   scis::args::updateArguments(argc, argv);
 
-  string const outTxlFile = scis::caching::generateFilenameByRuleset(scis::args::ARG_RULESET);
+  auto const outTxlFile = scis::caching::generateFilenameByRuleset(scis::args::ARG_RULESET);
 
   SCIS_INFO("Loading annotation");
   auto const annotation = loadAndParseAnnotation(scis::args::ARG_ANNOTATION);
   scis::args::updateGrammarLocation(annotation->grammar.txlSourceFilename);
+
+  //=====
+  // TODO: remove debug output
+  SCIS_DEBUG("workdi: >" << scis::args::ARG_WORKING_DIR          << "<");
+  SCIS_DEBUG("execdi: >" << scis::args::ARG_EXECUTABLE_DIR       << "<");
+  SCIS_DEBUG("in-txl: >" << scis::args::ARG_INTERNAL_GRM_TXL     << "<");
+  SCIS_DEBUG("in-rul: >" << scis::args::ARG_INTERNAL_GRM_RULESET << "<");
+
+  SCIS_DEBUG("src:    >" << scis::args::ARG_SRC_FILENAME   << "<");
+  SCIS_DEBUG("dst:    >" << scis::args::ARG_DST_FILENAME   << "<");
+  SCIS_DEBUG("annot:  >" << scis::args::ARG_ANNOTATION     << "<");
+  SCIS_DEBUG("anndir: >" << scis::args::ARG_ANNOTATION_DIR << "<");
+  SCIS_DEBUG("grm:    >" << scis::args::ARG_GRAMMAR        << "<");
+  SCIS_DEBUG("rules:  >" << scis::args::ARG_RULESET        << "<");
+  SCIS_DEBUG("disrul: >" << scis::args::ARG_DISABLED_RULES << "<");
+  SCIS_DEBUG("frags:  >" << scis::args::ARG_FRAGMENTS_DIR  << "<");
+  SCIS_DEBUG("cache:  >" << scis::args::ARG_USE_CACHE      << "<");
+  SCIS_DEBUG("params: >" << scis::args::ARG_TXL_PARAMETERS << "<");
+
+  //=====
 
   auto const data = scis::caching::initCacheSign(scis::args::ARG_RULESET, annotation->grammar.language);
 
@@ -177,7 +203,7 @@ int main(int argc, char** argv)
   }
 
   // prepare and run instrumentation command
-  string cmd = preparePipeline(annotation->pipeline, outTxlFile);
+  auto const cmd = preparePipeline(annotation->pipeline, outTxlFile);
   SCIS_DEBUG("Prepared command:" << endl << cmd);
   runPipeline(cmd);
 

@@ -2,6 +2,7 @@
   <dependencies/>
 
   <code white-list="imports">
+    import os
     import logging
   </code>
 </fragment>

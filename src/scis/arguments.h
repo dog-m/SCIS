@@ -7,9 +7,13 @@ namespace scis::args {
 
   using namespace std;
 
-  inline string ARG_WORKING_DIR    = "";
-  inline string ARG_ANNOTATION_DIR = "";
+  // TODO: move internal CLI params to settings
+  inline string ARG_WORKING_DIR          = "";
+  inline string ARG_EXECUTABLE_DIR       = "";
+  inline string ARG_INTERNAL_GRM_TXL     = "";
+  inline string ARG_INTERNAL_GRM_RULESET = "";
 
+  inline string ARG_ANNOTATION_DIR = "";
   inline string ARG_SRC_FILENAME   = "";
   inline string ARG_DST_FILENAME   = "";
   inline string ARG_RULESET        = "";

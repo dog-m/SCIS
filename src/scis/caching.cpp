@@ -52,11 +52,14 @@ static string readFileToString(string const& filename)
 
 string caching::generateFilenameByRuleset(string const& rulesetFilename)
 {
-  string cacheDir = "./example/"; // TODO: move to CLI arguments
+  auto const rulesetPath = boost::filesystem::path(rulesetFilename);
 
-  string const name = boost::filesystem::path(rulesetFilename).filename().replace_extension("").string();
+  // TODO: move caching folder to settings
+  auto const cacheDir = rulesetPath.parent_path().string();
 
-  return cacheDir + name + ".txl";
+  auto const name = rulesetPath.filename().replace_extension("").string();
+
+  return cacheDir + '/' + name + ".txl";
 }
 
 caching::CacheSignData caching::initCacheSign(

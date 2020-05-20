@@ -54,7 +54,7 @@
                   Addition
 
                 by
-                  Imports [^ Addition]
+                  Imports [. Addition]
             </source>
         </function>
     </lib>

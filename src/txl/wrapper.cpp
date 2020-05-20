@@ -30,12 +30,12 @@ inline static void read_line_by_line(
       break;
 }
 
-bool Wrapper::NOOP_READER(string const&)
+bool Wrapper::READER_NOOP(string const&)
 {
   return false;
 }
 
-bool Wrapper::LOG_READER(string const& line)
+bool Wrapper::READER_LOG(string const& line)
 {
   cerr << line << endl;
   return true;

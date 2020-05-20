@@ -1,9 +1,9 @@
-from logging import *
+import logging
 
 class Main:
     def __init__(self):
-        self.a = 10
-        self.b = 20
+        self.a = 20
+        self.b = 10
 
     def something_else(self, args):
         if self.a >= self.b:
