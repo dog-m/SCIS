@@ -7,7 +7,7 @@
 #include "scis/ruleset_parser.h"
 #include "scis/annotation_parser.h"
 #include "scis/txl_generator.h"
-#include "scis/arguments.h"
+#include "scis/cli_arguments.h"
 #include "xml_parser_utils.h"
 #include "txl/wrapper.h"
 #include "scis/caching.h"
@@ -97,6 +97,7 @@ static void generateTXLinstructions(
 
   SCIS_INFO("Loading ruleset");
   generator.ruleset = loadAndParseRuleset(scis::args::ARG_RULESET);
+  generator.ruleset->applyUserBlacklist(scis::args::ARG_DISABLED_RULES);
 
   generator.fragmentsDir = scis::args::ARG_FRAGMENTS_DIR;
 

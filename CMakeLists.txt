@@ -64,17 +64,16 @@ if(Boost_FOUND)
       src/scis/ruleset_parser.h
       src/scis/ruleset_parser.cpp
 
-      src/scis/txl_generator_commons.h
-      src/scis/txl_generator_commons.cpp
-
       src/scis/algorithm_commands.h
       src/scis/algorithm_commands.cpp
 
       src/scis/txl_generator.h
       src/scis/txl_generator.cpp
+      src/scis/txl_generator_commons.h
+      src/scis/txl_generator_commons.cpp
 
-      src/scis/arguments.h
-      src/scis/arguments.cpp
+      src/scis/cli_arguments.h
+      src/scis/cli_arguments.cpp
 
       src/scis/caching.h
       src/scis/caching.cpp

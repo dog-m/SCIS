@@ -914,8 +914,14 @@ void TXLGenerator::compileRefinementFunction_LevelPredicate(
 void TXLGenerator::compileRules()
 {
   for (auto const& [_, rule] : ruleset->rules) {
-    // FIXME: check if rule disabled by user
-    SCIS_DEBUG("Processing rule \'" << rule->id << "\'");
+    // check if we had to skip it
+    if (!rule->enabled) {
+      SCIS_DEBUG("Skipping disabled rule <" << rule->id << ">");
+      continue;
+    }
+
+    // go processing
+    SCIS_DEBUG("Processing rule <" << rule->id << ">");
 
     for (auto const& ruleStmt : rule->statements) {
       SCIS_DEBUG("Processing statement");
@@ -936,7 +942,7 @@ void TXLGenerator::compileRules()
         compileFilteringFunction(rule->id, context);
       }
 
-      SCIS_DEBUG("compiling Path*...");
+      SCIS_DEBUG("compiling Refiners...");
       compileRefinementFunctions(rule->id, ruleStmt);
 
       SCIS_DEBUG("compiling Instrumenter...");

@@ -1,6 +1,6 @@
 #include "interpreter.h"
 #include "wrapper.h"
-#include "../scis/arguments.h"
+#include "../scis/cli_arguments.h"
 
 #include <sstream>
 

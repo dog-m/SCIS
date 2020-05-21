@@ -127,7 +127,9 @@ namespace scis {
     unordered_map<string, unique_ptr<Context>> contexts;
     unordered_map<string, unique_ptr<Rule>> rules;
 
-    void dump(ostream &str);
+    void dump(ostream &str) const;
+
+    void applyUserBlacklist(vector<string> const& list);
   };
 
 } // SCIS

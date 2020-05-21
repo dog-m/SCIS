@@ -68,7 +68,7 @@ void Rule::MakeAction::ConstantComponent::toTXL(ostream& str) const
   str << " [+ " << upcase << "]";
 }
 
-void Ruleset::dump(ostream &str)
+void Ruleset::dump(ostream &str) const
 {
   str << "fragments:" << endl;
   for (auto const& f : fragments)
@@ -131,5 +131,17 @@ void Ruleset::dump(ostream &str)
     }
 
     str << "----------" << endl;
+  }
+}
+
+void Ruleset::applyUserBlacklist(vector<string> const& list)
+{
+  for (auto const& name : list) {
+    auto const rule = rules.find(name);
+    if (rule == rules.cend())
+      SCIS_WARNING("Cant disable non-existing rule <" << name << ">");
+    else
+      // NOTE: all rules enabled by-default
+      rule->second->enabled = false;
   }
 }
