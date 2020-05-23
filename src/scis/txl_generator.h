@@ -53,7 +53,7 @@ namespace scis {
 
     void resetCallChain();
 
-    TXLFunction* lastCallChainElement();
+    CallChainFunction* lastCallChainElement();
 
     void wrapStandardBinnaryOperator(string const& op,
                                      string const& type,
@@ -107,6 +107,8 @@ namespace scis {
 
     void compileRefinementFunctions(string const& ruleId,
                                     Rule::Statement const& ruleStmt);
+
+    void compileRefinementFunctionStarter();
 
     void compileRefinementFunction_First(string const& name,
                                          Rule::Location::PathElement const& element,

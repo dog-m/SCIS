@@ -12,6 +12,17 @@ namespace scis {
 
   using namespace std;
 
+  // basic context constraint operators
+  inline string const CTX_OP_EQUAL          = "=";
+  inline string const CTX_OP_NOT_EQUAL      = "~=";
+  inline string const CTX_OP_LESS           = "<";
+  inline string const CTX_OP_LESS_EQUAL     = "<=";
+  inline string const CTX_OP_GREATER        = ">";
+  inline string const CTX_OP_GREATER_EQUAL  = ">=";
+  inline string const CTX_OP_HAS            = "has";
+  inline string const CTX_OP_MATCH          = "matches";
+  inline string const CTX_OP_EXISTS         = "exists";
+
   struct SourceInfo {
     int32_t declarationLine = 0;
   };
@@ -126,6 +137,8 @@ namespace scis {
     vector<FragmentRequest> fragments;
     unordered_map<string, unique_ptr<Context>> contexts;
     unordered_map<string, unique_ptr<Rule>> rules;
+
+    vector<Rule const*> rulesOrder;
 
     void dump(ostream &str) const;
 

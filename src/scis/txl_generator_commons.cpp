@@ -173,6 +173,22 @@ void RefinementFunctionFilter::generateStatements()
         NODE_OUTPUT);
 }
 
+void RefinementFunctionStarter::generateStatements()
+{
+  addStatementTop(
+        "replace * [" + processingType + "]",
+        NODE_CURRENT + " [" + processingType + "]");
+
+  if (skipCounter.has_value())
+    exportVariableCreate(
+          skipCounter.value(), TXL_TYPE_NUMBER,
+          "0");
+
+  addStatementBott(
+        "by",
+        NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
+}
+
 void RefinementFunction_First::generateStatements()
 {
   if (isSequence) {
@@ -217,31 +233,33 @@ void RefinementFunction_First::generateStatements()
 
 void RefinementFunction_All::generateStatements()
 {
+  // independent instructions ('pre-generated')
+  importVariable(
+        skipCount, TXL_TYPE_NUMBER);
+
+  createVariable(
+        "BOXES_TO_SKIP", TXL_TYPE_NUMBER,
+        skipCount);
+
+  addStatementBott(
+        "where",
+        skipCount + " [" + skipCountDecrementer + "] [" + ACTION_NOTHING + "]");
+
+  addStatementBott(
+        "where",
+        "BOXES_TO_SKIP [= 0]");
+
+  exportVariableUpdate(
+        skipCount,
+        "1");
+
+  // type-dependent instructions
   if (isSequence) {
     addStatementTop(
           "replace " + getRepeatModifier() + " [" + searchType + "]",
           NODE_CURRENT + " [" + processingType + "] " + NODE_SEQ_TAIL + " [" + searchType + "]");
 
     /// pre-generated instructions there
-
-    importVariable(
-          skipCount, TXL_TYPE_NUMBER);
-
-    createVariable(
-          "BOXES_TO_SKIP", TXL_TYPE_NUMBER,
-          skipCount);
-
-    addStatementBott(
-          "where",
-          skipCount + " [" + skipCountDecrementer + "] [" + ACTION_NOTHING + "]");
-
-    addStatementBott(
-          "where",
-          "BOXES_TO_SKIP [= 0]");
-
-    exportVariableUpdate(
-          skipCount,
-          "1");
 
     createVariable(
           NODE_SEQ_SINGLE, searchType,
@@ -268,8 +286,9 @@ void RefinementFunction_All::generateStatements()
     /// pre-generated instructions there
     // WARNING: missed something here?
 
-    createVariable(NODE_OUTPUT, searchType,
-                   NODE_INPUT + " [" + callTo->name + getParamNames() + "]");
+    createVariable(
+          NODE_OUTPUT, searchType,
+          NODE_INPUT + " [" + callTo->name + getParamNames() + "]");
 
     addStatementBott(
           "by",
@@ -309,11 +328,10 @@ void RefinementFunction_Level::generateStatements()
 
     createVariable(
           NODE_SEQ_PROCESSED, searchType,
-          NODE_SEQ_SINGLE + " [" + callTo->name + getParamNames() + "]");
-
-    createVariable(
-          NODE_ANONYMOUS, searchType,
-          NODE_SEQ_PROCESSED + " [" + skipCountCounter + "]");
+          NODE_SEQ_SINGLE + " "
+          "[" + callTo->name + getParamNames() + "] "
+          "[" + skipCountCounter + "]" +
+          renderDecrementer());
 
     addStatementBott(
           "by",
@@ -332,16 +350,21 @@ void RefinementFunction_Level::generateStatements()
     /// pre-generated instructions there
 
     createVariable(
-          NODE_ANONYMOUS, searchType,
-          NODE_CURRENT + " [" + skipCountCounter + "] [" + skipCountDecrementer + "]");
-
-    createVariable(NODE_OUTPUT, searchType,
-                   NODE_INPUT + " [" + callTo->name + getParamNames() + "]");
+          NODE_OUTPUT, searchType,
+          NODE_INPUT + " "
+          "[" + callTo->name + getParamNames() + "] "
+          "[" + skipCountCounter + "]" +
+          renderDecrementer());
 
     addStatementBott(
           "by",
           NODE_OUTPUT);
   }
+}
+
+string RefinementFunction_Level::renderDecrementer() const
+{
+  return useDecrementer ? (" [" + skipCountDecrementer + "] ") : "";
 }
 
 

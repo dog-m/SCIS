@@ -11,9 +11,10 @@ namespace scis::codegen {
 
   using namespace std;
 
-  inline string const TXL_TYPE_STRING = "stringlit";
-  inline string const TXL_TYPE_ID     = "id";
-  inline string const TXL_TYPE_NUMBER = "number";
+  inline string const TXL_TYPE_STRING   = "stringlit";
+  inline string const TXL_TYPE_ID       = "id";
+  inline string const TXL_TYPE_NUMBER   = "number";
+  inline string const TXL_TYPE_PROGRAM  = "program";
 
   inline string const NODE_TXL_INPUT = "TXLinput";
 
@@ -37,7 +38,7 @@ namespace scis::codegen {
   inline string const PREFIX_STD                  = "__std__";
   inline string const PREFIX_NODE_SKIP            = "__SKIP__";
 
-  inline string const SUFFIX_HELPER = "__helper";
+  inline string const SUFFIX_STARTER = "__starter";
 
   inline string const ACTION_NOTHING = PREFIX_STD + "do_nothing";
 
@@ -150,6 +151,14 @@ namespace scis::codegen {
     void generateStatements() override;
   }; // RefinementFunctionFilter
 
+  /// kick-starter function for refiners
+  struct RefinementFunctionStarter : public CallChainFunction {
+    // used primarialy in `all` and `level` modifiers of refiners
+    optional<string> skipCounter = nullopt;
+
+    void generateStatements() override;
+  }; // RefinementFunctionStarter
+
   struct RefinementFunction_First final : public RefinementFunction {
     void generateStatements() override;
   }; // RefinementFunction_First
@@ -165,8 +174,11 @@ namespace scis::codegen {
     string skipCount;
     string skipCountCounter;
     string skipCountDecrementer;
+    bool useDecrementer = true;
 
     void generateStatements() override;
+
+    string renderDecrementer() const;
   }; // RefinementFunction_Level
 
   struct InstrumentationFunction final : public CallChainFunction {

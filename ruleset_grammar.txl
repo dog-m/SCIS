@@ -68,15 +68,29 @@ define basic_context
 end define
 
 define basic_context_constraint
-    [SPOFF] [context_property] [SPON] [context_op] [SP] [SPOFF] [string_template] [SPON]
+        [SPOFF] [basic_context_constraint_exists] [SPON]
+    |   [SPOFF] [basic_context_constraint_template] [SPON]
+    |   [SPOFF] [basic_context_constraint_value] [SPON]
+end define
+
+define basic_context_constraint_value
+  [context_property] [SP] [context_op] [SP] [stringlit]
+end define
+
+define context_op
+    '= | '< | '<= | '> | '>= | '~= | 'has
+end define
+
+define basic_context_constraint_template
+  [context_property] [SP] 'matches [SP] [string_template]
 end define
 
 define string_template
     [stringlit]
 end define
 
-define context_op
-    '= | '< | '<= | '> | '>= | '~= | 'has | 'matches
+define basic_context_constraint_exists
+  [context_property] [SP] 'exists [SP]
 end define
 
 define context_property

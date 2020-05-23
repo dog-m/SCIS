@@ -14,15 +14,6 @@ using namespace scis;
 
 constexpr auto DAG_DISTANCES_SEARCH_LIMMIT = 2500;
 
-static string const CTX_OP_EQUAL          = "=";
-static string const CTX_OP_NOT_EQUAL      = "~=";
-static string const CTX_OP_LESS           = "<";
-static string const CTX_OP_LESS_EQUAL     = "<=";
-static string const CTX_OP_GREATER        = ">";
-static string const CTX_OP_GREATER_EQUAL  = ">=";
-static string const CTX_OP_HAS            = "has";
-static string const CTX_OP_MATCH          = "matches";
-
 static unordered_map<string, pair<string, string>> CTX_OPERATOR_WRAPPER_MAPPING {
   // TODO: make better approach
   { CTX_OP_EQUAL        , { "="   , PREFIX_STD + "equal"         }},
@@ -132,7 +123,7 @@ void TXLGenerator::resetCallChain()
   currentCallChain.clear();
 }
 
-TXLFunction* TXLGenerator::lastCallChainElement()
+CallChainFunction* TXLGenerator::lastCallChainElement()
 {
   return currentCallChain.empty() ? nullptr : currentCallChain.back();
 }
@@ -504,8 +495,13 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
     auto const& property = poi2var[poi];
 
     // append expressions (pre-fix notation)
-    if (constraint.op == CTX_OP_MATCH)
+    if (constraint.op == CTX_OP_MATCH) {
       unrollPattern(checker, property, constraint.value);
+    }
+    // special case
+    else if (constraint.op == CTX_OP_EXISTS) {
+      // NOTE: Just do nothing. `exists` option forces a creation of a C-function to collect nodes with useful data
+    }
     // just regular operator
     else {
       auto const operation = getWrapperForOperator(constraint.op, TXL_TYPE_STRING);
@@ -726,7 +722,21 @@ void TXLGenerator::compileRefinementFunctions(
                  "in rule [" << ruleId << "] "
                  "declared at " << ruleStmt.declarationLine);
 
+    // compose a name
     auto const name = ruleId + "_refiner_" + path.keywordId + "_" + path.modifier + to_string(index);
+
+    auto const lastElement = lastCallChainElement();
+    // create a kick-starter function
+    auto const starter = createFunction<RefinementFunctionStarter>();
+    starter->isRule = false;
+    starter->name = name + SUFFIX_STARTER;
+    starter->copyParamsFrom(lastElement);
+    starter->processingType = lastElement
+        ? lastElement->processingType
+        : TXL_TYPE_PROGRAM;
+    addToCallChain(starter);
+
+    // build the rest
     generator->second(name, path, index);
 
     // update index
@@ -734,6 +744,19 @@ void TXLGenerator::compileRefinementFunctions(
       maxRefinementIndex = index;
 
     ++index;
+  }
+
+  // fix last refiner with `level` modifier
+  // NOTE: dirty hack to prevent a bug with `level`ed refiner infinite recursion
+  auto func = lastCallChainElement();
+  while (func) {
+    if (auto refiner = dynamic_cast<RefinementFunction_Level*>(func)) {
+      refiner->useDecrementer = false;
+      break;
+    }
+    else
+      // back tracking
+      func = dynamic_cast<CallChainFunction*>(const_cast<TXLFunction*>(func->callFrom));
   }
 }
 
@@ -769,28 +792,9 @@ void TXLGenerator::compileRefinementFunction_All(
   auto const keyword = annotation->grammar.graph.keywords[element.keywordId].get();
   auto const SKIP = getSkipNodeName(index);
 
-  if (keyword->sequential) {
-    // kick-starter function
-    auto const helper = createFunction<CallChainFunction>(); // TODO: move to a new class
-    helper->isRule = false;
-    helper->name = name + SUFFIX_HELPER;
-    helper->copyParamsFrom(lastCallChainElement());
-    helper->processingType = lastCallChainElement()->processingType;//annotation->grammar.baseSequenceType;
-
-    helper->addStatementTop(
-          "replace * [" + helper->processingType + "]",
-          NODE_CURRENT + " [" + helper->processingType + "]");
-
-    helper->exportVariableCreate(
-          SKIP, TXL_TYPE_NUMBER,
-          "0");
-
-    helper->addStatementBott(
-          "by",
-          NODE_CURRENT + " [" + name + helper->getParamNames() + "]");
-
-    addToCallChain(helper);
-  }
+  // fix kick-starter function
+  auto const starter = reinterpret_cast<RefinementFunctionStarter*>(lastCallChainElement());
+  starter->skipCounter = SKIP;
 
   // actual work
   auto const rFunc = createFunction<RefinementFunction_All>();
@@ -823,32 +827,15 @@ void TXLGenerator::compileRefinementFunction_Level(
   auto const keyword = annotation->grammar.graph.keywords[element.keywordId].get();
   auto const SKIP = getSkipNodeName(index);
 
-  // kick-starter function
-  auto const helper = createFunction<CallChainFunction>(); // TODO: move to a new class
-  helper->isRule = false;
-  helper->name = name + SUFFIX_HELPER;
-  helper->copyParamsFrom(lastCallChainElement());
-  helper->processingType = keyword->searchType;
-
-  helper->addStatementTop(
-        "replace * [" + helper->processingType + "]",
-        NODE_CURRENT + " [" + helper->processingType + "]");
-
-  helper->exportVariableCreate(
-        SKIP, TXL_TYPE_NUMBER,
-        "0");
-
-  helper->addStatementBott(
-        "by",
-        NODE_CURRENT + " [" + name + helper->getParamNames() + "]");
-
-  addToCallChain(helper);
+  // fix kick-starter function
+  auto const starter = reinterpret_cast<RefinementFunctionStarter*>(lastCallChainElement());
+  starter->skipCounter = SKIP;
 
   // actual work
   auto const rFunc = createFunction<RefinementFunction_Level>();
   rFunc->isRule = true;
   rFunc->name = name;
-  rFunc->copyParamsFrom(helper);
+  rFunc->copyParamsFrom(starter);
   rFunc->skipType = nullopt; // FIXME: refinement skipping
   rFunc->searchType = keyword->searchType;
   rFunc->processingType = keyword->type;
@@ -887,7 +874,7 @@ void TXLGenerator::compileRefinementFunction_Level(
 
   counter->addStatementTop(
         "replace $ [" + rFunc->processingType + "]",
-        NODE_CURRENT + "[" + rFunc->processingType + "]");
+        NODE_CURRENT + " [" + rFunc->processingType + "]");
 
   counter->importVariable(
         SKIP, TXL_TYPE_NUMBER);
@@ -913,7 +900,7 @@ void TXLGenerator::compileRefinementFunction_LevelPredicate(
 
 void TXLGenerator::compileRules()
 {
-  for (auto const& [_, rule] : ruleset->rules) {
+  for (auto const rule : ruleset->rulesOrder) {
     // check if we had to skip it
     if (!rule->enabled) {
       SCIS_DEBUG("Skipping disabled rule <" << rule->id << ">");
@@ -1084,6 +1071,7 @@ void TXLGenerator::compileInstrumentationFunction(
 
   // introduce common variables and constants
   unordered_map<string, pair<string, string>> const PREDEFINED_IDENTIFIERS {
+    { "std:rule"    , { TXL_TYPE_ID    , "\'" + ruleId                      }},
     { "std:node"    , { TXL_TYPE_ID    , "_ [typeof " + NODE_CURRENT + "]"  }},
     { "std:pointcut", { TXL_TYPE_ID    , "\'" + pointcut->name              }},
     { "std:file"    , { TXL_TYPE_STRING, "_ [+ " + NODE_TXL_INPUT + "]"     }},
@@ -1166,12 +1154,12 @@ void TXLGenerator::compileInstrumentationFunction(
   string fragmentsChunk = "";
   for (auto const& add : ruleStmt.actionAdd) {
     auto const fragment = getFragment(add.fragmentId);
+    // existance check
     if (!fragment)
       SCIS_ERROR("Unknown fragment <" << add.fragmentId << "> "
                  "referenced at line " << add.declarationLine);
 
-    // TODO: check dependencies
-
+    // language check
     if (fragment->language != annotation->grammar.language)
       SCIS_ERROR("Fragment <" << fragment->name << "> "
                  "language missmatch on line " << add.declarationLine << ": "

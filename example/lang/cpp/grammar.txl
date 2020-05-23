@@ -108,7 +108,11 @@ end define
 % %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
 
 define class_head
-    [class_key] [class_name_variants] [opt base_spec]
+    [class_key] [class_name_variants] [class_additional_attrs] [opt base_spec]
+end define
+
+define class_additional_attrs
+  [repeat id]
 end define
 
 define class_name_variants
@@ -635,9 +639,11 @@ end define
 
 % Preprocessor directives
 
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
 define preprocessor
         '#define [id] '( [list id+] ')  [expression]
-    |   '#define [id]  [expression] 
+    |   '#define [id]  [opt expression] 
     |   [EX] '#else  [IN]
     |   [EX] '#endif [NL]
     |   [NL] '#if [expression] [IN]
@@ -650,6 +656,8 @@ define preprocessor
     |   '#undef [id]
     |   '#LINK [stringlit]
 end define
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 define file_identifier
         [id]

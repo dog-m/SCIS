@@ -10,9 +10,14 @@
 #pragma -case
 #pragma -w 256
 
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
 compounds
     :=  >=  <=  <>  {$  (*$  (*   *)  //
+    +=
 end compounds
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 tokens
     charlit "[(\#\d+)(\#$[\dABCDEFabcdef]+)('[('')#']*')]+"
@@ -892,11 +897,12 @@ define unlabeled_stm
     |   [call_stm]
 end define
 
-% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
-
 define assign_stm
-     [expr]':= [expr]
+     [expr] ':= [expr]
+   | [expr] '+= [expr]
 end define
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 define call_stm
         [expr]   

@@ -1,0 +1,31 @@
+use fragment "frag"
+
+rules:
+  mod_1_FIRST:
+    @@ -> [first] if # before:
+      make:
+        msg <- $std:rule;
+      add:
+        frag(msg)
+
+  mod_2_ALL:
+    @@ -> [all] if # before:
+      make:
+        msg <- $std:rule;
+      add:
+        frag(msg)
+
+  mod_3_LEVEL:
+    @@ -> [level] if # before:
+      make:
+        msg <- $std:rule;
+      add:
+        frag(msg)
+
+  multiplie_LEVELs:
+    @@ -> [level] if -> [level] if # before:
+      make:
+        msg <- $std:rule;
+      add:
+        frag(msg)
+

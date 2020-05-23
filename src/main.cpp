@@ -158,7 +158,7 @@ static void runPipeline(string const& preparedPipeline)
     SCIS_INFO("Source file has been copied as a result");
   }
   else
-    SCIS_INFO("Instrumented successfuly");
+    SCIS_INFO("Ok");
 }
 
 
@@ -177,21 +177,26 @@ int main(int argc, char** argv)
 
   //=====
   // TODO: remove debug output
-  SCIS_DEBUG("workdi: >" << scis::args::ARG_WORKING_DIR          << "<");
-  SCIS_DEBUG("execdi: >" << scis::args::ARG_EXECUTABLE_DIR       << "<");
+  SCIS_DEBUG("wrkdir: >" << scis::args::ARG_WORKING_DIR          << "<");
+  SCIS_DEBUG("exedir: >" << scis::args::ARG_EXECUTABLE_DIR       << "<");
   SCIS_DEBUG("in-txl: >" << scis::args::ARG_INTERNAL_GRM_TXL     << "<");
   SCIS_DEBUG("in-rul: >" << scis::args::ARG_INTERNAL_GRM_RULESET << "<");
 
   SCIS_DEBUG("src:    >" << scis::args::ARG_SRC_FILENAME   << "<");
   SCIS_DEBUG("dst:    >" << scis::args::ARG_DST_FILENAME   << "<");
-  SCIS_DEBUG("annot:  >" << scis::args::ARG_ANNOTATION     << "<");
+  SCIS_DEBUG("ann:    >" << scis::args::ARG_ANNOTATION     << "<");
   SCIS_DEBUG("anndir: >" << scis::args::ARG_ANNOTATION_DIR << "<");
   SCIS_DEBUG("grm:    >" << scis::args::ARG_GRAMMAR        << "<");
   SCIS_DEBUG("rules:  >" << scis::args::ARG_RULESET        << "<");
-  SCIS_DEBUG("disrul: >" << scis::args::ARG_DISABLED_RULES << "<");
-  SCIS_DEBUG("frags:  >" << scis::args::ARG_FRAGMENTS_DIR  << "<");
+  SCIS_DEBUG("fragdi: >" << scis::args::ARG_FRAGMENTS_DIR  << "<");
   SCIS_DEBUG("cache:  >" << scis::args::ARG_USE_CACHE      << "<");
-  SCIS_DEBUG("params: >" << scis::args::ARG_TXL_PARAMETERS << "<");
+  SCIS_DEBUG("txlpar: >" << scis::args::ARG_TXL_PARAMETERS << "<");
+
+  if (scis::args::ARG_DISABLED_RULES.empty())
+    SCIS_DEBUG("d-rule: 0");
+  else
+    for (auto const& drule : scis::args::ARG_DISABLED_RULES)
+      SCIS_DEBUG("d-rule: >" << drule << "<");
 
   //=====
 

@@ -97,15 +97,34 @@ void RulesetParser::parseBasicContext(string const& id,
   FOREACH_XML_ELEMENT(list, item) {
     auto& constraint = ctx->constraints.emplace_back(/* empty */);
 
-    auto const property = expectedPath(item, { "context_property" });
-    mergeTextRecursive(constraint.id, property);
+    auto const something = item->FirstChildElement();
+    string_view const kind = something->Name();
 
+    // NOTE: property name is always first
+    mergeTextRecursive(constraint.id, expectedPath(something, { "context_property" }));
     if (constraint.id.empty())
       throw "Incorrect ID in constraints of context [" + id + "]";
 
-    constraint.op = expectedPath(item, { "context_op" })->GetText();
+    // just text value
+    if (kind == "basic_context_constraint_value") {
+      constraint.op = expectedPath(something, { "context_op" })->GetText();
 
-    parseStringTemplate(constraint.value, expectedPath(item, { "string_template", "stringlit" }));
+      auto& value = constraint.value.emplace_back(/* empty */);
+      value.text = unquote(expectedPath(something, { "stringlit" })->GetText());
+    }
+    // text template
+    else if (kind == "basic_context_constraint_template") {
+      // TODO: merge with
+      constraint.op = CTX_OP_MATCH;
+
+      parseStringTemplate(constraint.value, expectedPath(something, { "string_template", "stringlit" }));
+    }
+    // TODO: replace 'exists' keyword with something more useful
+    else if (kind == "basic_context_constraint_exists") {
+      constraint.op = CTX_OP_EXISTS;
+    }
+    else
+      throw "Unrecognized basic context constraint kind <"s + kind.data() + ">"s;
   }
 
   ruleset->contexts.insert_or_assign(ctx->id, std::move(ctx));
@@ -173,6 +192,9 @@ void RulesetParser::parseRules(XMLElement const* const rules)
 
     rule->id = expectedPath(singleRule, { "id" })->GetText();
     rule->declarationLine = line;
+
+    // save the order of rules
+    ruleset->rulesOrder.push_back(rule.get());
 
     SCIS_DEBUG("Found rule \'" << rule->id << "\' at line " << line);
 
@@ -253,9 +275,10 @@ void RulesetParser::parseActions_Make(Rule::Statement &statement,
     auto const chainHead = expectedPath(makeItem, { "string_chain", "stringlit_or_constant" });
     parseActions_Make_singleComponent(make, chainHead);
 
-    // and other elements
-    FOREACH_XML_ELEMENT(chainHead->NextSibling(), ss)
-      parseActions_Make_singleComponent(make, expectedPath(ss, { "stringlit_or_constant" }));
+    // and rest of other elements
+    if (auto const restOfChain = chainHead->NextSibling())
+      FOREACH_XML_ELEMENT(restOfChain, ss)
+        parseActions_Make_singleComponent(make, expectedPath(ss, { "stringlit_or_constant" }));
   }
 }
 
