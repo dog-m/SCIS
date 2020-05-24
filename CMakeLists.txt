@@ -78,6 +78,12 @@ if(Boost_FOUND)
       src/scis/caching.h
       src/scis/caching.cpp
 
+      src/scis/pipeline.h
+      src/scis/pipeline.cpp
+
+      src/scis/core.h
+      src/scis/core.cpp
+
       src/include/common.h
       src/include/logging.h
 
