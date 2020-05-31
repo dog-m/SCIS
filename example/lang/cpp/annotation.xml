@@ -47,7 +47,7 @@
                 deconstruct not * [declaration] Imports
                   Addition
                 by
-                  Imports [. Addition]
+                  Addition Imports
             </source>
         </function>
     </lib>
@@ -155,7 +155,7 @@
             <templates>
                 <template kind="replace">
                     <!--class_head--> '{
-                        <p name="all"/>
+                        <p name="before_body"/>
                         <!--repeat member-->
                     '}
                 </template>
@@ -163,7 +163,7 @@
                 <template kind="match" auto-gen="grammar"/>
             </templates>
             <pointcuts>
-                <pointcut name="all">
+                <pointcut name="before_body">
                     <paste-algorithm>
                         <insert-fragment
                           />

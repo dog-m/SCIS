@@ -1,3 +1,5 @@
+% !!! MODIFIED !!!
+
 % TXL Java 1.5 Basis Grammar
 % Version 4.2, November 2018
 
@@ -141,7 +143,7 @@
 #pragma -width 4096 -id "$"
 
 tokens
-    space  "[ \t]+"
+    space  "[ \t]+"
     newline  "\n" | "" | "\n"
     id  "[$\u][$\i]*"
     % JC 1 May 2018 - added _ digit to all forms 
@@ -322,11 +324,23 @@ define interface_name
     [declared_name]
 end define
 
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% {
+
 define class_or_interface_body
     '{                                    [NL][IN]
        [repeat class_body_declaration]    [EX]
-    '} [opt ';]                           [NL][NL]
+    '} [optional_semicolon]                    [NL][NL]
 end define
+
+define optional_semicolon
+  [opt ';]
+end define
+
+define semicolon
+  ';
+end define
+
+% %%%%%%%%%%%%%%%%%%%%%%%%% MODIFIED %%%%%%%%%%%%%%%%%%%%%%%%% }
 
 define class_body_declaration
         [empty_declaration]

@@ -243,6 +243,8 @@ unique_ptr<GrammarAnnotation> AnnotationParser::parse(XMLDocument const& doc)
     // skip everything else
   } catch (string const msg) {
     SCIS_ERROR("Incorrect grammar annotation. " << msg);
+  } catch(...) {
+    SCIS_ERROR("!!!");
   }
 
   return std::move(annotation);

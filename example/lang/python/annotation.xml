@@ -124,12 +124,45 @@
         </keyword>
 
         <keyword
-          name="body"
-          search-type="repeat statement_or_newline"
+          name="class"
+          search-type="classdef"
+          filter-poi="class_name"
           sequential="false"
           >
-            <templates/>
-            <pointcuts/>
+            <templates>
+                <template kind="replace">
+                    'class <!--opt id--> <!--opt classdef_checks--> ': 'INDENT <!--newline-->
+                        <!--repeat statement_or_newline-->
+                        <p name="after_body"/>
+                    'DEDENT
+                </template>
+
+                <template kind="match">
+                    'class <!--opt id--> <!--opt classdef_checks--> ': 'INDENT <!--newline-->
+                        <!--repeat statement_or_newline-->
+                    'DEDENT
+                </template>
+            </templates>
+            <pointcuts>
+                <pointcut name="all">
+                    <paste-algorithm>
+                        <create-variable
+                          name="NewLine"
+                          type="newline"
+                          value="_"
+                          />
+                        <fragment-to-variable
+                          name="Additions"
+                          type="repeat statement_or_newline"
+                          each-line-postfix="NewLine"
+                          />
+                        <insert-call
+                          function="addToImportsIfNotExists"
+                          params="each Additions"
+                          />
+                    </paste-algorithm>
+                </pointcut>
+            </pointcuts>
         </keyword>
 
         <keyword

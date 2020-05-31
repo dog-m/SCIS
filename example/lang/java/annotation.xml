@@ -9,20 +9,18 @@
             <package type="package_declaration">
                 <imports type="repeat import_declaration"/>
                 <class type="class_declaration">
-                    <body type="class_or_interface_body">
-                        <method type="method_declaration">
-                            <if type="if_statement">
-                                <else type="else_clause"/>
-                            </if>
-                            <switch type="switch_statement">
-                                <case type="switch_alternative"/>
-                            </switch>
-                            <for type="for_statement"/>
-                            <while type="while_statement"/>
-                            <do_while type="do_statement"/>
-                            ...
-                        </method>
-                    </body>
+                    <method type="method_declaration">
+                        <if type="if_statement">
+                            <else type="else_clause"/>
+                        </if>
+                        <switch type="switch_statement">
+                            <case type="switch_alternative"/>
+                        </switch>
+                        <for type="for_statement"/>
+                        <while type="while_statement"/>
+                        <do_while type="do_statement"/>
+                        ...
+                    </method>
                 </class>
             </package>
         </keyword-DAG>
@@ -136,22 +134,27 @@
         </keyword>
 
         <keyword
-          name="body"
-          search-type="class_or_interface_body"
+          name="class"
+          search-type="class_declaration"
           sequential="false"
+          filter-poi="class_name"
           >
             <templates>
                 <template kind="replace">
-                    '{
-                        <p name="all"/>
+                    <!--repeat modifier--> 'class <!--class_name--> <!--opt extends_clause--> <!--opt implements_clause--> '{
+                        <p name="before_body"/>
                         <!--repeat class_body_declaration-->
-                    '} <!--opt literal-->
+                    '} <!--optional_semicolon-->
                 </template>
 
-                <template kind="match" auto-gen="grammar"/>
+                <template kind="match">
+                    <!--repeat modifier--> 'class <!--class_name--> <!--opt extends_clause--> <!--opt implements_clause--> '{
+                        <!--repeat class_body_declaration-->
+                    '} <!--optional_semicolon-->
+                </template>
             </templates>
             <pointcuts>
-                <pointcut name="all">
+                <pointcut name="before_body">
                     <paste-algorithm>
                         <insert-fragment
                           />

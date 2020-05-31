@@ -442,7 +442,7 @@ void TXLGenerator::unrollPatternFor(
     unrollPattern(rFunc, valueHolder, pattern);
   }
   else
-    SCIS_WARNING("Text pattern presented but keyword does not support pattern-matching");
+    SCIS_WARNING("Text pattern presented but keyword <" << keyword->id << "> does not support pattern-matching");
 }
 
 void TXLGenerator::compileBasicContext(BasicContext const* const context)
@@ -463,14 +463,9 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
     POIsUsed.insert(poi);
   }
 
-  // keep parameters in order
-  vector<string> sortedKeywords;
-  sortedKeywords.insert(sortedKeywords.begin(), keywordsUsed.begin(), keywordsUsed.end());
-  sortKeywords(sortedKeywords);
-
   // introduce parameters
   unordered_map<string, string> type2name;
-  for (auto const& kw : sortedKeywords) {
+  for (auto const& kw : keywordsUsed) {
     auto const& param = checker->addParameter(codegen::makeNameFromKeyword(kw),
                                               annotation->grammar.graph.keywords[kw]->type);
     type2name.insert_or_assign(param.type, param.id);
@@ -608,6 +603,7 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
   unordered_set<string> keywordsUsedInContext;
   // collect keywords to build a chain
   if (auto const checker = findContextCheckerByContext(context->id)) {
+    // dumb way to find all used keywords
     for (auto const& parameter : checker->params)
       // look for keyword name
       for (auto const& [_, keyword] : annotation->grammar.graph.keywords)
@@ -625,17 +621,28 @@ void TXLGenerator::compileCollectionFunctions(string const& ruleId,
   sortedKeywords.insert(sortedKeywords.begin(), keywordsUsedInContext.begin(), keywordsUsedInContext.end());
   sortKeywords(sortedKeywords);
 
-  SCIS_DEBUG("sorted keywords:");
+  SCIS_DEBUG("Sorted keywords:");
   for (auto const& k : sortedKeywords)
     cout << k << endl;
 
-  // FIXME: check for exactly one starting point
+  SCIS_DEBUG("Checking keywords levels");
+  auto lastDistance = -1;
+  for (auto const& kw : sortedKeywords) {
+    auto const distance = maxDistanceToRoot[kw];
+    if (distance == lastDistance)
+      SCIS_ERROR("Used keywords should have DIFFERENT levels of hierarchy. "
+                 "Please check definition of context <" << context->id << "> "
+                 "on line " << context->declarationLine);
+
+    lastDistance = distance;
+  }
+  SCIS_DEBUG("Used keywords seem ok");
 
   // create and add collection functions to a sequence
   for (auto const& keyword : sortedKeywords) {
     auto const cFunc = createFunction<CollectionFunction>();
     cFunc->isRule = true;
-    cFunc->name = ruleId + "_collector_" + context->id + "_" + cFunc->processingKeyword + to_string(__LINE__) + getUniqueId();
+    cFunc->name = ruleId + "_collector_" + context->id + "_" + keyword + "_" + to_string(__LINE__) + getUniqueId();
     cFunc->processingKeyword = keyword;
     cFunc->processingType = annotation->grammar.graph.keywords[keyword]->type;
     cFunc->skipType = cFunc->processingType; // BUG: potential skipping bug
@@ -723,7 +730,7 @@ void TXLGenerator::compileRefinementFunctions(
                  "declared at " << ruleStmt.declarationLine);
 
     // compose a name
-    auto const name = ruleId + "_refiner_" + path.keywordId + "_" + path.modifier + to_string(index);
+    auto const name = ruleId + "_refiner_" + path.keywordId + "_" + path.modifier + to_string(index) + getUniqueId();
 
     auto const lastElement = lastCallChainElement();
     // create a kick-starter function
@@ -766,6 +773,10 @@ void TXLGenerator::compileRefinementFunction_First(
     int const index)
 {
   auto const keyword = annotation->grammar.graph.keywords[element.keywordId].get();
+  if (!keyword)
+    SCIS_ERROR("Reference to undefined keyword <" << element.keywordId << "> found "
+               "in refinement path when constructing [" << name << "]");
+
   auto const rFunc = createFunction<RefinementFunction_First>();
   rFunc->isRule = false;
   rFunc->name = name;
@@ -789,8 +800,11 @@ void TXLGenerator::compileRefinementFunction_All(
     Rule::Location::PathElement const& element,
     int const index)
 {
-  auto const keyword = annotation->grammar.graph.keywords[element.keywordId].get();
   auto const SKIP = getSkipNodeName(index);
+  auto const keyword = annotation->grammar.graph.keywords[element.keywordId].get();
+  if (!keyword)
+    SCIS_ERROR("Reference to undefined keyword <" << element.keywordId << "> found "
+               "in refinement path when constructing [" << name << "]");
 
   // fix kick-starter function
   auto const starter = reinterpret_cast<RefinementFunctionStarter*>(lastCallChainElement());
@@ -824,8 +838,11 @@ void TXLGenerator::compileRefinementFunction_Level(
     Rule::Location::PathElement const& element,
     int const index)
 {
-  auto const keyword = annotation->grammar.graph.keywords[element.keywordId].get();
   auto const SKIP = getSkipNodeName(index);
+  auto const keyword = annotation->grammar.graph.keywords[element.keywordId].get();
+  if (!keyword)
+    SCIS_ERROR("Reference to undefined keyword <" << element.keywordId << "> found "
+               "in refinement path when constructing [" << name << "]");
 
   // fix kick-starter function
   auto const starter = reinterpret_cast<RefinementFunctionStarter*>(lastCallChainElement());
@@ -919,6 +936,10 @@ void TXLGenerator::compileRules()
           isGlobalContext ?
             GLOBAL_CONTEXT.get() :
             ruleset->contexts[ruleStmt.location.contextId].get();
+
+      if (!context)
+        SCIS_ERROR("Undefined context <" << ruleStmt.location.contextId << "> detected "
+                   "in rule [" << rule->id << "]");
 
       // generate chain of functions
       if (!isGlobalContext) {

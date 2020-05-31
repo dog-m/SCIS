@@ -186,7 +186,7 @@
             <templates>
                 <template kind="replace">
                     <!--identlist--> '= <!--opt type_keyword--> <!--opt packing--> <!--class_keyword--> <!--opt heritage_list-->
-                        <p name="all"/>
+                        <p name="before_body"/>
                         <!--repeat class_member-->
                         <!--repeat visibility_block-->
                     'end <!--opt hint_directive--> ';
@@ -200,7 +200,7 @@
                 </template>
             </templates>
             <pointcuts>
-                <pointcut name="all">
+                <pointcut name="before_body">
                     <paste-algorithm>
                         <deconstruct-variable
                           type="visibility_default"

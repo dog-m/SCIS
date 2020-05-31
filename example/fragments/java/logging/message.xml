@@ -5,6 +5,6 @@
   </dependencies>
 
   <code black-list="imports" params="message">
-    iLogger.log(Level.FINE, <p id="message"/>);
+    iLogger.log (Level.FINE, <p id="message"/>);
   </code>
 </fragment>

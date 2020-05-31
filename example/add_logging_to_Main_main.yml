@@ -18,7 +18,7 @@ rules:
       add:
         logging_dependencies
   
-    @class_m -> [first] body # all:
+    @class_m -> [first] class # before_body:
       add:
         logging_fields
   
