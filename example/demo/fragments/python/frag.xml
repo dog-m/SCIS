@@ -1,0 +1,7 @@
+<fragment language="python" name="frag">
+  <dependencies/>
+
+  <code params="message">
+    print <p id="message"/>
+  </code>
+</fragment>
