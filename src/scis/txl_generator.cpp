@@ -385,10 +385,11 @@ void TXLGenerator::compileContextCheckers()
     SCIS_ERROR("Dependency loops or missing dependencies were detected in context definitions");
 }
 
-TXLFunction* TXLGenerator::prepareContextChecker(Context const* const context,
-                                                 bool const positive)
+ContextChecker* TXLGenerator::prepareNewContextChecker(
+    Context const* const context,
+    bool const positive)
 {
-  auto const checker = createFunction<TXLFunction>();
+  auto const checker = createFunction<ContextChecker>();
   checker->isRule = false;
   checker->name = makeFunctionNameFromContextName(context->id, !positive);
 
@@ -405,16 +406,16 @@ TXLFunction* TXLGenerator::prepareContextChecker(Context const* const context,
   return checker;
 }
 
-void TXLGenerator::registerContextChecker(
+void TXLGenerator::registerNewContextChecker(
     Context const* const context,
-    TXLFunction const* const checker)
+    ContextChecker const* const checker)
 {
   // register for later use
   if (auto const& [_, insertion] = contextCheckers.insert_or_assign(context->id, checker); !insertion)
     SCIS_ERROR("Context with name <" << context->id << "> already exists");
 }
 
-TXLFunction const* TXLGenerator::findContextCheckerByContext(string const& name)
+ContextChecker const* TXLGenerator::findContextCheckerByContext(string const& name)
 {
   if (auto const c = contextCheckers.find(name); c != contextCheckers.cend())
     return c->second;
@@ -450,7 +451,7 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
   SCIS_DEBUG("Processing basic context <" << context->id << ">");
 
   // creating new context checking function (incl. VOID variable)
-  auto const checker = prepareContextChecker(context, true);
+  auto const checker = prepareNewContextChecker(context, true);
 
   unordered_set<string> keywordsUsed;
   unordered_set<GrammarAnnotation::PointOfInterest const*> POIsUsed;
@@ -463,12 +464,15 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
     POIsUsed.insert(poi);
   }
 
-  // introduce parameters
+  // introduce parameters and remember dependencies
   unordered_map<string, string> type2name;
   for (auto const& kw : keywordsUsed) {
     auto const& param = checker->addParameter(codegen::makeNameFromKeyword(kw),
                                               annotation->grammar.graph.keywords[kw]->type);
     type2name.insert_or_assign(param.type, param.id);
+
+    // NOTE: context dependencies with the same order
+    checker->keywords.push_back(kw);
   }
 
   // instantiate variables which will keep values for POIs
@@ -509,7 +513,7 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
   }
 
   // make it available for others (ie contexts and filtering functions)
-  registerContextChecker(context, checker);
+  registerNewContextChecker(context, checker);
 
   // create negative form
   compileContextNegation(context, checker);
@@ -517,11 +521,14 @@ void TXLGenerator::compileBasicContext(BasicContext const* const context)
 
 void TXLGenerator::compileContextNegation(
     Context const* const context,
-    TXLFunction const* const contextChecker)
+    ContextChecker const* const contextChecker)
 {
-  auto const func = prepareContextChecker(context, false);
+  auto const func = prepareNewContextChecker(context, false);
   // signature should be the same with the original context checker
   func->copyParamsFrom(contextChecker);
+
+  func->keywords.insert(func->keywords.begin(),
+                        contextChecker->keywords.cbegin(), contextChecker->keywords.cend());
 
   string args = "";
   for (auto const& param : func->params)
@@ -534,32 +541,34 @@ void TXLGenerator::compileContextNegation(
 
 void TXLGenerator::compileCompoundContext(CompoundContext const* const context)
 {
-  unordered_set<string> requiredTypes;
+  unordered_set<string> requiredKeywords;
   // TODO: dependencies for compound contexts already checked
   // check for dependencies
   for (auto const& disjunction : context->references)
     for (auto const& reference : disjunction) {
       // each reference can be just basic context or complicated compound context
-      auto const contextChecker = findContextCheckerByContext(reference.id);
-      if (!contextChecker)
+      auto const refContextChecker = findContextCheckerByContext(reference.id);
+      if (!refContextChecker)
         // failed to create a thing
         SCIS_ERROR("Cant find checker for <" << reference.id << "> "
                    "when constructing checker <" << context->id << ">");
 
-      // collect types required for context checks
-      for (auto const& parameter : contextChecker->params)
-        requiredTypes.insert(parameter.type);
+      // collect required keywords for context checks
+      for (auto const& kw : refContextChecker->keywords)
+        requiredKeywords.insert(kw);
     }
 
   SCIS_DEBUG("Processing compound context <" << context->id << ">");
 
-  auto const checker = prepareContextChecker(context, true);
+  auto const checker = prepareNewContextChecker(context, true);
 
-  unordered_map<string, string> type2name;
-  // create parameters for this particular context checker
-  for (auto const& type : requiredTypes) {
-    auto const& param = checker->addParameter(makeNameFromType(type), type);
-    type2name.insert_or_assign(type, param.id);
+  unordered_map<string, string> keyword2name;
+  // create parameters and fill keywords for this particular context checker
+  for (auto const& kw : requiredKeywords) {
+    auto const& param = checker->addParameter(makeNameFromKeyword(kw), annotation->grammar.graph.keywords[kw]->type);
+    checker->keywords.push_back(kw);
+
+    keyword2name.insert_or_assign(kw, param.id);
   }
 
   // joined with 'AND'
@@ -573,8 +582,8 @@ void TXLGenerator::compileCompoundContext(CompoundContext const* const context)
 
       // map arguments to callee parameters
       string args = "";
-      for (auto const& param : ref->params)
-        args += " " + type2name[param.type];
+      for (auto const& kw : ref->keywords)
+        args += " " + keyword2name[kw];
 
       // actual 'call'
       where.text += " [" + target + args + "]";
@@ -582,7 +591,7 @@ void TXLGenerator::compileCompoundContext(CompoundContext const* const context)
   }
 
   // make it available for others
-  registerContextChecker(context, checker);
+  registerNewContextChecker(context, checker);
 
   // create negative form
   compileContextNegation(context, checker);
@@ -600,25 +609,16 @@ Kind* TXLGenerator::createFunction()
 void TXLGenerator::compileCollectionFunctions(string const& ruleId,
                                               Context const* const context)
 {
-  unordered_set<string> keywordsUsedInContext;
+  vector<string> sortedKeywords;
   // collect keywords to build a chain
   if (auto const checker = findContextCheckerByContext(context->id)) {
-    // dumb way to find all used keywords
-    for (auto const& parameter : checker->params)
-      // look for keyword name
-      for (auto const& [_, keyword] : annotation->grammar.graph.keywords)
-        // BUG: keywords with same type
-        if (keyword->type == parameter.type) {
-          keywordsUsedInContext.insert(keyword->id);
-          break;
-        }
+    sortedKeywords.insert(sortedKeywords.begin(),
+                          checker->keywords.cbegin(), checker->keywords.cend());
   }
   else
     SCIS_ERROR("Undefined reference to a context with id <" << context->id << ">");
 
-  // sort keywords
-  vector<string> sortedKeywords;
-  sortedKeywords.insert(sortedKeywords.begin(), keywordsUsedInContext.begin(), keywordsUsedInContext.end());
+  // keep thing in order
   sortKeywords(sortedKeywords);
 
   SCIS_DEBUG("Sorted keywords:");
@@ -682,8 +682,8 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
 
   unordered_map<string, string> type2name;
   // organize parameters
-  for (auto const& par : fFunc->params)
-    type2name.insert_or_assign(par.type, par.id);
+  for (auto const& param : fFunc->params)
+    type2name.insert_or_assign(param.type, param.id);
 
   // create garbage variable
   fFunc->createVariable(
@@ -694,8 +694,8 @@ void TXLGenerator::compileFilteringFunction(string const& ruleId,
   auto const checker = contextCheckers[context->id];
 
   string args = "";
-  for (auto const& p : checker->params)
-    args += " " + type2name[p.type];
+  for (auto const& param : checker->params)
+    args += " " + type2name[param.type];
 
   // actual checks (functions should already been created)
   fFunc->addStatementBott(

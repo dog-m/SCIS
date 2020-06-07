@@ -40,7 +40,7 @@ namespace scis {
 
     unordered_map<GrammarAnnotation::PointOfInterest const*, TXLFunction const*> poi2getter;
 
-    unordered_map<string, TXLFunction const*> contextCheckers;
+    unordered_map<string, ContextChecker const*> contextCheckers;
 
     unordered_map<string, TXLFunction const*> operator2wrapper;
 
@@ -78,13 +78,13 @@ namespace scis {
 
     void compileContextCheckers();
 
-    TXLFunction* prepareContextChecker(Context const* const context,
-                                       bool const positive);
+    ContextChecker* prepareNewContextChecker(Context const* const context,
+                                             bool const positive);
 
-    void registerContextChecker(Context const* const context,
-                                TXLFunction const* const checker);
+    void registerNewContextChecker(Context const* const context,
+                                   ContextChecker const* const checker);
 
-    TXLFunction const* findContextCheckerByContext(string const& name);
+    ContextChecker const* findContextCheckerByContext(string const& name);
 
     void unrollPatternFor(TXLFunction* const rFunc,
                           string const& keywordId,
@@ -95,7 +95,7 @@ namespace scis {
     void compileBasicContext(BasicContext const* const context);
 
     void compileContextNegation(Context const* const context,
-                                     TXLFunction const* const contextChecker);
+                                ContextChecker const* const contextChecker);
 
     void compileCompoundContext(CompoundContext const* const context);
 

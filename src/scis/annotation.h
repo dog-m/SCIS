@@ -100,6 +100,7 @@ namespace scis {
     }; // GrammarDescription
 
     enum class FunctionPolicy {
+      UNSPECIFIED = 0,
       DIRECT_CALL,
       BEFORE_ALL,
       AFTER_ALL,
@@ -113,7 +114,7 @@ namespace scis {
 
       string name;
       bool isRule = false;
-      FunctionPolicy callPolicy = FunctionPolicy::DIRECT_CALL;
+      FunctionPolicy callPolicy = FunctionPolicy::UNSPECIFIED;
       vector<Parameter> params;
       string source;
     }; // Function

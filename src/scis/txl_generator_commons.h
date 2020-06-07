@@ -116,6 +116,11 @@ namespace scis::codegen {
     string getParamNames();
   }; // TXLFunction
 
+  struct ContextChecker : public TXLFunction {
+    /// WARNING: required data sources should match params order 1-1
+    vector<string> keywords;
+  };
+
   struct CallChainElement {
     /// calleR
     TXLFunction const* callFrom = nullptr;

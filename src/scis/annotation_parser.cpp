@@ -49,6 +49,7 @@ void AnnotationParser::parseDAGKeyword(XMLElement const* const keyword)
   // base params
   word->id = keyword->Name();
   word->type = expectedAttribute(keyword, "type")->Value();
+  word->searchType = word->type; // NOTE: keyword search type is equal primary processing type by-default
   FOREACH_XML_ELEMENT(keyword, subtype)
     word->subnodes.push_back(subtype->Name());
 
