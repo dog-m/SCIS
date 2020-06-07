@@ -10,7 +10,7 @@ namespace scis::caching {
 
   struct CacheSignData {
     string lang = "???";
-    string hash = "???";
+    string stamp = "???";
 
     string ver = scis::PROGRAM_VERSION;
   };

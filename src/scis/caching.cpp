@@ -5,12 +5,13 @@
 #include <boost/uuid/detail/sha1.hpp>
 #include <boost/algorithm/hex.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 
 using namespace std;
 using namespace scis;
 
 
-static string getSHA1HashOf(string const& str)
+static string getHashOf(string const& str)
 {
   using boost::uuids::detail::sha1;
   sha1 hash;
@@ -50,6 +51,14 @@ static string readFileToString(string const& filename)
   return text;
 }
 
+static string getTimestampOf(string const& filename)
+{
+  auto const timestamp = boost::filesystem::last_write_time(filename);
+  return to_string(timestamp);
+}
+
+
+
 string caching::generateFilenameByRuleset(string const& rulesetFilename)
 {
   auto const rulesetPath = boost::filesystem::path(rulesetFilename);
@@ -68,7 +77,7 @@ caching::CacheSignData caching::initCacheSign(
 {
   return {
       .lang = language,
-      .hash = getSHA1HashOf(readFileToString(rulesetFilename)),
+      .stamp = getTimestampOf(rulesetFilename),
     };
 }
 
@@ -80,7 +89,7 @@ void caching::applyCacheFileSign(ostream& stream,
             " {"
             " ver: "  << data.ver   << ","
             " lang: " << data.lang  << ","
-            " hash: " << data.hash  << ","
+            " stamp: " << data.stamp  << ","
             " }\n";
 }
 
