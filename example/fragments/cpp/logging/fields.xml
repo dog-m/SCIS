@@ -4,6 +4,7 @@
   </dependencies>
 
   <code black-list="imports, if, for">
-    unsigned int __INSTRUM_ID = 1;
+    public:
+      inline static unsigned int __INSTRUM_ID = 1;
   </code>
 </fragment>
