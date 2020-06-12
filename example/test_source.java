@@ -1,12 +1,13 @@
-package com.test;
+// javac test_source_instrumented.java
+// java -cp .. example.Main
+package example;
 
 import java.util.logging.Level;
 import java.util.logging.ConsoleHandler;
 
-public class Main {
-  
-  public static int a = 20;
-  public static int b = 10;
+class Main {
+  public static int a = -10;
+  public static int b = -20;
 
   public static void something_else(String[] args) {
     if (a >= b) {
@@ -31,5 +32,4 @@ public class Main {
         System.out.println("Hello World!");
     }
   }
-
 }

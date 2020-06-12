@@ -1,11 +1,13 @@
+// g++ test_source_instrumented.cpp -std=c++17
+// a
 #include <iostream>
 
 using namespace std;
 
 class Main {
-
-  int a = 20;
-  int b = 10;
+public:
+  inline static int a = -10;
+  inline static int b = -20;
 
   static void something_else() {
     if (a >= b) {
@@ -20,7 +22,6 @@ class Main {
   }
 
   static void main();
-
 };
 
 void Main::main() {

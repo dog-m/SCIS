@@ -1,17 +1,18 @@
+# python test_source_instrumented.py
 import logging
 
 class Main:
     def __init__(self):
-        self.a = 20
-        self.b = 10
+        self.a = -10
+        self.b = -20
 
     def something_else(self, args):
         if self.a >= self.b:
-          if a < 0:
+          if self.a < 0:
             print "Fizz Buzz!"
 
-        if a >= b:
-          if a < 0:
+        if self.a >= self.b:
+          if self.a < 0:
             print "Fizz Buzz!"
 
     def main(self, args):

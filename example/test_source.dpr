@@ -1,3 +1,5 @@
+// fpc -MDELPHI test_source_instrumented.dpr
+// test_source_instrumented.exe
 program test;
 
 {$APPTYPE CONSOLE}
@@ -48,8 +50,8 @@ end;
 begin
   with Main.Create do
   begin
-    a := 20;
-    b := 10;
+    a := -10;
+    b := -20;
     main(['text']);
 
     Free;
