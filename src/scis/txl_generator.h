@@ -16,7 +16,7 @@ namespace scis {
 
   /// one-time use
   class TXLGenerator final {
-    using RefinementFunctionGenerator = function<void(string const&, Rule::Location::PathElement const&, int const)>;
+    using RefinementFunctionGenerator = function<RefinementFunction*(string const&, Rule::Location::PathElement const&, int const)>;
 
   public:
     unique_ptr<txl::Grammar> grammar;
@@ -89,7 +89,7 @@ namespace scis {
     void unrollPatternFor(TXLFunction* const rFunc,
                           string const& keywordId,
                           Pattern const& pattern,
-                          string const& variableName);
+                          string const& varDataSource);
 
   protected:
     void compileBasicContext(BasicContext const* const context);
@@ -110,21 +110,25 @@ namespace scis {
 
     void compileRefinementFunctionStarter();
 
-    void compileRefinementFunction_First(string const& name,
-                                         Rule::Location::PathElement const& element,
-                                         int const index);
+    RefinementFunction*
+    compileRefinementFunction_First(string const& name,
+                                    Rule::Location::PathElement const& element,
+                                    int const index);
 
-    void compileRefinementFunction_All(string const& name,
-                                       Rule::Location::PathElement const& element,
-                                       int const index);
+    RefinementFunction*
+    compileRefinementFunction_All(string const& name,
+                                  Rule::Location::PathElement const& element,
+                                  int const index);
 
-    void compileRefinementFunction_Level(string const& name,
-                                         Rule::Location::PathElement const& element,
-                                         int const index);
+    RefinementFunction*
+    compileRefinementFunction_Level(string const& name,
+                                    Rule::Location::PathElement const& element,
+                                    int const index);
 
-    void compileRefinementFunction_LevelPredicate(string const& name,
-                                                  Rule::Location::PathElement const& element,
-                                                  int const index);
+    RefinementFunction*
+    compileRefinementFunction_LevelPredicate(string const& name,
+                                             Rule::Location::PathElement const& element,
+                                             int const index);
 
     void compileRules();
 

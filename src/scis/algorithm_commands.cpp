@@ -6,7 +6,7 @@ using namespace scis;
 
 using SimpleFunction = function< FunctionCall::Result (FunctionCall const&) >;
 
-static unordered_map<string_view, SimpleFunction> STANDARD_FUNCTIONS {
+static unordered_map<string_view, SimpleFunction> const STANDARD_FUNCTIONS {
 
   { "insert-fragment", [](FunctionCall const& call) -> FunctionCall::Result
     {
@@ -106,11 +106,12 @@ bool scis::callAlgorithmCommand(FunctionCall&& params,
   auto const func = STANDARD_FUNCTIONS.find(params.function);
   if (func == STANDARD_FUNCTIONS.cend())
     return false;
-  else
+  else {
     try {
       resultHandler(func->second(params));
       return true;
     } catch (...) {
       return false;
     }
+  }
 }

@@ -14,7 +14,7 @@ void FragmentParser::parseDependencies(XMLElement const* const dependencies)
     auto& dependency = fragment->dependencies.emplace_back(/* empty */);
 
     dependency.target = expectedAttribute(dep, "name")->Value();
-    // TODO: complicated dependencies
+    // TODO: add more complicated dependencies
     dependency.required = (dep->Name() == "required"sv);
   }
 }

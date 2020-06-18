@@ -12,7 +12,6 @@ void test ()
                     {
                         "mod_2_ALL";
                         {
-                            "multiplie_LEVELs";
                             if (lvl == 22) {
                                 {
                                     "mod_2_ALL";
@@ -27,12 +26,12 @@ void test ()
                                     }
                                 }
                             }
+                            "multiplie_LEVELs";
                         }
                     }
                     {
                         "mod_2_ALL";
                         {
-                            "multiplie_LEVELs";
                             if (lvl == 22) {
                                 {
                                     "mod_2_ALL";
@@ -47,6 +46,7 @@ void test ()
                                     }
                                 }
                             }
+                            "multiplie_LEVELs";
                         }
                     }
                 }
@@ -61,7 +61,6 @@ void test ()
                 {
                     "mod_2_ALL";
                     {
-                        "multiplie_LEVELs";
                         if (lvl == 22) {
                             {
                                 "mod_2_ALL";
@@ -76,12 +75,12 @@ void test ()
                                 }
                             }
                         }
+                        "multiplie_LEVELs";
                     }
                 }
                 {
                     "mod_2_ALL";
                     {
-                        "multiplie_LEVELs";
                         if (lvl == 22) {
                             {
                                 "mod_2_ALL";
@@ -96,6 +95,7 @@ void test ()
                                 }
                             }
                         }
+                        "multiplie_LEVELs";
                     }
                 }
             }

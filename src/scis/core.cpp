@@ -121,7 +121,6 @@ void core::doTheWork()
   args::updateGrammarLocation(annotation->grammar.txlSourceFilename);
 
   //=====
-  // TODO: remove debug output
   SCIS_DEBUG("wrkdir: >" << args::ARG_WORKING_DIR          << "<");
   SCIS_DEBUG("exedir: >" << args::ARG_EXECUTABLE_DIR       << "<");
   SCIS_DEBUG("in-txl: >" << args::ARG_INTERNAL_GRM_TXL     << "<");

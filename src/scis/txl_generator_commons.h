@@ -147,6 +147,11 @@ namespace scis::codegen {
     string searchType;
     bool isSequence = false;
     int queueIndex = 0;
+
+    // NOTE: dirty hack?
+    string_view pointcutName;
+
+    bool isSpecialAfter() const;
   }; // RefinementFunction
 
   /// primary used by "level" kind/modification of refiner
@@ -183,7 +188,7 @@ namespace scis::codegen {
 
     void generateStatements() override;
 
-    string renderDecrementer() const;
+    string renderDecrementer(bool const specialAfter) const;
   }; // RefinementFunction_Level
 
   struct InstrumentationFunction final : public CallChainFunction {

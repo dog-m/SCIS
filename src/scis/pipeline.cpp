@@ -33,7 +33,7 @@ string pipeline::preparePipeline(
 
 void pipeline::runPipeline(string const& preparedPipeline)
 {
-  // TODO: find way to get output of any shell command (including pipes)
+  // TODO: find better way to get output of any shell command (including pipes)
   SCIS_INFO("Executing transformation pipeline...");
   //string rOut, rErr;
   auto const result = txl::Wrapper::runShellCommand(preparedPipeline/*,

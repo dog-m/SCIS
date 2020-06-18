@@ -152,6 +152,12 @@ void FilteringFunction::generateStatements()
         NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
 }
 
+bool RefinementFunction::isSpecialAfter() const
+{
+  // NOTE: dirty hack?
+  return isSequence && pointcutName == "after";
+}
+
 void RefinementFunctionFilter::generateStatements()
 {
   addStatementTop(
@@ -233,6 +239,8 @@ void RefinementFunction_First::generateStatements()
 
 void RefinementFunction_All::generateStatements()
 {
+  auto const specialAfter = isSpecialAfter();
+
   // independent instructions ('pre-generated')
   importVariable(
         skipCount, TXL_TYPE_NUMBER);
@@ -251,7 +259,7 @@ void RefinementFunction_All::generateStatements()
 
   exportVariableUpdate(
         skipCount,
-        "1");
+        specialAfter ? "0" : "1");
 
   // type-dependent instructions
   if (isSequence) {
@@ -284,7 +292,6 @@ void RefinementFunction_All::generateStatements()
           NODE_INPUT + " [" + searchType + "]");
 
     /// pre-generated instructions there
-    // WARNING: missed something here?
 
     createVariable(
           NODE_OUTPUT, searchType,
@@ -298,6 +305,8 @@ void RefinementFunction_All::generateStatements()
 
 void RefinementFunction_Level::generateStatements()
 {
+  auto const specialAfter = isSpecialAfter();
+
   // independent instructions ('pre-generated')
   importVariable(
         skipCount, TXL_TYPE_NUMBER);
@@ -331,7 +340,7 @@ void RefinementFunction_Level::generateStatements()
           NODE_SEQ_SINGLE + " "
           "[" + callTo->name + getParamNames() + "] "
           "[" + skipCountCounter + "]" +
-          renderDecrementer());
+          renderDecrementer(specialAfter));
 
     addStatementBott(
           "by",
@@ -354,7 +363,7 @@ void RefinementFunction_Level::generateStatements()
           NODE_INPUT + " "
           "[" + callTo->name + getParamNames() + "] "
           "[" + skipCountCounter + "]" +
-          renderDecrementer());
+          renderDecrementer(specialAfter));
 
     addStatementBott(
           "by",
@@ -362,9 +371,11 @@ void RefinementFunction_Level::generateStatements()
   }
 }
 
-string RefinementFunction_Level::renderDecrementer() const
+string RefinementFunction_Level::renderDecrementer(bool const specialAfter) const
 {
-  return useDecrementer ? (" [" + skipCountDecrementer + "] ") : "";
+  return useDecrementer || specialAfter
+      ? (" [" + skipCountDecrementer + "] ")
+      : "";
 }
 
 

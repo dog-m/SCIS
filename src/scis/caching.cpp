@@ -84,7 +84,7 @@ caching::CacheSignData caching::initCacheSign(
 void caching::applyCacheFileSign(ostream& stream,
                                  CacheSignData const& data)
 {
-  // WARNING: single-line sign
+  // WARNING: single-line cache signing
   stream << "% Cache sign:"
             " {"
             " ver: "  << data.ver   << ","

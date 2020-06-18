@@ -3,7 +3,7 @@
 
 #include <argparse.hpp>
 
-//#include <filesystem> // TODO: use std::filesystem, broken in mingw81
+//#include <filesystem> // TODO: use std::filesystem (broken in mingw81)
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
 

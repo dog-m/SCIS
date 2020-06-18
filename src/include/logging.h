@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+// TODO: make (debug) logging optional with CLI
 #define SCIS_DEBUG_MODE_ON
 
 #ifdef SCIS_DEBUG_MODE_ON

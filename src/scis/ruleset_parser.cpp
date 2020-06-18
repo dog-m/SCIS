@@ -114,7 +114,6 @@ void RulesetParser::parseBasicContext(string const& id,
     }
     // text template
     else if (kind == "basic_context_constraint_template") {
-      // TODO: merge with
       constraint.op = CTX_OP_MATCH;
 
       parseStringTemplate(constraint.value, expectedPath(something, { "string_template", "stringlit" }));
@@ -158,7 +157,7 @@ void RulesetParser::parseCompoundContext(string const& id,
   else
     throw "Unrecognized context reference chain"s;
 
-  // TODO: check if every context (id) exists in compound context
+  // TODO: check if every context (id) exists in a compound context
 
   ruleset->contexts.insert_or_assign(ctx->id, std::move(ctx));
 }

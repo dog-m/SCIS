@@ -15,7 +15,7 @@ using namespace scis;
 constexpr auto DAG_DISTANCES_SEARCH_LIMMIT = 2500;
 
 static unordered_map<string, pair<string, string>> CTX_OPERATOR_WRAPPER_MAPPING {
-  // TODO: make better approach
+  // TODO: find better approach for wrapper definition
   { CTX_OP_EQUAL        , { "="   , PREFIX_STD + "equal"         }},
   { CTX_OP_NOT_EQUAL    , { "~="  , PREFIX_STD + "not_equal"     }},
   { CTX_OP_LESS         , { "<"   , PREFIX_STD + "lower"         }},
@@ -66,17 +66,17 @@ static void unrollPattern(
 
     // middle part?
     if (part.somethingBefore && part.somethingAfter) {
-      where.action += " %% middle"; // TODO: remove debug output
+      where.action += " %% middle"; // TODO: remove string template debug output
       where.text += "[> 0]";
     }
     // start?
     else if (part.somethingAfter) {
-      where.action += " %% starts with"; // TODO: remove debug output
+      where.action += " %% starts with"; // TODO: remove string template debug output
       where.text += "[= 1]";
     }
     // end?
     else if (part.somethingBefore) {
-      where.action += " %% ends with"; // TODO: remove debug output
+      where.action += " %% ends with"; // TODO: remove string template debug output
       pos.text += "[- 1] [+ " + to_string(part.text.length()) + "]";
       where.text += "[= " + indexedLength + "]";
 
@@ -86,7 +86,7 @@ static void unrollPattern(
     // full match
     else {
       where.text = indexedName + " [= " + quotedText + "]";
-      where.action += " %% full"; // TODO: remove debug output
+      where.action += " %% full"; // TODO: remove string template debug output
 
       // nothing else can be done here
       break;
@@ -427,7 +427,7 @@ void TXLGenerator::unrollPatternFor(
     TXLFunction *const rFunc,
     string const& keywordId,
     Pattern const& pattern,
-    string const& variableName)
+    string const& varDataSource)
 {
   auto const keyword = annotation->grammar.graph.keywords[keywordId].get();
 
@@ -438,7 +438,7 @@ void TXLGenerator::unrollPatternFor(
     auto const valueHolder = "value_holder_" + getUniqueId();
     rFunc->createVariable(
           valueHolder, TXL_TYPE_STRING,
-          "_ [" + getter->name + " " + variableName + "]");
+          "_ [" + getter->name + " " + varDataSource + "]");
 
     unrollPattern(rFunc, valueHolder, pattern);
   }
@@ -542,8 +542,7 @@ void TXLGenerator::compileContextNegation(
 void TXLGenerator::compileCompoundContext(CompoundContext const* const context)
 {
   unordered_set<string> requiredKeywords;
-  // TODO: dependencies for compound contexts already checked
-  // check for dependencies
+  // check for dependencies and collect keywords
   for (auto const& disjunction : context->references)
     for (auto const& reference : disjunction) {
       // each reference can be just basic context or complicated compound context
@@ -716,7 +715,7 @@ void TXLGenerator::compileRefinementFunctions(
     { "first",   bind(&TXLGenerator::compileRefinementFunction_First,          this, _1, _2, _3) },
     { "all",     bind(&TXLGenerator::compileRefinementFunction_All,            this, _1, _2, _3) },
     { "level",   bind(&TXLGenerator::compileRefinementFunction_Level,          this, _1, _2, _3) },
-    // TODO: more refinement function modifiers
+    // TODO: add more refinement function modifiers
     //{ "level_p", bind(&TXLGenerator::compileRefinementFunction_LevelPredicate, this, _1, _2, _3) },
   };
 
@@ -744,7 +743,8 @@ void TXLGenerator::compileRefinementFunctions(
     addToCallChain(starter);
 
     // build the rest
-    generator->second(name, path, index);
+    auto const rFunc = generator->second(name, path, index);
+    rFunc->pointcutName = ruleStmt.location.pointcut;
 
     // update index
     if (index > maxRefinementIndex)
@@ -767,7 +767,8 @@ void TXLGenerator::compileRefinementFunctions(
   }
 }
 
-void TXLGenerator::compileRefinementFunction_First(
+RefinementFunction*
+TXLGenerator::compileRefinementFunction_First(
     string const& name,
     Rule::Location::PathElement const& element,
     int const index)
@@ -793,9 +794,12 @@ void TXLGenerator::compileRefinementFunction_First(
   // pattern matching if needed
   if (element.pattern.has_value())
     unrollPatternFor(rFunc, element.keywordId, element.pattern.value(), NODE_CURRENT);
+
+  return rFunc;
 }
 
-void TXLGenerator::compileRefinementFunction_All(
+RefinementFunction*
+TXLGenerator::compileRefinementFunction_All(
     string const& name,
     Rule::Location::PathElement const& element,
     int const index)
@@ -831,9 +835,12 @@ void TXLGenerator::compileRefinementFunction_All(
   // pattern matching if needed
   if (element.pattern.has_value())
     unrollPatternFor(rFunc, element.keywordId, element.pattern.value(), NODE_CURRENT);
+
+  return rFunc;
 }
 
-void TXLGenerator::compileRefinementFunction_Level(
+RefinementFunction*
+TXLGenerator::compileRefinementFunction_Level(
     string const& name,
     Rule::Location::PathElement const& element,
     int const index)
@@ -877,7 +884,6 @@ void TXLGenerator::compileRefinementFunction_Level(
     filter->processingType = rFunc->processingType;
     filter->searchType = rFunc->searchType;
 
-    // FIXME: potential text template checking bug (with NODE_CURRENT)
     unrollPatternFor(filter, element.keywordId, element.pattern.value(), NODE_CURRENT);
 
     // append after refiner function
@@ -885,7 +891,7 @@ void TXLGenerator::compileRefinementFunction_Level(
   }
 
   // counter
-  auto const counter = createFunction<TXLFunction>(); // TODO: move to a new class
+  auto const counter = createFunction<TXLFunction>(); // TODO: move refinement counter to a new class
   counter->name = getSkipCounterName(rFunc->name);
   counter->isRule = true;
 
@@ -903,9 +909,12 @@ void TXLGenerator::compileRefinementFunction_Level(
   counter->addStatementBott(
         "by",
         NODE_CURRENT);
+
+  return rFunc;
 }
 
-void TXLGenerator::compileRefinementFunction_LevelPredicate(
+RefinementFunction*
+TXLGenerator::compileRefinementFunction_LevelPredicate(
     string const& name,
     Rule::Location::PathElement const& element,
     int const index)
@@ -1228,8 +1237,8 @@ void TXLGenerator::compileInstrumentationFunction(
 
           // execute an algorithm
           for (auto const& step : pointcut->aglorithm) {
-            // TODO: check command return value (bool)
-            callAlgorithmCommand({
+            // perform action
+            auto const executed = callAlgorithmCommand({
                                    .function = step.function,
                                    .args = step.args,
                                    .preparedFragment = fragmentsChunk,
@@ -1237,6 +1246,13 @@ void TXLGenerator::compileInstrumentationFunction(
                                    .grammar = grammar.get()
                                  },
                                  handler);
+
+            // check the result
+            if (!executed)
+              SCIS_ERROR("Failed command :" << step.function << ": execution of an algorithm "
+                         "for pointcut with name <" << pointcut->name << "> "
+                         "defined for keyword [" << keyword->id << "].\n"
+                         "NOTE: Check grammar annotation for {" << annotation->grammar.language << "} language");
           }
 
           // add result to a full text (empty symbol at the end already exists, see 'handler')
