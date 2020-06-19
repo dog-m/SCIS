@@ -1,0 +1,30 @@
+use fragment "imports-instrummentation-fragment-with-dependencies"
+
+context s1:
+  { poi:class_name = "Main" }
+context s2:
+  { poi:method_name = "main" }
+context s3:
+  s1 & s2
+
+rules:
+  instrument_some_statements_at_s3_and_s4:
+    @s3 -> [all] if # before:
+      make:
+        msg <- $LOCATION + " " + $ITEM + " block in " + $CLASS + " class, in " + $METHOD + " method.";
+      add:
+        insert_logging(msg)
+
+    @s4 -> [first] if("x == 10"...) -> [all] for(*) # before_body:
+      add:
+        print_iterration,
+        correct_variable_i,
+        do_other_stuff
+
+/*
+    @context -> path-element -> [repeat-modifier] statement-name("param-template") # pointcut_name:
+      make:
+        element <- $CONSTANT
+      add:
+        name_of_a_block_of_code
+*/

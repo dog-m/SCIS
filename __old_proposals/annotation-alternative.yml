@@ -1,0 +1,127 @@
+common:
+  language = java,
+  src = `lang/java/grammar.txl`,
+  pipeline = `txl "%SRC%" "%TRANSFORM%" -o "%DST%" %PARAMS%`
+
+
+keyword-DAG: {
+  package [package_declaration]       -> { imports, class }
+  imports [repeat import_declaration]
+  class   [class_declaration]         -> { body }
+  body    [class_or_interface_body]   -> { method }
+  method  [method_declaration]        -> { if, switch, for, while, do_while }
+
+  if [if_statement] -> { else }
+  else [else_clause]
+
+  switch [switch_statement] -> { case }
+  case [switch_alternative]
+
+  for [for_statement]
+  while [while_statement]
+  do_while [do_statement]
+
+...
+}
+
+  
+library: {
+
+  rule simplify() after_all
+  ~~~
+    replace [block]
+      '{'{ Statements [repeat declaration_or_statement] '}'}
+    by
+      '{ Statements '}
+  ~~~
+
+  function addToImportsIfNotExists( Addition:import_declaration ) call
+  ~~~
+    replace [repeat import_declaration]
+      Imports [repeat import_declaration]
+
+    deconstruct not * [import_declaration] Imports
+      Addition
+
+    by
+      Imports [^ Addition]
+  ~~~
+
+...
+}
+
+
+points-of-interest: {
+
+  package_name: [package] -> package_header -> package_name
+
+  class_name: [class] -> class_header -> class_name
+
+  method_name: [method] -> method_declarator -> method_name
+
+  if_condition: [if] -> condition
+
+...
+}
+
+
+pointcuts: {
+
+  [imports]: {
+    search-type = `repeat import_declaration`
+    sequential  = `false`
+
+    templates: {
+      replace:
+        ~~~
+          @@@repeat import_declaration@
+          ###all#
+        ~~~
+
+      match:
+        ~~~
+          @@@repeat import_declaration@
+        ~~~
+    }
+
+    pointcuts: {
+      all:
+        fragment-to-variable (name=`Additions`, type=`repeat import_declaration`)
+        insert-call (function=`addToImportsIfNotExists`, params=`each Additions`)
+    }
+  }
+  
+  [if]: {
+    search-type = `statement`
+    filter-poi  = `if_condition`
+    
+    templates: {
+      replace:
+        ~~~
+          '{
+              ###before#
+              'if '( @@@condition@ ') '{
+                  ###before_body#
+                  @@@statement@
+                  ###after_body#
+              '}
+              @@@opt else_clause@
+              ###after#
+          '}
+        ~~~
+
+      match: <- $GRAMMAR
+    }
+
+    pointcuts: {
+      before:
+        insert-fragment ()
+      
+      before_body: <- if::before
+      after_body: <- if::before
+      after: <- if::before
+    }
+  }
+
+...
+}

@@ -1,2 +1,1 @@
-Original repository:
-https://github.com/leethomason/tinyxml2
+Original repository: https://github.com/leethomason/tinyxml2
