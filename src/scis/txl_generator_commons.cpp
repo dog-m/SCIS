@@ -155,7 +155,7 @@ void FilteringFunction::generateStatements()
 bool RefinementFunction::isSpecialAfter() const
 {
   // NOTE: dirty hack?
-  return isSequence && pointcutName == "after";
+  return isSequence && pointcutName.find("after") != string_view::npos;
 }
 
 void RefinementFunctionFilter::generateStatements()

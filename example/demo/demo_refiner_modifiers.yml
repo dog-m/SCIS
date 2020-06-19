@@ -23,7 +23,7 @@ rules:
         frag(msg)
 
   multiplie_LEVELs:
-    @@ -> [level] if -> [level] if # after:
+    @@ -> [level] if -> [level] if # after_body:
       make:
         msg <- $std:rule;
       add:

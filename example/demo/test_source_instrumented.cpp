@@ -14,19 +14,21 @@ void test ()
                         {
                             if (lvl == 22) {
                                 {
-                                    "mod_2_ALL";
-                                    if (lvl == 33) {
-                                        cout << "Hello World!" << endl;
+                                    {
+                                        "mod_2_ALL";
+                                        if (lvl == 33) {
+                                            cout << "Hello World!" << endl;
+                                        }
+                                    }
+                                    {
+                                        "mod_2_ALL";
+                                        if (lvl == 33) {
+                                            cout << "Hello World!" << endl;
+                                        }
                                     }
                                 }
-                                {
-                                    "mod_2_ALL";
-                                    if (lvl == 33) {
-                                        cout << "Hello World!" << endl;
-                                    }
-                                }
+                                "multiplie_LEVELs";
                             }
-                            "multiplie_LEVELs";
                         }
                     }
                     {
@@ -34,19 +36,21 @@ void test ()
                         {
                             if (lvl == 22) {
                                 {
-                                    "mod_2_ALL";
-                                    if (lvl == 33) {
-                                        cout << "Hello World!" << endl;
+                                    {
+                                        "mod_2_ALL";
+                                        if (lvl == 33) {
+                                            cout << "Hello World!" << endl;
+                                        }
+                                    }
+                                    {
+                                        "mod_2_ALL";
+                                        if (lvl == 33) {
+                                            cout << "Hello World!" << endl;
+                                        }
                                     }
                                 }
-                                {
-                                    "mod_2_ALL";
-                                    if (lvl == 33) {
-                                        cout << "Hello World!" << endl;
-                                    }
-                                }
+                                "multiplie_LEVELs";
                             }
-                            "multiplie_LEVELs";
                         }
                     }
                 }
@@ -63,19 +67,21 @@ void test ()
                     {
                         if (lvl == 22) {
                             {
-                                "mod_2_ALL";
-                                if (lvl == 33) {
-                                    cout << "Hello World!" << endl;
+                                {
+                                    "mod_2_ALL";
+                                    if (lvl == 33) {
+                                        cout << "Hello World!" << endl;
+                                    }
+                                }
+                                {
+                                    "mod_2_ALL";
+                                    if (lvl == 33) {
+                                        cout << "Hello World!" << endl;
+                                    }
                                 }
                             }
-                            {
-                                "mod_2_ALL";
-                                if (lvl == 33) {
-                                    cout << "Hello World!" << endl;
-                                }
-                            }
+                            "multiplie_LEVELs";
                         }
-                        "multiplie_LEVELs";
                     }
                 }
                 {
@@ -83,19 +89,21 @@ void test ()
                     {
                         if (lvl == 22) {
                             {
-                                "mod_2_ALL";
-                                if (lvl == 33) {
-                                    cout << "Hello World!" << endl;
+                                {
+                                    "mod_2_ALL";
+                                    if (lvl == 33) {
+                                        cout << "Hello World!" << endl;
+                                    }
+                                }
+                                {
+                                    "mod_2_ALL";
+                                    if (lvl == 33) {
+                                        cout << "Hello World!" << endl;
+                                    }
                                 }
                             }
-                            {
-                                "mod_2_ALL";
-                                if (lvl == 33) {
-                                    cout << "Hello World!" << endl;
-                                }
-                            }
+                            "multiplie_LEVELs";
                         }
-                        "multiplie_LEVELs";
                     }
                 }
             }
