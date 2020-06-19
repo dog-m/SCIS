@@ -17,6 +17,9 @@ namespace scis {
 
   inline string const DEFAULT_PIPELINE = R"***(txl "%SRC%" "%TRANSFORM%" -o "%DST%" %PARAMS%)***";
 
+  inline string const ANNOTATION_TEMPLATE_MATCH   = "match";
+  inline string const ANNOTATION_TEMPLATE_REPLACE = "replace";
+
   struct GrammarAnnotation final {
 
     struct Pointcut final {
@@ -27,6 +30,7 @@ namespace scis {
 
       string name;
       vector<Step> aglorithm;
+      bool caretViolation = false;
     }; // Pointcut
 
     struct Template final {

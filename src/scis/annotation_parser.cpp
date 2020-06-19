@@ -1,5 +1,6 @@
 #include "annotation_parser.h"
 #include "logging.h"
+#include <unordered_set>
 
 using namespace std;
 using namespace scis;
@@ -7,7 +8,8 @@ using namespace tinyxml2;
 
 #include "../xml_parser_utils.h"
 
-constexpr string_view CLONNING_PATH_SEPARATOR = "::";
+constexpr string_view ANNOTATION_POINTCUT_CLONNING_PATH_SEPARATOR = "::";
+constexpr string_view ANNOTATION_POINTCUT_TAG = "p";
 
 void AnnotationParser::parseBaseParameters(XMLElement const* const root)
 {
@@ -132,6 +134,7 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
   if (auto const fPOI = root->FindAttribute("filter-poi"))
     keyword->filterPOI = fPOI->Value();
 
+  unordered_set<string> pointsWithViolations;
   // parsing patterns for a keyword
   auto const templates = expectedPath(root, { "templates" });
   FOREACH_XML_ELEMENT(templates, tmpl) {
@@ -149,10 +152,10 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
 
     FOREACH_XML_NODE(tmpl, block) {
       // is it just text?
-      if (auto const text = block->ToText()) {
+      if (auto const textElement = block->ToText()) {
         auto txt = make_unique<GrammarAnnotation::Template::TextBlock>();
 
-        txt->text = text->Value();
+        txt->text = textElement->Value();
 
         newTemplate->blocks.emplace_back(std::move(txt));
       }
@@ -161,7 +164,7 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
         if (auto const elem = block->ToElement()) {
           auto const elementName = elem->Name();
           // pointcut
-          if (elementName == "p"sv) {
+          if (elementName == ANNOTATION_POINTCUT_TAG) {
             auto pointcut = make_unique<GrammarAnnotation::Template::PointcutLocation>();
 
             pointcut->name = expectedAttribute(elem, "name")->Value();
@@ -183,6 +186,18 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
       else
         throw "Unknown element in pointcut"s;
     }
+
+    // final pass to detect special pointcuts (affecting modifiers for R-functions)
+    if (newTemplate->kind == ANNOTATION_TEMPLATE_REPLACE) {
+      using Pointcut = GrammarAnnotation::Template::PointcutLocation;
+
+      for (auto const& block : newTemplate->blocks) {
+        if (auto const pointcut = dynamic_cast<Pointcut*>(block.get()))
+          pointsWithViolations.insert(pointcut->name);
+        else
+          break;
+      }
+    }
   }
 
   // parsing actual pointcuts
@@ -190,21 +205,24 @@ void AnnotationParser::parseKeywordWithPointcuts(XMLElement const* const root)
     // create and attach new pointcut
     auto const pointcut = keyword->addPointcut(expectedAttribute(point, "name")->Value());
 
+    // set basic properties
+    pointcut->caretViolation = pointsWithViolations.find(pointcut->name) != pointsWithViolations.cend();
+
     if (auto const clone = point->FindAttribute("clone")) {
       // copy from another pointcut
       string const path = clone->Value();
 
-      auto const sep = path.find(CLONNING_PATH_SEPARATOR);
+      auto const sep = path.find(ANNOTATION_POINTCUT_CLONNING_PATH_SEPARATOR);
       if (sep == string::npos)
         throw "Invalid path to source pointcut for " + pointcut->name;
 
       auto const srcKeyword = path.substr(0, sep);
-      auto const srcName = path.substr(sep + CLONNING_PATH_SEPARATOR.size());
+      auto const srcName = path.substr(sep + ANNOTATION_POINTCUT_CLONNING_PATH_SEPARATOR.size());
 
-      // FIXME: deffer pointcut clonning
+      // TODO: deffer pointcut clonning
       try {
         auto const src = annotation->grammar.graph.keywords.at(srcKeyword)->pointcuts.at(srcName).get();
-        // BUG: potential bug in algorithm clonning
+        // WARNING: potential bug in algorithm clonning
         pointcut->aglorithm.insert(pointcut->aglorithm.begin(), src->aglorithm.cbegin(), src->aglorithm.cend());
       } catch (...) {
         throw "Original pointcut <"s + path.data() + "> "

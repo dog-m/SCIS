@@ -144,7 +144,7 @@
                 </template>
             </templates>
             <pointcuts>
-                <pointcut name="all">
+                <pointcut name="after_body">
                     <paste-algorithm>
                         <create-variable
                           name="NewLine"
@@ -157,8 +157,8 @@
                           each-line-postfix="NewLine"
                           />
                         <insert-call
-                          function="addToImportsIfNotExists"
-                          params="each Additions"
+                          function="."
+                          params="Additions"
                           />
                     </paste-algorithm>
                 </pointcut>

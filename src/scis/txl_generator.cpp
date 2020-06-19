@@ -709,8 +709,20 @@ void TXLGenerator::compileRefinementFunctions(
     string const& ruleId,
     Rule::Statement const& ruleStmt)
 {
-  using namespace std::placeholders;
+  // prepare common info
+  auto const& lastKeywordId = ruleStmt.location.path.back().keywordId;
+  auto const lastKeyword = annotation->grammar.graph.keywords[lastKeywordId].get();
+  auto const pointcut = lastKeyword->pointcuts[ruleStmt.location.pointcut].get();
 
+  if (!pointcut) {
+    SCIS_WARNING("Pointcut <" << ruleStmt.location.pointcut << "> not defined "
+                 "for keyword [" << lastKeywordId << "]. "
+                 "Detected at line " << ruleStmt.declarationLine << ".");
+    return;
+  }
+
+  // prepare modifier generators
+  using namespace std::placeholders;
   unordered_map<string, RefinementFunctionGenerator> const modifier2generator {
     { "first",   bind(&TXLGenerator::compileRefinementFunction_First,          this, _1, _2, _3) },
     { "all",     bind(&TXLGenerator::compileRefinementFunction_All,            this, _1, _2, _3) },
@@ -744,7 +756,7 @@ void TXLGenerator::compileRefinementFunctions(
 
     // build the rest
     auto const rFunc = generator->second(name, path, index);
-    rFunc->pointcutName = ruleStmt.location.pointcut;
+    rFunc->caretPositionViolation = pointcut->caretViolation;
 
     // update index
     if (index > maxRefinementIndex)
@@ -1029,8 +1041,14 @@ void TXLGenerator::compileInstrumentationFunction(
     string const& ruleId,
     Rule::Statement const& ruleStmt)
 {
-  auto const functionName = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + getUniqueId();
   auto const lastFunc = lastCallChainElement();
+
+  if (!lastFunc) {
+    SCIS_WARNING("Nothing to connect to. Instrumentation function had not been generated.");
+    return;
+  }
+
+  auto const functionName = ruleId + "_instrummenter_" + ruleStmt.location.pointcut + getUniqueId();
   auto const keyword = annotation->grammar.graph.keywords[ruleStmt.location.path.back().keywordId].get(); // BUG: empty path?
   auto const& workingType = keyword->type;
 
@@ -1056,8 +1074,8 @@ void TXLGenerator::compileInstrumentationFunction(
     return;
   }
 
-  auto const templateMatch = keyword->getTemplate("match");
-  auto const templateReplace = keyword->getTemplate("replace");
+  auto const templateMatch = keyword->getTemplate(ANNOTATION_TEMPLATE_MATCH);
+  auto const templateReplace = keyword->getTemplate(ANNOTATION_TEMPLATE_REPLACE);
 
   // add instrumentation function
   auto const iFunc = createFunction<InstrumentationFunction>();

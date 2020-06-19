@@ -28,4 +28,3 @@ rules:
         msg <- $std:rule;
       add:
         frag(msg)
-

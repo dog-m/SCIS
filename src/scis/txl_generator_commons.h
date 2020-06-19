@@ -148,10 +148,10 @@ namespace scis::codegen {
     bool isSequence = false;
     int queueIndex = 0;
 
-    // NOTE: dirty hack?
-    string_view pointcutName;
+    // TXL internals (probably)
+    bool caretPositionViolation = false;
 
-    bool isSpecialAfter() const;
+    inline bool additionalSkipNeeded() const;
   }; // RefinementFunction
 
   /// primary used by "level" kind/modification of refiner
@@ -188,7 +188,7 @@ namespace scis::codegen {
 
     void generateStatements() override;
 
-    string renderDecrementer(bool const specialAfter) const;
+    string renderDecrementer() const;
   }; // RefinementFunction_Level
 
   struct InstrumentationFunction final : public CallChainFunction {

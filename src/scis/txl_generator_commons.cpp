@@ -152,10 +152,9 @@ void FilteringFunction::generateStatements()
         NODE_CURRENT + " [" + callTo->name + getParamNames() + "]");
 }
 
-bool RefinementFunction::isSpecialAfter() const
+inline bool RefinementFunction::additionalSkipNeeded() const
 {
-  // NOTE: dirty hack?
-  return isSequence && pointcutName.find("after") != string_view::npos;
+  return caretPositionViolation || !isSequence;
 }
 
 void RefinementFunctionFilter::generateStatements()
@@ -239,8 +238,6 @@ void RefinementFunction_First::generateStatements()
 
 void RefinementFunction_All::generateStatements()
 {
-  auto const specialAfter = isSpecialAfter();
-
   // independent instructions ('pre-generated')
   importVariable(
         skipCount, TXL_TYPE_NUMBER);
@@ -259,7 +256,7 @@ void RefinementFunction_All::generateStatements()
 
   exportVariableUpdate(
         skipCount,
-        specialAfter ? "0" : "1");
+        additionalSkipNeeded() ? "1" : "0");
 
   // type-dependent instructions
   if (isSequence) {
@@ -305,8 +302,6 @@ void RefinementFunction_All::generateStatements()
 
 void RefinementFunction_Level::generateStatements()
 {
-  auto const specialAfter = isSpecialAfter();
-
   // independent instructions ('pre-generated')
   importVariable(
         skipCount, TXL_TYPE_NUMBER);
@@ -340,7 +335,7 @@ void RefinementFunction_Level::generateStatements()
           NODE_SEQ_SINGLE + " "
           "[" + callTo->name + getParamNames() + "] "
           "[" + skipCountCounter + "]" +
-          renderDecrementer(specialAfter));
+          renderDecrementer());
 
     addStatementBott(
           "by",
@@ -363,7 +358,7 @@ void RefinementFunction_Level::generateStatements()
           NODE_INPUT + " "
           "[" + callTo->name + getParamNames() + "] "
           "[" + skipCountCounter + "]" +
-          renderDecrementer(specialAfter));
+          renderDecrementer());
 
     addStatementBott(
           "by",
@@ -371,9 +366,11 @@ void RefinementFunction_Level::generateStatements()
   }
 }
 
-string RefinementFunction_Level::renderDecrementer(bool const specialAfter) const
+string RefinementFunction_Level::renderDecrementer() const
 {
-  return useDecrementer || specialAfter
+  // flags: useDecrementer, isSequence, caretPositionViolation
+
+  return useDecrementer || !additionalSkipNeeded()
       ? (" [" + skipCountDecrementer + "] ")
       : "";
 }
