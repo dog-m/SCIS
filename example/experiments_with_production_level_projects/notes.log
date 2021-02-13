@@ -1,0 +1,18 @@
+* C++
+* https://raw.githubusercontent.com/boostorg/uuid/develop/include/boost/uuid/detail/sha1.hpp
+нормализация удалась лишь для некоторых исходных текстов в силу слабой поддержки директив препроцессора со стороны грамматики -- требуется доработать грамматику языка или подавать на вход системы обработанный С++ препроцессором файл исходных текстов
+
+
+* Delphi
+* https://svn.freepascal.org/cgi-bin/viewvc.cgi/trunk/ide/compiler.pp?root=lazarus&view=co&content-type=text%2Fplain
+после нормализации исчезли все комментарии и директивы компилятора, потому как эти особенности не поддерживаются со стороны грамматики языка
+
+
+* Java
+* https://git.eclipse.org/c/aspectj/org.aspectj.git/plain/asm/src/main/java/org/aspectj/asm/AsmManager.java
+внешнний класс AsmManager содержит в себе классы CanonicalFilePathMap и ModelInfo
+
+
+* Python
+* https://raw.githubusercontent.com/keras-team/keras/master/keras/layers/convolutional.py
+описание нескольких классов в одном файле

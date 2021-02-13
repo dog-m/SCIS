@@ -1,0 +1,27 @@
+use fragment "logging/dependencies"
+use fragment "logging/fields"
+use fragment "logging/init"
+use fragment "logging/message"
+
+context target_class:
+  { poi:class_name = "AsmManager" }
+
+rules:
+  trace_while_loops_in_Model:
+    @@ -> [first] imports # all:
+      add:
+        logging_dependencies
+  
+    @target_class -> [first] class("Model*") # before_body:
+      add:
+        logging_fields
+  
+    @target_class -> [first] method("Model*") # before_body:
+      add:
+        logging_init
+  
+    @target_class -> [first] class("Model*") -> [all] while # before:
+      make:
+        msg <- $std:pointcut + " " + $std:node;
+      add:
+        logging_message(msg)

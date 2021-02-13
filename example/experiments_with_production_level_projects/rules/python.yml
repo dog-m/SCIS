@@ -1,0 +1,27 @@
+use fragment "logging/dependencies"
+use fragment "logging/fields"
+use fragment "logging/init"
+use fragment "logging/message"
+
+context target_class:
+  { poi:class_name exists }
+
+context target_method:
+  { poi:method_name = "__init__" }
+
+context target_class_and_method:
+  target_class & target_method
+
+rules:
+  // display message when something has been created
+  print_usefull_message_to_the_log:
+    @@ -> [first] imports # all:
+      add:
+        logging_dependencies
+
+    @target_class_and_method -> [first] method # before_body:
+      make:
+        msg <- "In constructor of [" + $poi:class_name + "] class";
+      add:
+        logging_init,
+        logging_message(msg)

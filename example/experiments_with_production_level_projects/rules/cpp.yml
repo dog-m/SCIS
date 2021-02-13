@@ -1,0 +1,29 @@
+use fragment "logging/dependencies"
+use fragment "logging/fields"
+use fragment "logging/message"
+
+context target_class:
+  { poi:method_namespace matches "sha*" }
+
+context target_method:
+  { poi:method_name = "process_block" }
+
+context target_class_and_method:
+  target_class & target_method
+
+rules:
+  // show message before "for" loops in sha1->process_block
+  trace_processblock_func:
+    @@ -> [first] imports # all:
+      add:
+        logging_dependencies
+  
+    @@ -> [first] class("sha*") # before_body:
+      add:
+        logging_fields
+  
+    @target_class_and_method -> [all] for # before:
+      make:
+        msg <- "<" + $std:pointcut + "> in [" + $poi:method_name_full + "] method";
+      add:
+        logging_message(msg)
